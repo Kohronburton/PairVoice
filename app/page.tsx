@@ -1,42 +1,14 @@
 'use client';
+import { FormEvent,useEffect,useState } from 'react';
 
-import { FormEvent, useState } from 'react';
-
-export default function Home() {
-  const [sent, setSent] = useState(false);
-  function submit(e: FormEvent<HTMLFormElement>) { e.preventDefault(); setSent(true); }
-
-  return <main>
-    <nav><div className="logo">PAIR<span>VOICE</span></div><a href="#join">Join now</a></nav>
-    <section className="hero">
-      <div className="eyebrow">PAID VOICE OPPORTUNITIES • MULTIPLE LANGUAGES & ACCENTS</div>
-      <h1>Your voice<br/><em>has value.</em></h1>
-      <p className="lead">Join PairVoice and get matched with paid voice-recording projects. Our introductory opportunity pays <strong>$50 total per accepted pair</strong>.</p>
-      <div className="actions"><a className="primary" href="#join">Sign up for voice work →</a><span>Free to join • 18+</span></div>
-      <div className="chips"><b>English</b><b>Español</b><b>US Accents</b><b>UK Accents</b><b>More coming</b></div>
-    </section>
-
-    <section className="steps">
-      <div><i>01</i><h3>Create your profile</h3><p>Tell us your language, accent and location. It takes about 60 seconds.</p></div>
-      <div><i>02</i><h3>Invite your partner</h3><p>Some projects need two voices. Send your personal link to your partner.</p></div>
-      <div><i>03</i><h3>Qualify & record</h3><p>Complete the project requirements and submit your recording.</p></div>
-      <div><i>04</i><h3>Get paid</h3><p>Approved work becomes eligible for payment under the project's terms.</p></div>
-    </section>
-
-    <section className="join" id="join">
-      <div><div className="eyebrow">JOIN THE VOICE COMMUNITY</div><h2>Start with your<br/>first opportunity.</h2><p>Create your free profile now. If a project requires a pair, we'll give you a personal invitation link for your second participant.</p><div className="affiliate"><strong>Earn by referring others, too.</strong><br/>PairVoice members can receive referral rewards on eligible approved missions completed by people they directly refer.</div></div>
-      <div className="card">
-        {sent ? <div className="success"><div>✓</div><h3>You're on the PairVoice list.</h3><p>Next, we'll match your profile with opportunities that fit your language, accent and location.</p></div> : <form onSubmit={submit}>
-          <h3>Create your free profile</h3><label>First name<input required name="firstName" placeholder="Your first name"/></label>
-          <label>Email<input required type="email" name="email" placeholder="you@email.com"/></label>
-          <label>Country<select required name="country" defaultValue=""><option value="" disabled>Select your country</option><option>United States</option><option>Spain</option><option>United Kingdom</option><option>Mexico</option><option>Other</option></select></label>
-          <label>Primary language<select required name="language" defaultValue=""><option value="" disabled>Select language</option><option>English</option><option>Spanish</option><option>Other</option></select></label>
-          <label>Accent / dialect<input required name="accent" placeholder="e.g. American, British, Spain Spanish"/></label>
-          <label className="check"><input required type="checkbox"/> <span>I confirm I am 18+ and agree to be contacted about PairVoice opportunities.</span></label>
-          <button>Create my PairVoice account →</button><small>No signup fee. Project eligibility and compensation vary by opportunity.</small>
-        </form>}
-      </div>
-    </section>
-    <footer><div className="logo">PAIR<span>VOICE</span></div><p>Paid voices. Real people. Global opportunities.</p></footer>
-  </main>;
-}
+type Result={referralCode:string;inviteCode:string};
+export default function Home(){
+ const [result,setResult]=useState<Result|null>(null),[error,setError]=useState(''),[loading,setLoading]=useState(false),[lang,setLang]=useState<'en'|'es'>('en');
+ useEffect(()=>{if(navigator.language.toLowerCase().startsWith('es'))setLang('es')},[]);
+ const t=lang==='es'?{join:'Únete ahora',eyebrow:'OPORTUNIDADES DE VOZ PAGADAS • MÚLTIPLES IDIOMAS Y ACENTOS',h1:'Tu voz',h2:'tiene valor.',lead:'Únete a PairVoice para proyectos pagados de grabación de voz. Nuestra oportunidad introductoria paga $50 en total por pareja aceptada.',cta:'Regístrate para trabajo de voz →',free:'Gratis • 18+',start:'Empieza con tu primera oportunidad.',profile:'Crea tu perfil gratis',done:'¡Ya estás en PairVoice!',next:'Invita a tu compañero para completar tu pareja.',invite:'Invitar por WhatsApp'}:{join:'Join now',eyebrow:'PAID VOICE OPPORTUNITIES • MULTIPLE LANGUAGES & ACCENTS',h1:'Your voice',h2:'has value.',lead:'Join PairVoice for paid voice-recording projects. Our introductory opportunity pays $50 total per accepted pair.',cta:'Sign up for voice work →',free:'Free to join • 18+',start:'Start with your first opportunity.',profile:'Create your free profile',done:"You're on PairVoice!",next:'Invite your recording partner to complete your pair.',invite:'Invite on WhatsApp'};
+ async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();setLoading(true);setError('');const f=new FormData(e.currentTarget);const q=new URLSearchParams(location.search);const payload={firstName:f.get('firstName'),email:f.get('email'),phone:f.get('phone'),country:f.get('country'),language:f.get('language'),accent:f.get('accent'),is18Plus:f.get('age')==='on',consent:f.get('consent')==='on',ref:q.get('ref'),campaign:q.get('campaign')||q.get('utm_campaign')};const r=await fetch('/api/signup',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});const d=await r.json();setLoading(false);if(!r.ok){setError(d.error||'Signup failed');return}setResult(d)}
+ const invite=result?`${location.origin}/?pair=${result.inviteCode}`:'';
+ return <main><nav><div className="logo">PAIR<span>VOICE</span></div><div className="navright"><button className="language" onClick={()=>setLang(lang==='en'?'es':'en')}>{lang==='en'?'ES':'EN'}</button><a href="#join">{t.join}</a></div></nav>
+ <section className="hero"><div className="eyebrow">{t.eyebrow}</div><h1>{t.h1}<br/><em>{t.h2}</em></h1><p className="lead">{t.lead}</p><div className="actions"><a className="primary" href="#join">{t.cta}</a><span>{t.free}</span></div><div className="chips"><b>English</b><b>Español</b><b>US Accents</b><b>UK Accents</b><b>LATAM</b><b>More</b></div></section>
+ <section className="steps"><div><i>01</i><h3>Create your profile</h3><p>Language, accent and location. About 60 seconds.</p></div><div><i>02</i><h3>Invite your partner</h3><p>Pair projects require a second registered participant.</p></div><div><i>03</i><h3>Qualify & record</h3><p>Follow the requirements for each available project.</p></div><div><i>04</i><h3>Get paid</h3><p>Accepted work becomes eligible for payment under project terms.</p></div></section>
+ <section className="join" id="join"><div><div className="eyebrow">PAIRVOICE COMMUNITY</div><h2>{t.start}</h2><p>One profile can match you with current and future opportunities based on your language, accent and location.</p><div className="affiliate"><strong>Invite people. Earn referral rewards.</strong><br/>Eligible direct referrals can generate a small commission when their qualifying missions are completed and approved.</div></div><div className="card">{result?<div className="success"><div>✓</div><h3>{t.done}</h3><p>{t.next}</p><a className="share" href={`https://wa.me/?text=${encodeURIComponent('Join my PairVoice pair: '+invite)}`}>{t.invite}</a><button className="copy" onClick={()=>navigator.clipboard.writeText(invite)}>Copy partner link</button><small>Your referral code: {result.referralCode}</small></div>:<form onSubmit={submit}><h3>{t.profile}</h3><div className="grid2"><label>First name<input required name="firstName"/></label><label>Phone / WhatsApp<input name="phone" type="tel"/></label></div><label>Email<input required type="email" name="email"/></label><div className="grid2"><label>Country<select required name="country" defaultValue=""><option value="" disabled>Select</option><option>United States</option><option>Spain</option><option>United Kingdom</option><option>Mexico</option><option>Argentina</option><option>Colombia</option><option>Other</option></select></label><label>Primary language<select required name="language" defaultValue=""><option value="" disabled>Select</option><option>English</option><option>Spanish</option><option>Other</option></select></label></div><label>Accent / dialect<input required name="accent" placeholder="e.g. American, British, Spain Spanish"/></label><label className="check"><input required name="age" type="checkbox"/><span>I confirm I am 18 or older.</span></label><label className="check"><input required name="consent" type="checkbox"/><span>I agree to be contacted about PairVoice opportunities.</span></label>{error&&<p className="error">{error}</p>}<button disabled={loading}>{loading?'Creating profile…':'Create my PairVoice account →'}</button><small>No signup fee. Eligibility and compensation vary by project.</small></form>}</div></section><footer><div className="logo">PAIR<span>VOICE</span></div><p>Paid voices. Real people. Global opportunities.</p></footer></main>}
