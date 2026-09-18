@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: pairvoice
+    runtime: node
+    branch: feat/signup-first-launch
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: PAIRVOICE_ADMIN_USER
+        sync: false
+      - key: PAIRVOICE_ADMIN_PASSWORD
+        sync: false
