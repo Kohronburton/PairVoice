@@ -1,4 +1,4 @@
-name: Build Check — staging
+name: Build & Test — staging
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  verify:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -18,5 +18,7 @@ jobs:
           node-version: 22
       - name: Install
         run: npm install
-      - name: Build
+      - name: Unit tests
+        run: npm test
+      - name: Production build
         run: npm run build
