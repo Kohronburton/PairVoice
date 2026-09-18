@@ -14,7 +14,7 @@ services:
         value: coming-soon
       - key: NEXT_PUBLIC_SUPABASE_URL
         sync: false
-      - key: SUPABASE_SERVICE_ROLE_KEY
+      - key: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
         sync: false
       - key: PAIRVOICE_ADMIN_USER
         sync: false
