@@ -43,8 +43,15 @@ create table if not exists referral_commissions (
  created_at timestamptz not null default now()
 );
 
-insert into gigs(slug,title,compensation_cents,compensation_unit,requires_pair) values
-('intro-pair-50','Introductory Pair Voice Project',5000,'pair',true) on conflict(slug) do nothing;
+insert into campaigns(slug,name,language_target,country_target,active) values
+('us-english-v1','U.S. English Pair Voice Project','English','United States',true),
+('es-spain-v1','Spain Spanish Pair Voice Project','Spanish','Spain',true)
+on conflict(slug) do update set name=excluded.name,language_target=excluded.language_target,country_target=excluded.country_target,active=excluded.active;
+
+insert into gigs(slug,title,compensation_cents,compensation_unit,language,country,requires_pair) values
+('us-pair-60','U.S. Introductory Pair Voice Project',6000,'pair','English','United States',true),
+('es-pair-50','Spain Introductory Pair Voice Project',5000,'pair','Spanish','Spain',true)
+on conflict(slug) do update set title=excluded.title,compensation_cents=excluded.compensation_cents,language=excluded.language,country=excluded.country,requires_pair=excluded.requires_pair;
 
 alter table profiles enable row level security;
 alter table pairs enable row level security;
