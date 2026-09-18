@@ -13,9 +13,15 @@ export async function POST(req:NextRequest){
   const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.SUPABASE_SERVICE_ROLE_KEY;
   if(!url||!key) return NextResponse.json({error:'Lead signup is not configured.'},{status:503});
   const db=createClient(url,key,{auth:{persistSession:false}});
+  const campaignKey=String(b.campaign_key||b.utm_campaign||'organic').slice(0,120);
   const payload={
    email,country,marketing_consent:true,
    source:b.source||null,
+   campaign_key:campaignKey,
+   landing_path:b.landing_path||null,
+   referrer:b.referrer||null,
+   fbclid:b.fbclid||null,
+   gclid:b.gclid||null,
    utm_source:b.utm_source||null,
    utm_medium:b.utm_medium||null,
    utm_campaign:b.utm_campaign||null,
