@@ -9,7 +9,8 @@ const MARKETS:any={
  GB:{country:'United Kingdom',countryCode:'GB',regionCode:'GB'},
  MX:{country:'Mexico',countryCode:'MX',regionCode:'MX'},
  AR:{country:'Argentina',countryCode:'AR',regionCode:'AR'},
- CO:{country:'Colombia',countryCode:'CO',regionCode:'CO'}
+ CO:{country:'Colombia',countryCode:'CO',regionCode:'CO'},
+ UNKNOWN:{country:'Unknown',countryCode:null,regionCode:null}
 };
 
 const languageName=(code:string)=>code==='es'?'Spanish':code==='it'?'Italian':code==='en'?'English':code||'Unknown';
@@ -18,8 +19,8 @@ export async function POST(req:NextRequest){
  try{
   const b=await req.json();
   const email=String(b.email||'').trim().toLowerCase();
-  const marketCode=String(b.market_code||'US').trim().toUpperCase();
-  const market=MARKETS[marketCode]||MARKETS.US;
+  const marketCode=String(b.market_code||'UNKNOWN').trim().toUpperCase();
+  const market=MARKETS[marketCode]||MARKETS.UNKNOWN;
   const consent=b.consent===true;
   if(!/^\S+@\S+\.\S+$/.test(email)) return NextResponse.json({error:'Enter a valid email address.'},{status:400});
   if(!consent) return NextResponse.json({error:'Consent is required to receive PairVoice opportunities.'},{status:400});
