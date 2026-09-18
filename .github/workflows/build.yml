@@ -1,9 +1,9 @@
-name: Build Check
+name: Build Check — preview
 
 on:
   push:
     branches:
-      - feat/signup-first-launch
+      - preview
   workflow_dispatch:
 
 jobs:
@@ -16,8 +16,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: package.json
       - name: Install
         run: npm install
       - name: Build
