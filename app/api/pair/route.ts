@@ -13,14 +13,19 @@ export async function POST(req:NextRequest){
   const db=createClient(url,key,{auth:{persistSession:false}});
   const {data:pair}=await db.from('pairs').select('id,user_a,status').eq('invite_code',String(inviteCode).toUpperCase()).maybeSingle();
   if(!pair||pair.status!=='invited')return NextResponse.json({error:'Invite is invalid or already used.'},{status:400});
-  const {data:owner}=await db.from('profiles').select('referral_code').eq('id',pair.user_a).single();
+  const {data:owner}=await db.from('profiles').select('referral_code,campaign_id').eq('id',pair.user_a).single();
   const {data:user,error}=await db.from('profiles').insert({
    first_name:String(firstName).trim(),email:String(email).trim().toLowerCase(),phone:phone||null,country,
-   primary_language:language,accent:String(accent).trim(),referred_by:pair.user_a,is_18_plus:true,consent_contact:true
+   primary_language:language,accent:String(accent).trim(),referred_by:pair.user_a,campaign_id:owner?.campaign_id??null,
+   is_18_plus:true,consent_contact:true
   }).select('id,referral_code').single();
   if(error){if(error.code==='23505')return NextResponse.json({error:'This email is already registered.'},{status:409});throw error;}
-  const {error:updateError}=await db.from('pairs').update({user_b:user.id,status:'complete'}).eq('id',pair.id).eq('status','invited');
+  const {data:updated,error:updateError}=await db.from('pairs').update({user_b:user.id,status:'complete'}).eq('id',pair.id).eq('status','invited').select('id').maybeSingle();
   if(updateError)throw updateError;
+  if(!updated){
+   await db.from('profiles').delete().eq('id',user.id);
+   return NextResponse.json({error:'This invite was already used.'},{status:409});
+  }
   return NextResponse.json({ok:true,referralCode:user.referral_code,originalReferrer:owner?.referral_code});
  }catch(e){console.error(e);return NextResponse.json({error:'Unable to join pair.'},{status:500})}
 }
