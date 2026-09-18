@@ -2,34 +2,39 @@
 
 Mobile-first recruitment and operations platform for paid conversational speech-data projects.
 
-## V1
+## Tonight Launch Scope
 
-Campaign #1 is Spain Spanish using FunCrowd as the external recording provider. PairVoice owns recruitment, configurable screening, pair formation, training, FunCrowd companion workflow, session tracking, external QA, payment obligations, WhatsApp-assisted communication, referrals and audit history.
+The current public launch is deliberately email-first:
+
+**Landing page -> email -> consent -> lead saved -> confirmation.**
+
+No password, phone number, voice recording, payout setup, partner workflow, or full account is required for tonight's acquisition launch.
+
+The lead layer automatically captures locale/language signals and campaign attribution so PairVoice can segment future opportunities and measure CPL/CAC without adding signup friction.
+
+See `docs/TONIGHT_MVP_AND_PROGRESSIVE_VERIFICATION.md` for the locked launch scope and the next-phase voice verification design.
+
+## V1 Platform Foundation
+
+The repository also preserves the broader participant/account foundation for future campaign operations: profiles, pairs, gigs, completions, referrals, payments, campaign targeting, admin analytics and progressive verification.
 
 ### Core rules
 
 - Supabase/Postgres is the source of truth.
-- Spain requirements are campaign configuration, not platform hard-coding.
-- Requirement versions are immutable after publication.
-- Both participants must independently qualify before a pair can become ready.
-- FunCrowd is an external provider; PairVoice never fabricates external completion/QA state.
+- Campaign requirements are configuration, not platform hard-coding.
+- Market and language are separate signals.
 - COMPLETED != ACCEPTED != PAYMENT_DUE != PAID.
-- Spain V1 compensation is $50 TOTAL per accepted pair.
-- WhatsApp V1 is operator-assisted click-to-chat. Delivery/read status is not claimed without an official API.
 - Credentials and payment obligations require database-level duplicate protection.
+- One-time jobs should eventually enforce one completion per real enrolled speaker, with manual review for uncertain duplicate matches.
 
 ## Stack
 
-Next.js App Router + TypeScript + Tailwind + Supabase/Postgres/Auth/Storage + Vitest + Playwright.
+Next.js App Router + TypeScript + Supabase/Postgres.
 
-## Architecture
+## Launch Priority
 
-Modular monolith. Domain modules live under `modules/`; UI routes under `app/`; database migrations under `supabase/migrations/`.
-
-## First milestones
-
-1. A synthetic pair can travel through the entire workflow without direct database edits.
-2. Two real Spain pairs complete the same workflow.
-3. Validate 10 accepted pairs before adding paid acquisition or unnecessary infrastructure.
-
-See `docs/SYSTEM_PLAN.md` and `docs/STATE_MACHINE.md`.
+1. Collect email leads with minimal friction.
+2. Preserve attribution and acquisition KPIs from day one.
+3. Notify leads when a matching opportunity opens.
+4. Convert only interested leads into full accounts.
+5. Add phone, voice enrollment, duplicate-speaker screening and payout setup progressively when needed.
