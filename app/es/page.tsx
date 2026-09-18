@@ -50,19 +50,24 @@ export default function SpanishLanding(){
   </nav>
 
   <section className="hero conversion-hero">
-   <div className="hero-copy">
-    <div className="eyebrow">OPORTUNIDADES DE VOZ PAGADAS EN ESPAÑA</div>
-    <h1>Tu voz tiene valor.</h1>
-    <p className="lead">Únete a PairVoice y recibe avisos cuando haya proyectos pagados de grabación de voz para personas en España.</p>
-    <div className="trust-row"><span>✓ Gratis</span><span>✓ Solo necesitamos tu correo</span><span>✓ No necesitas experiencia</span></div>
-    <div className="micro-proof">Proyectos reales. Requisitos claros. Te avisamos cuando haya una oportunidad que encaje contigo.</div>
+   <div className="hero-visual">
+    <div className="hero-scrim"></div>
+    <div className="hero-visual-copy">
+     <div className="eyebrow">OPORTUNIDADES DE VOZ PAGADAS EN ESPAÑA</div>
+     <h1>Tu voz tiene valor.</h1>
+     <p className="lead">Únete a PairVoice y recibe avisos cuando haya proyectos pagados de grabación de voz para personas en España.</p>
+     <div className="trust-row"><span>✓ Gratis</span><span>✓ Solo correo</span><span>✓ Sin experiencia profesional</span></div>
+    </div>
+    <div className="floating-pay floating-main"><small>EJEMPLO DE PROYECTO EN ESPAÑA</small><b>$50</b><span>total por pareja aceptada</span></div>
+    <div className="waveform" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
    </div>
 
    <div className="hero-form card" id="join">
     <div className="form-kicker">ACCESO ANTICIPADO</div>
-    <h2>Entérate primero.</h2>
-    <p>Únete a la lista ahora. Solo completaremos más datos cuando haya un proyecto pagado compatible contigo.</p>
+    <h2>Apúntate a la lista.</h2>
+    <p>Cuando haya un proyecto pagado compatible con tu idioma y ubicación, te avisamos por correo. Nada más por hoy.</p>
     <SignupForm placement="spain-hero"/>
+    <div className="form-proof"><span>🔒 Sin datos de pago</span><span>🎙 Sin muestra de voz hoy</span></div>
    </div>
   </section>
 
