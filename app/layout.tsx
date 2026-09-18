@@ -1,11 +1,3 @@
-import type { Metadata } from 'next';
-import './globals.css';
-
-export const metadata: Metadata = {
-  title: 'PairVoice | Get Paid for Voice Work',
-  description: 'Join PairVoice for paid voice recording opportunities across languages and accents.',
-};
-
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body>{children}</body></html>;
-}
+import type {Metadata} from 'next';import './globals.css';
+export const metadata:Metadata={title:'PairVoice Staging',description:'PairVoice staging environment.',robots:{index:false,follow:false}};
+export default function RootLayout({children}:{children:React.ReactNode}){return <html lang="en"><body>{children}</body></html>}
