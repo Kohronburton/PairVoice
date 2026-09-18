@@ -128,18 +128,24 @@ export default function Home(){
   </nav>
 
   <section className="hero conversion-hero">
-   <div className="hero-copy">
-    <div className="eyebrow">{t.eyebrow}</div>
-    <h1>{t.h1}</h1>
-    <p className="lead">{t.lead}</p>
-    <div className="trust-row"><span>✓ Free to join</span><span>✓ Email only</span><span>✓ No experience required</span></div>
-    <div className="micro-proof">Real projects. Clear requirements. Get notified only when there is an opportunity worth looking at.</div>
+   <div className="hero-visual">
+    <div className="hero-scrim"></div>
+    <div className="hero-visual-copy">
+     <div className="eyebrow">{t.eyebrow}</div>
+     <h1>{t.h1}</h1>
+     <p className="lead">{t.lead}</p>
+     <div className="trust-row"><span>✓ Free to join</span><span>✓ Email only</span><span>✓ No experience required</span></div>
+    </div>
+    <div className="floating-pay floating-us"><small>U.S. PROJECT EXAMPLE</small><b>$60</b><span>total per accepted pair</span></div>
+    <div className="floating-pay floating-es"><small>SPAIN PROJECT EXAMPLE</small><b>$50</b><span>total per accepted pair</span></div>
+    <div className="waveform" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
    </div>
    <div className="hero-form card" id="join">
     <div className="form-kicker">EARLY ACCESS</div>
-    <h2>Be first to know.</h2>
-    <p>Join the list now. Finish your profile only when a matching paid project opens.</p>
+    <h2>Get on the list.</h2>
+    <p>When a paid project matches your language and location, we email you. Nothing else required today.</p>
     <SignupForm placement="coming-soon-hero"/>
+    <div className="form-proof"><span>🔒 No payment info</span><span>🎙 No voice sample today</span></div>
    </div>
   </section>
 
