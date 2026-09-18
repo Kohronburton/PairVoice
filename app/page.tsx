@@ -3,13 +3,13 @@ import {FormEvent,useEffect,useState} from 'react';
 
 const marketForLocale=(locale:string)=>{
  const parts=(locale||'en-US').replace('_','-').split('-');
- const region=(parts[1]||'US').toUpperCase();
+ const region=(parts[1]||'').toUpperCase();
  const supported=['US','ES','IT','AU','GB','MX','AR','CO'];
- return supported.includes(region)?region:'US';
+ return supported.includes(region)?region:'UNKNOWN';
 };
 
 export default function Home(){
- const [done,setDone]=useState(false),[error,setError]=useState(''),[loading,setLoading]=useState(false),[lang,setLang]=useState<'en'|'es'|'it'>('en'),[market,setMarket]=useState('US'),[detectedLocale,setDetectedLocale]=useState('');
+ const [done,setDone]=useState(false),[error,setError]=useState(''),[loading,setLoading]=useState(false),[lang,setLang]=useState<'en'|'es'|'it'>('en'),[market,setMarket]=useState('UNKNOWN'),[detectedLocale,setDetectedLocale]=useState('');
  useEffect(()=>{
   const locale=navigator.language||'en-US';
   setDetectedLocale(locale);
