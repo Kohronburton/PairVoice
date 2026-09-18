@@ -32,8 +32,8 @@ export default function Home(){
    consent:f.get('consent')==='on',
    detected_locale:detectedLocale,
    detected_languages:Array.from(navigator.languages||[]),
-   source:q.get('source')||q.get('src')||null,
-   campaign_key:q.get('campaign_key')||q.get('utm_campaign')||'organic',
+   source:q.get('source')||q.get('src')||'staging',
+   campaign_key:q.get('campaign_key')||q.get('utm_campaign')||'staging-test',
    landing_path:location.pathname,
    referrer:document.referrer||null,
    fbclid:q.get('fbclid'),
@@ -49,7 +49,7 @@ export default function Home(){
   if(!r.ok){setError(d.error||'Signup failed');return}
   setDone(true);
  }
- return <main>
+ return <main><div style={{background:'#b9ff48',color:'#07100e',padding:'8px 16px',textAlign:'center',fontWeight:900,fontSize:12}}>STAGING — TEST ENVIRONMENT — DO NOT USE FOR LIVE TRAFFIC</div>
   <nav><div className="logo">PAIR<span>VOICE</span></div><div className="navright"><select className="language" value={lang} onChange={e=>setLang(e.target.value as any)}><option value="en">EN</option><option value="es">ES</option><option value="it">IT</option></select><a href="#join">{t.join}</a></div></nav>
   <section className="hero"><div className="eyebrow">{t.eyebrow}</div><h1>{t.h1}<br/><em>{t.h2}</em></h1><p className="lead">{t.lead}</p><div className="actions"><a className="primary" href="#join">{t.cta}</a><span>{t.free}</span></div><div className="chips"><b>English</b><b>Español</b><b>Italiano</b><b>United States</b><b>Spain</b><b>Italy</b><b>Australia</b><b>United Kingdom</b></div></section>
   <section className="steps"><div><i>01</i><h3>Enter your email</h3><p>That is the only information we need tonight.</p></div><div><i>02</i><h3>We match quietly</h3><p>Your device language and market are saved automatically.</p></div><div><i>03</i><h3>Get notified</h3><p>We email you when a matching opportunity opens.</p></div><div><i>04</i><h3>Finish setup later</h3><p>Phone, voice check and payment details are only requested when needed.</p></div></section>
