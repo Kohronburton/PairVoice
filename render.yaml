@@ -1,8 +1,8 @@
 services:
   - type: web
-    name: pairvoice
+    name: pairvoice-coming-soon
     runtime: node
-    branch: feat/signup-first-launch
+    branch: coming-soon
     buildCommand: npm install && npm run build
     startCommand: npm start
     healthCheckPath: /api/health
@@ -10,6 +10,8 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: PAIRVOICE_ENV
+        value: coming-soon
       - key: NEXT_PUBLIC_SUPABASE_URL
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
