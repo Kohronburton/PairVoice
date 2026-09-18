@@ -1,0 +1,11 @@
+import type { Metadata } from 'next';
+import './globals.css';
+
+export const metadata: Metadata = {
+  title: 'PairVoice | Get Paid for Voice Work',
+  description: 'Join PairVoice for paid voice recording opportunities across languages and accents.',
+};
+
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  return <html lang="en"><body>{children}</body></html>;
+}
