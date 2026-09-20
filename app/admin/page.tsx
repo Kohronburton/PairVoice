@@ -1,117 +1,31 @@
 'use client';
-import {FormEvent,useEffect,useState} from 'react';
+import{FormEvent,useCallback,useEffect,useState}from'react';
+import{allowedPairTransitions,PairState}from'../../lib/workflow';
 
-type GrowthCampaign={campaignKey:string;leads:number;customers:number;spendCents:number;cplCents:number|null;cacCents:number|null;conversionRate:number|null};
-type Break={market?:string;language?:string;count:number};
-type Stats={leads:number;customers:number;target:number;progress:number;totalSpendCents:number;cplCents:number|null;cacCents:number|null;leadConversionRate:number|null;totalClicks:number;totalImpressions:number;ctr:number|null;cpcCents:number|null;campaigns:GrowthCampaign[];markets:Break[];languages:Break[]};
-
-type SourcePosting={
- id:string;platform:string;external_job_id:string;url:string;title:string;
- compensation_type:string;observed_rate_cents:number|null;observed_currency:string;
- observations:Array<{worker_display_name:string|null;observed_hours:number|null;hourly_rate_cents:number|null;observed_month:string|null}>;
-};
-
-type CatalogCampaign={
- id:string;slug:string;name:string;country_code:string;language_code:string;participant_count:number;
- session_count:number|null;session_minutes_min:number|null;session_minutes_max:number|null;device_requirement:string|null;
- provider:string|null;participant_payout_cents:number|null;payout_currency:string;payout_unit:string;
- client_base_revenue_cents:number|null;client_referral_revenue_cents:number|null;status:string;
- family:{name:string;recording_mode:string;requires_pair:boolean}|null;
- sourcePostings:SourcePosting[];
- access:{provider:string;invitation_code:string|null;reveal_state:string;updated_at:string}|null;
- enrollmentCounts:Record<string,number>;
- pairCounts:Record<string,number>;
-};
-
-const money=(c:number|null,currency='USD')=>c==null?'—':new Intl.NumberFormat('en-US',{style:'currency',currency,maximumFractionDigits:0}).format(c/100);
+type Stats={leads:number;converted:number;activePairs:number;approvedPairs:number;approvalRate:number|null;approvedRevenueCents:number;contributionCents:number;availableCredentials:number;reservedCredentials:number;launchTarget:number;launchProgress:number;pipeline:{state:string;count:number}[];milestones:{label:string;target:number;unlocked:boolean}[]};
+type Pair={id:string;publicCode:string;state:PairState;campaign:{slug:string;name:string}|null;members:{role:string;name:string;email:string}[];credential:{label:string;status:string;releasedAt:string|null}|null};
+type CredentialData={campaigns:{id:string;slug:string;name:string}[];bundles:{id:string;campaign_id:string;label:string;status:string;accounts:{slot:string;username:string}[]}[]};type CatalogCampaign={id:string;slug:string;name:string;access:{provider:string;invitation_code:string|null;reveal_state:string}|null;sourcePostings:any[]};
+const money=(c:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(c/100);
+const financial=new Set(['APPROVED','PAYABLE','PAID','PAYMENT_FAILED']);
 
 export default function Admin(){
- const[s,setS]=useState<Stats|null>(null);
- const[catalog,setCatalog]=useState<CatalogCampaign[]>([]);
- const[message,setMessage]=useState('');
+ const[stats,setStats]=useState<Stats|null>(null),[pairs,setPairs]=useState<Pair[]>([]),[credentials,setCredentials]=useState<CredentialData>({campaigns:[],bundles:[]}),[catalog,setCatalog]=useState<CatalogCampaign[]>([]),[error,setError]=useState(''),[busy,setBusy]=useState('');
+ const load=useCallback(async()=>{setError('');try{const[rs,rp,rc,rg]=await Promise.all([fetch('/api/admin/stats'),fetch('/api/admin/pairs'),fetch('/api/admin/credentials'),fetch('/api/admin/catalog')]);const[ss,pp,cc,gg]=await Promise.all([rs.json(),rp.json(),rc.json(),rg.json()]);if(!rs.ok||!rp.ok||!rc.ok||!rg.ok)throw new Error(ss.error||pp.error||cc.error||gg.error||'Unable to load admin');setStats(ss);setPairs(pp.pairs||[]);setCredentials(cc);setCatalog(gg.campaigns||[])}catch(e:any){setError(e.message)}},[]);
+ useEffect(()=>{load()},[load]);
+ async function post(url:string,body:any,key:string){setBusy(key);setError('');try{const r=await fetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}),d=await r.json();if(!r.ok)throw new Error(d.error||'Action failed');await load()}catch(e:any){setError(e.message)}finally{setBusy('')}}
+ async function saveAccess(e:FormEvent<HTMLFormElement>,slug:string){e.preventDefault();const f=new FormData(e.currentTarget);setBusy('access-'+slug);setError('');try{const r=await fetch('/api/admin/campaigns/'+encodeURIComponent(slug)+'/access',{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({provider:f.get('provider'),invitationCode:f.get('invitationCode'),revealState:f.get('revealState')})}),d=await r.json();if(!r.ok)throw new Error(d.error||'Unable to save campaign access');await load()}catch(e:any){setError(e.message)}finally{setBusy('')}}
+ async function addCredential(e:FormEvent<HTMLFormElement>){e.preventDefault();const f=new FormData(e.currentTarget);await post('/api/admin/credentials',{campaignSlug:f.get('campaignSlug'),label:f.get('label'),aUsername:f.get('aUsername'),aPassword:f.get('aPassword'),bUsername:f.get('bUsername'),bPassword:f.get('bPassword'),pairInvitationCode:f.get('pairInvitationCode'),notes:f.get('notes')},'credential-create');e.currentTarget.reset()}
+ if(!stats&&!error)return <main className="admin"><p>Loading live operations…</p></main>;
+ return <main className="admin admin-shell">
+  <header className="admin-head"><div><div className="logo">PAIR<span>VOICE</span> <small>OPS</small></div><p className="eyebrow">APPROVED REVENUE FIRST</p><h1>Mission Control</h1><p className="admin-sub">Professional operations with just enough progress mechanics to keep the team moving. No vanity metrics.</p></div><div className="health-pill">● Live admin</div></header>
+  {error&&<p className="error">{error}</p>}
+  {stats&&<><section className="mission-card"><div><span className="kicker">LAUNCH MISSION</span><h2>{stats.approvedPairs} / {stats.launchTarget} approved pairs</h2><p>Prove quality and contribution before scaling acquisition.</p></div><strong>{stats.launchProgress}%</strong><div className="meter mission-meter"><i style={{width:stats.launchProgress+'%'}}/></div></section><section className="kpi-grid"><article><span>Approved revenue</span><b>{money(stats.approvedRevenueCents)}</b></article><article><span>Contribution</span><b>{money(stats.contributionCents)}</b></article><article><span>Approval rate</span><b>{stats.approvalRate==null?'—':stats.approvalRate+'%'}</b></article><article><span>Credential capacity</span><b>{stats.availableCredentials}</b><small>{stats.reservedCredentials} committed</small></article><article><span>Active pairs</span><b>{stats.activePairs}</b></article><article><span>Lead pool</span><b>{stats.leads}</b><small>{stats.converted} converted</small></article></section></>}
 
- async function load(){
-  const [statsRes,catalogRes]=await Promise.all([fetch('/api/admin/stats'),fetch('/api/admin/catalog')]);
-  const [stats,catalogData]=await Promise.all([statsRes.json(),catalogRes.json()]);
-  if(statsRes.ok)setS(stats);
-  if(catalogRes.ok)setCatalog(catalogData.campaigns||[]);
- }
+  <section className="admin-grid">
+   <div className="panel"><span className="kicker">OPERATIONS QUEUE</span><h2>Pairs</h2><div className="ops-list">{pairs.length?pairs.map(p=><article className="ops-row" key={p.id}><div><strong>{p.publicCode}</strong><span>{p.campaign?.name||'Campaign'} · {p.members.map(m=>m.role+': '+m.name).join(' / ')||'Waiting for participant'}</span><small>{p.credential?'Credentials '+p.credential.label+' · '+p.credential.status:'No credentials reserved'}</small></div><div className="ops-actions"><b>{p.state.replaceAll('_',' ')}</b>{p.state==='READY'&&!p.credential&&<button disabled={busy!==''} onClick={()=>post('/api/admin/credentials/assign',{pairId:p.id},'assign-'+p.id)}>Reserve credentials</button>}{p.state==='READY'&&p.credential?.status==='RESERVED'&&<button disabled={busy!==''} onClick={()=>post('/api/admin/credentials/release',{pairId:p.id},'release-'+p.id)}>Release & start</button>}<select defaultValue="" onChange={e=>{const to=e.target.value as PairState;if(!to)return;const reason=window.prompt('Reason for this state change?');if(reason)post('/api/admin/pairs/transition',{pairId:p.id,toState:to,reason},'transition-'+p.id);e.currentTarget.value=''}}><option value="">Move state…</option>{allowedPairTransitions[p.state].filter(x=>!financial.has(x)).map(x=><option key={x} value={x}>{x.replaceAll('_',' ')}</option>)}</select></div></article>):<p>No pairs yet.</p>}</div></div>
+   <div className="panel"><span className="kicker">MILESTONES</span><h2>Operating badges</h2><div className="badge-row">{stats?.milestones.map(m=><div className={m.unlocked?'ops-badge unlocked':'ops-badge'} key={m.label}><strong>{m.unlocked?'✓':'○'}</strong><span>{m.label}</span><small>{m.target} approved</small></div>)}</div><p className="panel-note">Display only. Never bypasses QA or financial controls.</p></div>
+  </section>
 
- useEffect(()=>{load()},[]);
-
- async function saveAccess(e:FormEvent<HTMLFormElement>,slug:string){
-  e.preventDefault();setMessage('Saving…');
-  const form=new FormData(e.currentTarget);
-  const res=await fetch('/api/admin/campaigns/'+encodeURIComponent(slug)+'/access',{
-   method:'PATCH',
-   headers:{'content-type':'application/json'},
-   body:JSON.stringify({
-    provider:form.get('provider'),
-    invitationCode:form.get('invitationCode'),
-    revealState:form.get('revealState')
-   })
-  });
-  const body=await res.json();
-  setMessage(res.ok?'Campaign access saved.':body.error||'Unable to save.');
-  if(res.ok)await load();
- }
-
- return <main className="admin">
-  <div className="logo">PAIR<span>VOICE</span> <small>OPERATIONS</small></div>
-  <h1>Campaign Control</h1>
-
-  {!s?<p>Loading growth data…</p>:<>
-   <div className="meter"><i style={{width:Math.min(s.progress,100)+'%'}}/></div>
-   <strong className="progress">{s.leads.toLocaleString()} / {s.target.toLocaleString()} leads <em>{s.progress}%</em></strong>
-   <div className="stats">
-    <article><b>{s.leads.toLocaleString()}</b><span>Email leads</span></article>
-    <article><b>{money(s.cplCents)}</b><span>Cost per lead</span></article>
-    <article><b>{s.customers.toLocaleString()}</b><span>Converted participants</span></article>
-    <article><b>{money(s.totalSpendCents)}</b><span>Acquisition spend</span></article>
-   </div>
-  </>}
-
-  <h2>Job catalog</h2>
-  {message&&<p className="codeStatus">{message}</p>}
-  <div className="catalogList">
-   {catalog.map(c=>{
-    const clientTotal=(c.client_base_revenue_cents??0)+(c.client_referral_revenue_cents??0);
-    const spread=c.participant_payout_cents!=null&&clientTotal>0?clientTotal-c.participant_payout_cents:null;
-    return <article className="catalogRow" key={c.id}>
-     <div className="catalogRowHead">
-      <div>
-       <h3>{c.name}</h3>
-       <p>{c.family?.name||'Voice project'} · {c.country_code} · {c.language_code.toUpperCase()} · {c.status}</p>
-      </div>
-      <div className="codeStatus">{c.sourcePostings.length} source posting{c.sourcePostings.length===1?'':'s'}</div>
-     </div>
-
-     <div className="catalogPills">
-      <span>{c.participant_count} participant{c.participant_count===1?'':'s'}</span>
-      {c.session_count&&<span>{c.session_count} sessions</span>}
-      {c.device_requirement&&<span>{c.device_requirement}</span>}
-      {c.participant_payout_cents!=null&&<span>PairVoice payout {money(c.participant_payout_cents,c.payout_currency)} / {c.payout_unit.toLowerCase()}</span>}
-      {clientTotal>0&&<span>Client revenue {money(clientTotal,c.payout_currency)}</span>}
-      {spread!=null&&<span>Gross spread {money(spread,c.payout_currency)}</span>}
-      <span>{Object.values(c.enrollmentCounts||{}).reduce((a,b)=>a+b,0)} enrollments</span>
-      <span>{Object.values(c.pairCounts||{}).reduce((a,b)=>a+b,0)} pairs</span>
-     </div>
-
-     {c.sourcePostings.length>0&&<div className="sourceList">
-      {c.sourcePostings.map(p=><div key={p.id}>
-       <a href={p.url} target="_blank" rel="noreferrer">{p.platform} · {p.external_job_id} · {p.title}</a>
-       <span className="muted"> {p.observed_rate_cents!=null?' · observed '+money(p.observed_rate_cents,p.observed_currency)+(p.compensation_type==='HOURLY'?' / hr':''):''}</span>
-      </div>)}
-     </div>}
-
-     {(c.provider||c.access)&&<form onSubmit={e=>saveAccess(e,c.slug)} style={{marginTop:20,paddingTop:18,borderTop:'1px solid #26332f',display:'grid',gridTemplateColumns:'1fr 1fr 1fr auto',gap:8,alignItems:'end'}}>
-      <label style={{margin:0}}>Provider<input name="provider" defaultValue={c.access?.provider||c.provider||''}/></label>
-      <label style={{margin:0}}>Invitation code<input name="invitationCode" type="password" defaultValue={c.access?.invitation_code||''} autoComplete="off"/></label>
-      <label style={{margin:0}}>Reveal state<select name="revealState" defaultValue={c.access?.reveal_state||'READY'}><option>PARTNER_PENDING</option><option>PAIRED</option><option>READY</option><option>IN_PROGRESS</option></select></label>
-      <button type="submit" style={{width:'auto',margin:0}}>Save</button>
-     </form>}
-    </article>
-   })}
-  </div>
- </main>
+  <section className="panel credentials-panel"><span className="kicker">CREDENTIAL INVENTORY</span><h2>{credentials.bundles.filter(b=>b.status==='AVAILABLE').length} bundles available</h2><div className="credential-layout"><form className="credential-form" onSubmit={addCredential}><label>Campaign<select name="campaignSlug" required>{credentials.campaigns.map(c=><option key={c.id} value={c.slug}>{c.name}</option>)}</select></label><label>Bundle label<input name="label" required placeholder="SPAIN-0001"/></label><div className="grid2"><label>A username<input name="aUsername" required/></label><label>A password<input name="aPassword" type="password" required autoComplete="new-password"/></label><label>B username<input name="bUsername" required/></label><label>B password<input name="bPassword" type="password" required autoComplete="new-password"/></label></div><label>Pair-specific invitation code (optional)<input name="pairInvitationCode"/></label><label>Notes<input name="notes"/></label><button disabled={busy!==''}>{busy==='credential-create'?'Encrypting & saving…':'Add credential bundle'}</button><small>Passwords are encrypted before storage and never returned by inventory APIs.</small></form><div className="credential-list">{credentials.bundles.slice(0,12).map(b=><div key={b.id}><strong>{b.label}</strong><span>{b.status}</span><small>{b.accounts.sort((a,c)=>a.slot.localeCompare(c.slot)).map(a=>a.slot+': '+a.username).join(' · ')}</small></div>)}</div></div></section>
+ <section className="panel credentials-panel"><span className="kicker">CAMPAIGN ACCESS</span><h2>Invitation-code control</h2><p className="panel-note">Campaign access is operational configuration. Changes are admin-only and do not bypass eligibility, readiness, QA, or payout controls.</p><div className="credential-list">{catalog.map(c=><form key={c.id} onSubmit={e=>saveAccess(e,c.slug)} className="credential-form"><strong>{c.name}</strong><label>Provider<input name="provider" defaultValue={c.access?.provider||'FUNCROWD'} required/></label><label>Invitation code<input name="invitationCode" type="password" defaultValue={c.access?.invitation_code||''} autoComplete="off"/></label><label>Reveal at<select name="revealState" defaultValue={c.access?.reveal_state||'READY'}><option>PARTNER_PENDING</option><option>PAIRED</option><option>READY</option><option>IN_PROGRESS</option></select></label><button disabled={busy!==''}>{busy==='access-'+c.slug?'Saving…':'Save campaign access'}</button><small>{c.sourcePostings?.length||0} source posting(s) linked</small></form>)}</div></section></main>
 }

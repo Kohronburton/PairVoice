@@ -1,0 +1,18 @@
+# PairVoice Development Log
+
+## 2026-09-20 — Clean core redesign
+Removed competing legacy database models because the product is pre-production. Added one canonical baseline with versioned campaigns, normalized enrollments/pair members, credential bundles, redo history, append-only ledger/audit, idempotent approval earnings, transactional public registration/pair join, revenue-first admin metrics, light professional milestones, tests and CI gates.
+
+## 2026-09-20 — Working operations admin
+Added encrypted credential-bundle creation, credential inventory, atomic reservation, controlled credential release, pair queue/state operations, session initialization on READY, admin documentation, and server-side credential encryption. Added PostgreSQL CI that applies every clean migration and runs end-to-end invariant checks against a fresh database.
+
+Revenue effect: protects the lead → pair → approval → cash path from duplicate credentials, duplicate earnings, retroactive payout drift, fake admin controls and schema ambiguity.
+
+Release: feature branch; requires green app + database CI before merge.
+
+
+## 2026-09-20 — V2 reconciliation
+- Reconciled the catalog-first public experience with the clean operational core.
+- Removed the competing V2 migration chain; catalog/source intelligence now extends the canonical baseline.
+- Preserved revenue-first Mission Control, credential inventory, campaign invitation-code controls, QA gates, immutable ledger/audit records, and participant-safe state transitions.
+- Added catalog migration coverage and catalog invariants to CI.
