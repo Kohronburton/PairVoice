@@ -1,40 +1,43 @@
 # PairVoice
 
-Mobile-first recruitment and operations platform for paid conversational speech-data projects.
+PairVoice is a mobile-first recruitment and operations platform for paid conversational speech-data projects.
 
-## Tonight Launch Scope
+## Operating objective
 
-The current public launch is deliberately email-first:
+Optimize **approved contribution**, not raw registrations:
 
-**Landing page -> email -> consent -> lead saved -> confirmation.**
+Lead → qualified participant → valid pair → ready pair → sessions → internal QA → client approval → earnings → payout.
 
-No password, phone number, voice recording, payout setup, partner workflow, or full account is required for tonight's acquisition launch.
+## Clean baseline
 
-The lead layer automatically captures locale/language signals and campaign attribution so PairVoice can segment future opportunities and measure CPL/CAC without adding signup friction.
+The project is pre-production, so the database is intentionally one clean schema instead of carrying competing legacy models.
 
-See `docs/TONIGHT_MVP_AND_PROGRESSIVE_VERIFICATION.md` for the locked launch scope and the next-phase voice verification design.
+Core domains: acquisition, participants, campaign enrollments, immutable campaign versions, pair membership history, credential inventory, topics/sessions/redos, QA, referrals, immutable ledger/payouts, outbox messaging, activity and audit.
 
-## V1 Platform Foundation
+## Revenue rules
 
-The repository also preserves the broader participant/account foundation for future campaign operations: profiles, pairs, gigs, completions, referrals, payments, campaign targeting, admin analytics and progressive verification.
+- Published campaign terms are immutable.
+- A participant enrolls once per campaign.
+- One active pair membership per enrollment.
+- One credential bundle is assigned to one pair for its lifetime.
+- Completion is not approval; approval is not payout.
+- Earnings/payouts are idempotent.
+- Ledger and audit records are append-only.
+- Existing assignments never inherit future rule/payout changes.
 
-### Core rules
+## Spain
 
-- Supabase/Postgres is the source of truth.
-- Campaign requirements are configuration, not platform hard-coding.
-- Market and language are separate signals.
-- COMPLETED != ACCEPTED != PAYMENT_DUE != PAID.
-- Credentials and payment obligations require database-level duplicate protection.
-- One-time jobs should eventually enforce one completion per real enrolled speaker, with manual review for uncertain duplicate matches.
+Current PairVoice offer: **$50 per completed pair**. Confirmed client base revenue from the supplied contract: **$75 per pair**. The supplied invitation code is stored as a campaign default but marked unconfirmed until the client confirms whether it is universal or pair-specific.
 
-## Stack
+## Professional gamification
 
-Next.js App Router + TypeScript + Supabase/Postgres.
+Keep it light: progress bars, operating milestones and completion visibility. Never use mechanics that encourage rushing, rule-skipping or low-quality recordings.
 
-## Launch Priority
+## Verify
 
-1. Collect email leads with minimal friction.
-2. Preserve attribution and acquisition KPIs from day one.
-3. Notify leads when a matching opportunity opens.
-4. Convert only interested leads into full accounts.
-5. Add phone, voice enrollment, duplicate-speaker screening and payout setup progressively when needed.
+npm install
+npm run typecheck
+npm test
+npm run build
+
+See docs/ARCHITECTURE.md, docs/DATABASE.md, docs/TESTING.md and docs/DEVLOG.md.

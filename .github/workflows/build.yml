@@ -1,24 +1,27 @@
-name: Build Check
-
+name: PairVoice Verify
 on:
+  pull_request:
+    branches: [main, staging]
   push:
-    branches:
-      - feat/signup-first-launch
+    branches: [main, staging]
   workflow_dispatch:
-
 jobs:
-  build:
+  verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: package.json
       - name: Install
         run: npm install
-      - name: Build
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Unit tests
+        run: npm test
+      - name: Production build
         run: npm run build
+      - name: Production dependency audit
+        run: npm audit --omit=dev --audit-level=high
