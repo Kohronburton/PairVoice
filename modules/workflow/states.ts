@@ -1,30 +1,43 @@
-export const workflowStates = [
-  'APPLIED','SCREENING','MANUAL_REVIEW','QUALIFIED','PARTNER_PENDING','PAIRED','TRAINING',
-  'FUNCROWD_SETUP','FUNCROWD_TEST','READY','RECORDING','SUBMITTED','EXTERNAL_QA_PENDING',
-  'REWORK_REQUIRED','APPROVED','PAYMENT_DUE','PAID','WAITLISTED','REJECTED','ABANDONED',
-  'CREDENTIAL_HOLD','PAYMENT_FAILED',
-] as const
+export const enrollmentStates=[
+ 'INTERESTED','ELIGIBILITY','QUALIFIED','PARTNER_PENDING','PAIRED','IN_PROGRESS',
+ 'SUBMITTED','APPROVED','REJECTED','PAID','WITHDRAWN'
+] as const;
 
-export type WorkflowState = typeof workflowStates[number]
+export type EnrollmentState=typeof enrollmentStates[number];
 
-export const allowedTransitions: Partial<Record<WorkflowState, readonly WorkflowState[]>> = {
-  APPLIED:['SCREENING','REJECTED','ABANDONED'],
-  SCREENING:['MANUAL_REVIEW','QUALIFIED','REJECTED','ABANDONED'],
-  MANUAL_REVIEW:['QUALIFIED','REJECTED'],
-  QUALIFIED:['PARTNER_PENDING','PAIRED'],
-  PARTNER_PENDING:['PAIRED','ABANDONED'],
-  PAIRED:['TRAINING'],
-  TRAINING:['FUNCROWD_SETUP','ABANDONED'],
-  FUNCROWD_SETUP:['FUNCROWD_TEST','CREDENTIAL_HOLD'],
-  FUNCROWD_TEST:['READY','CREDENTIAL_HOLD'],
-  READY:['RECORDING'],
-  RECORDING:['SUBMITTED','ABANDONED'],
-  SUBMITTED:['EXTERNAL_QA_PENDING'],
-  EXTERNAL_QA_PENDING:['REWORK_REQUIRED','APPROVED','REJECTED'],
-  REWORK_REQUIRED:['RECORDING','SUBMITTED'],
-  APPROVED:['PAYMENT_DUE'],
-  PAYMENT_DUE:['PAID','PAYMENT_FAILED'],
-  PAYMENT_FAILED:['PAYMENT_DUE'],
+export const pairStates=[
+ 'FORMING','READY','RECORDING','SUBMITTED','QA_PENDING','REWORK',
+ 'APPROVED','PAYMENT_DUE','PAID','CANCELLED'
+] as const;
+
+export type PairState=typeof pairStates[number];
+
+export const allowedEnrollmentTransitions:Partial<Record<EnrollmentState,readonly EnrollmentState[]>>={
+ INTERESTED:['ELIGIBILITY','WITHDRAWN'],
+ ELIGIBILITY:['QUALIFIED','REJECTED','WITHDRAWN'],
+ QUALIFIED:['PARTNER_PENDING','PAIRED','IN_PROGRESS','WITHDRAWN'],
+ PARTNER_PENDING:['PAIRED','WITHDRAWN'],
+ PAIRED:['IN_PROGRESS','WITHDRAWN'],
+ IN_PROGRESS:['SUBMITTED','WITHDRAWN'],
+ SUBMITTED:['APPROVED','REJECTED','IN_PROGRESS'],
+ APPROVED:['PAID'],
+};
+
+export const allowedPairTransitions:Partial<Record<PairState,readonly PairState[]>>={
+ FORMING:['READY','CANCELLED'],
+ READY:['RECORDING','CANCELLED'],
+ RECORDING:['SUBMITTED','CANCELLED'],
+ SUBMITTED:['QA_PENDING','REWORK'],
+ QA_PENDING:['APPROVED','REWORK','CANCELLED'],
+ REWORK:['RECORDING','SUBMITTED','CANCELLED'],
+ APPROVED:['PAYMENT_DUE'],
+ PAYMENT_DUE:['PAID'],
+};
+
+export function canEnrollmentTransition(from:EnrollmentState,to:EnrollmentState){
+ return allowedEnrollmentTransitions[from]?.includes(to)??false;
 }
 
-export function canTransition(from:WorkflowState,to:WorkflowState){return allowedTransitions[from]?.includes(to) ?? false}
+export function canPairTransition(from:PairState,to:PairState){
+ return allowedPairTransitions[from]?.includes(to)??false;
+}
