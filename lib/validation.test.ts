@@ -1,0 +1,2 @@
+import{describe,expect,it}from'vitest';import{isValidEmail,normalizeEmail,normalizeMarket}from'./validation';
+describe('validation',()=>{it('normalizes email',()=>expect(normalizeEmail('  USER@Example.COM ')).toBe('user@example.com'));it('rejects bad email',()=>expect(isValidEmail('bad')).toBe(false));it('does not invent geography',()=>expect(normalizeMarket('ZZ')).toBe('UNKNOWN'));it('accepts market',()=>expect(normalizeMarket('es')).toBe('ES'))});

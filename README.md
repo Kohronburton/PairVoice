@@ -1,63 +1,43 @@
 # PairVoice
 
-PairVoice is a mobile-first marketplace and operations platform for paid voice-data work.
+PairVoice is a mobile-first recruitment and operations platform for paid conversational speech-data projects.
 
-## Core product model
+## Operating objective
 
-PairVoice does not treat every external listing as a separate product.
+Optimize **approved contribution**, not raw registrations:
 
-`Job Family -> Campaign -> Source Posting -> Enrollment -> Work -> QA -> Payout`
+Lead → qualified participant → valid pair → ready pair → sessions → internal QA → client approval → earnings → payout.
 
-Examples:
+## Clean baseline
 
-- Job family: Paired Conversation Recording
-  - U.S. English — 7 Conversations
-  - Canada English — 7 Conversations
-  - Spain Spanish — 7 Conversations
-- Job family: Mobile Voice Recording
-  - Australia English — iPhone Recording
+The project is pre-production, so the database is intentionally one clean schema instead of carrying competing legacy models.
 
-Multiple Upwork listings can point to the same PairVoice campaign.
+Core domains: acquisition, participants, campaign enrollments, immutable campaign versions, pair membership history, credential inventory, topics/sessions/redos, QA, referrals, immutable ledger/payouts, outbox messaging, activity and audit.
 
-## Public experience
+## Revenue rules
 
-The public site is catalog-first and email-first:
+- Published campaign terms are immutable.
+- A participant enrolls once per campaign.
+- One active pair membership per enrollment.
+- One credential bundle is assigned to one pair for its lifetime.
+- Completion is not approval; approval is not payout.
+- Earnings/payouts are idempotent.
+- Ledger and audit records are append-only.
+- Existing assignments never inherit future rule/payout changes.
 
-`Opportunity catalog -> choose campaign or general list -> email + consent -> lead saved`
+## Spain
 
-No password, phone number, payout setup or voice sample is required at first contact.
+Current PairVoice offer: **$50 per completed pair**. Confirmed client base revenue from the supplied contract: **$75 per pair**. The supplied invitation code is stored as a campaign default but marked unconfirmed until the client confirms whether it is universal or pair-specific.
 
-## Operational model
+## Professional gamification
 
-A participant has one reusable PairVoice identity and can enroll in many campaigns.
+Keep it light: progress bars, operating milestones and completion visibility. Never use mechanics that encourage rushing, rule-skipping or low-quality recordings.
 
-Pair campaigns create a PairVoice pair record. Solo campaigns skip pair formation.
+## Verify
 
-External provider invitation codes are campaign-level configuration and are never used as PairVoice pair IDs.
+npm install
+npm run typecheck
+npm test
+npm run build
 
-## Stack
-
-- Next.js App Router
-- TypeScript
-- Supabase/Postgres
-- Server-side Supabase service role for application database access
-- Row-level security enabled on operational tables
-- Render deployment
-- GitHub Actions build checks
-
-## Main directories
-
-- `app/` — public site, admin dashboard and server API routes
-- `modules/` — workflow and messaging logic
-- `supabase/migrations/` — current schema transition
-- `docs/ARCHITECTURE.md` — system model and invariants
-- `docs/CAMPAIGN_CATALOG.md` — canonical active campaign/source catalog
-
-## Current campaigns
-
-- `us-english-7`
-- `ca-english-7`
-- `es-spain-7`
-- `au-english-iphone`
-
-See `docs/CAMPAIGN_CATALOG.md` for the current source-posting map and locked economics.
+See docs/ARCHITECTURE.md, docs/DATABASE.md, docs/TESTING.md and docs/DEVLOG.md.
