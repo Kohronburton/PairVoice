@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+const allowedRevealStates = new Set(['FUNCROWD_SETUP','FUNCROWD_TEST','READY']);
+
 function getDb() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -12,38 +14,43 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
-  const db = getDb();
-  if (!db) return NextResponse.json({ error: 'Not configured' }, { status: 503 });
+  try {
+    const db = getDb();
+    if (!db) return NextResponse.json({ error: 'Not configured' }, { status: 503 });
 
-  const { slug } = await params;
-  const { data: campaign, error: campaignError } = await db
-    .from('campaigns')
-    .select('id,slug,name')
-    .eq('slug', slug)
-    .maybeSingle();
+    const { slug } = await params;
+    const { data: campaign, error: campaignError } = await db
+      .from('campaigns')
+      .select('id,slug,name')
+      .eq('slug', slug)
+      .maybeSingle();
 
-  if (campaignError) throw campaignError;
-  if (!campaign) return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
+    if (campaignError) throw campaignError;
+    if (!campaign) return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
 
-  const { data, error } = await db
-    .from('campaign_external_access')
-    .select('provider,invitation_code,reveal_state,updated_at')
-    .eq('campaign_id', campaign.id)
-    .maybeSingle();
+    const { data, error } = await db
+      .from('campaign_external_access')
+      .select('provider,invitation_code,reveal_state,updated_at')
+      .eq('campaign_id', campaign.id)
+      .maybeSingle();
 
-  if (error) throw error;
+    if (error) throw error;
 
-  return NextResponse.json({
-    campaign: { slug: campaign.slug, name: campaign.name },
-    externalAccess: data
-      ? {
-          provider: data.provider,
-          invitationCode: data.invitation_code,
-          revealState: data.reveal_state,
-          updatedAt: data.updated_at,
-        }
-      : null,
-  });
+    return NextResponse.json({
+      campaign: { slug: campaign.slug, name: campaign.name },
+      externalAccess: data
+        ? {
+            provider: data.provider,
+            invitationCode: data.invitation_code,
+            revealState: data.reveal_state,
+            updatedAt: data.updated_at,
+          }
+        : null,
+    });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: 'Unable to load campaign external access.' }, { status: 500 });
+  }
 }
 
 export async function PATCH(
@@ -63,6 +70,9 @@ export async function PATCH(
     if (!provider) return NextResponse.json({ error: 'Provider is required.' }, { status: 400 });
     if (invitationCode.length < 4) {
       return NextResponse.json({ error: 'Invitation code must be at least 4 characters.' }, { status: 400 });
+    }
+    if (!allowedRevealStates.has(revealState)) {
+      return NextResponse.json({ error: 'Invalid reveal state.' }, { status: 400 });
     }
 
     const { data: campaign, error: campaignError } = await db
