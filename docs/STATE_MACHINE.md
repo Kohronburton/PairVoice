@@ -8,6 +8,16 @@ QA can route `EXTERNAL_QA_PENDING -> REWORK_REQUIRED -> RECORDING/SUBMITTED` or 
 
 Exception states: `WAITLISTED`, `REJECTED`, `ABANDONED`, `CREDENTIAL_HOLD`, `PAYMENT_FAILED`.
 
+## External provider access
+
+The Spain FunCrowd invitation code is campaign-level configuration, not a PairVoice pair identifier.
+
+- PairVoice pair/invite codes remain unique per pair.
+- The shared external invitation code is held in the RLS-protected `campaign_external_access` table.
+- The configured earliest reveal state is `FUNCROWD_SETUP`.
+- Reaching `PAIRED` alone does not authorize public exposure of the external code.
+- Future participant-facing retrieval must verify pair membership and current workflow state on the server before returning the code.
+
 ## Financial invariant
 
 `COMPLETED != ACCEPTED != PAYMENT_DUE != PAID`
