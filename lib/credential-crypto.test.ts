@@ -1,0 +1,2 @@
+import{beforeEach,describe,expect,it}from'vitest';import{decryptSecret,encryptSecret}from'./credential-crypto';
+describe('credential encryption',()=>{beforeEach(()=>{process.env.PAIRVOICE_CREDENTIAL_ENCRYPTION_KEY=Buffer.alloc(32,7).toString('base64')});it('round trips without storing plaintext',()=>{const c=encryptSecret('funcrowd12345');expect(c).not.toContain('funcrowd12345');expect(decryptSecret(c)).toBe('funcrowd12345')});it('uses randomized IVs',()=>expect(encryptSecret('x')).not.toBe(encryptSecret('x')))});
