@@ -1,40 +1,63 @@
 # PairVoice
 
-Mobile-first recruitment and operations platform for paid conversational speech-data projects.
+PairVoice is a mobile-first marketplace and operations platform for paid voice-data work.
 
-## Tonight Launch Scope
+## Core product model
 
-The current public launch is deliberately email-first:
+PairVoice does not treat every external listing as a separate product.
 
-**Landing page -> email -> consent -> lead saved -> confirmation.**
+`Job Family -> Campaign -> Source Posting -> Enrollment -> Work -> QA -> Payout`
 
-No password, phone number, voice recording, payout setup, partner workflow, or full account is required for tonight's acquisition launch.
+Examples:
 
-The lead layer automatically captures locale/language signals and campaign attribution so PairVoice can segment future opportunities and measure CPL/CAC without adding signup friction.
+- Job family: Paired Conversation Recording
+  - U.S. English — 7 Conversations
+  - Canada English — 7 Conversations
+  - Spain Spanish — 7 Conversations
+- Job family: Mobile Voice Recording
+  - Australia English — iPhone Recording
 
-See `docs/TONIGHT_MVP_AND_PROGRESSIVE_VERIFICATION.md` for the locked launch scope and the next-phase voice verification design.
+Multiple Upwork listings can point to the same PairVoice campaign.
 
-## V1 Platform Foundation
+## Public experience
 
-The repository also preserves the broader participant/account foundation for future campaign operations: profiles, pairs, gigs, completions, referrals, payments, campaign targeting, admin analytics and progressive verification.
+The public site is catalog-first and email-first:
 
-### Core rules
+`Opportunity catalog -> choose campaign or general list -> email + consent -> lead saved`
 
-- Supabase/Postgres is the source of truth.
-- Campaign requirements are configuration, not platform hard-coding.
-- Market and language are separate signals.
-- COMPLETED != ACCEPTED != PAYMENT_DUE != PAID.
-- Credentials and payment obligations require database-level duplicate protection.
-- One-time jobs should eventually enforce one completion per real enrolled speaker, with manual review for uncertain duplicate matches.
+No password, phone number, payout setup or voice sample is required at first contact.
+
+## Operational model
+
+A participant has one reusable PairVoice identity and can enroll in many campaigns.
+
+Pair campaigns create a PairVoice pair record. Solo campaigns skip pair formation.
+
+External provider invitation codes are campaign-level configuration and are never used as PairVoice pair IDs.
 
 ## Stack
 
-Next.js App Router + TypeScript + Supabase/Postgres.
+- Next.js App Router
+- TypeScript
+- Supabase/Postgres
+- Server-side Supabase service role for application database access
+- Row-level security enabled on operational tables
+- Render deployment
+- GitHub Actions build checks
 
-## Launch Priority
+## Main directories
 
-1. Collect email leads with minimal friction.
-2. Preserve attribution and acquisition KPIs from day one.
-3. Notify leads when a matching opportunity opens.
-4. Convert only interested leads into full accounts.
-5. Add phone, voice enrollment, duplicate-speaker screening and payout setup progressively when needed.
+- `app/` — public site, admin dashboard and server API routes
+- `modules/` — workflow and messaging logic
+- `supabase/migrations/` — current schema transition
+- `docs/ARCHITECTURE.md` — system model and invariants
+- `docs/CAMPAIGN_CATALOG.md` — canonical active campaign/source catalog
+
+## Current campaigns
+
+- `us-english-7`
+- `ca-english-7`
+- `es-spain-7`
+- `au-english-iphone`
+
+See `docs/CAMPAIGN_CATALOG.md` for the current source-posting map and locked economics.
