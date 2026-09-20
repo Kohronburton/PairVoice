@@ -5,8 +5,9 @@ on:
   push:
     branches: [main, staging]
   workflow_dispatch:
+
 jobs:
-  verify:
+  app:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -24,3 +25,38 @@ jobs:
         run: npm run build
       - name: Production dependency audit
         run: npm audit --omit=dev --audit-level=high
+
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare Supabase-compatible auth stubs
+        run: |
+          psql -h localhost -U postgres -d postgres <<'SQL'
+          create schema auth;
+          create table auth.users(id uuid primary key);
+          create function auth.uid() returns uuid language sql stable as $$ select null::uuid $$;
+          create role anon nologin;
+          create role authenticated nologin;
+          SQL
+      - name: Apply clean baseline
+        run: psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 -f supabase/migrations/0001_baseline.sql
+      - name: Apply admin operations
+        run: psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 -f supabase/migrations/0002_admin_operations.sql
+      - name: Verify core invariants
+        run: psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 -f supabase/tests/core_invariants.sql
