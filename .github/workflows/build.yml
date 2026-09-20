@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - feat/signup-first-launch
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
