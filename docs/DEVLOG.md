@@ -9,3 +9,10 @@ Added encrypted credential-bundle creation, credential inventory, atomic reserva
 Revenue effect: protects the lead → pair → approval → cash path from duplicate credentials, duplicate earnings, retroactive payout drift, fake admin controls and schema ambiguity.
 
 Release: feature branch; requires green app + database CI before merge.
+
+
+## 2026-09-20 — V2 reconciliation
+- Reconciled the catalog-first public experience with the clean operational core.
+- Removed the competing V2 migration chain; catalog/source intelligence now extends the canonical baseline.
+- Preserved revenue-first Mission Control, credential inventory, campaign invitation-code controls, QA gates, immutable ledger/audit records, and participant-safe state transitions.
+- Added catalog migration coverage and catalog invariants to CI.
