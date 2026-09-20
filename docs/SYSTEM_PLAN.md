@@ -16,6 +16,14 @@ Campaigns, requirements, participants, screening, voice review, pairs, workflow,
 ## Campaign #1
 Spain Spanish. Two independently qualified participants. Seven separate conversations. Active operational target 21–22 minutes per conversation. $50 total participant compensation per accepted pair. Same-project repeat participation is not permitted under the active requirement version. All campaign rules remain configuration-driven.
 
+### External provider access
+- FunCrowd uses one invitation code for the Spain campaign, not one code per pair.
+- PairVoice still creates and tracks its own unique pair/invite identifier for Participant A + Participant B.
+- The external invitation code is stored once at the campaign level in `campaign_external_access`.
+- The external code is server/admin data and is not stored in the public campaign record or committed to source control.
+- The configured reveal state is `FUNCROWD_SETUP`: only an eligible pair that has reached the external setup stage should receive the code.
+- Admins can update the provider, invitation code, and reveal state through the protected campaign settings API/UI.
+
 ## Core invariants
 1. Published requirement versions are immutable.
 2. Both participants qualify independently before pair readiness.
@@ -27,6 +35,9 @@ Spain Spanish. Two independently qualified participants. Seven separate conversa
 8. WhatsApp V1 never claims DELIVERED/READ without official API evidence.
 9. Sensitive credentials never enter click-to-chat URLs.
 10. Privileged mutations are audited.
+11. External provider invitation codes belong to campaigns, not PairVoice pairs.
+12. PairVoice pair/invite codes and external provider invitation codes are separate identifiers.
+13. External provider access is not exposed through public campaign reads.
 
 ## Milestones
 - M1: synthetic pair traverses complete workflow without direct DB editing.
