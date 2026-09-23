@@ -4,6 +4,7 @@
 .heroVisual img{display:block;width:100%;height:auto;aspect-ratio:4/5;object-fit:cover}
 .opportunityCard{padding:0 26px 26px}
 .opportunityImage{width:calc(100% + 52px);height:155px;margin:0 -26px 22px;object-fit:cover;object-position:center 35%;filter:saturate(.9)}
+.catalogMessage{justify-content:center;min-height:250px}.catalogMessage h3{margin:0 0 10px}.catalogMessage p{max-width:520px;color:#9aa6a1;line-height:1.6;margin:0 0 22px}.catalogMessage button{align-self:flex-start}
 @media(max-width:800px){
  .catalogHero{display:flex;flex-direction:column;gap:35px;align-items:stretch;padding-top:42px}
  .heroVisual{order:-1;width:100%;max-width:520px;margin:auto}
