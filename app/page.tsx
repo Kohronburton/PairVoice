@@ -46,6 +46,8 @@ export default function Home(){
  const[market,setMarket]=useState('UNKNOWN');
  const[detectedLocale,setDetectedLocale]=useState('');
  const[opportunities,setOpportunities]=useState<Opportunity[]>([]);
+ const[opportunitiesLoading,setOpportunitiesLoading]=useState(true);
+ const[opportunitiesError,setOpportunitiesError]=useState(false);
  const[selectedCampaign,setSelectedCampaign]=useState<string|null>(null);
 
  useEffect(()=>{
@@ -63,9 +65,13 @@ export default function Home(){
   if(campaign)setSelectedCampaign(campaign);
 
   fetch('/api/opportunities')
-   .then(r=>r.json())
+   .then(async r=>{
+    if(!r.ok)throw new Error('catalog unavailable');
+    return r.json();
+   })
    .then(d=>setOpportunities(Array.isArray(d.opportunities)?d.opportunities:[]))
-   .catch(()=>setOpportunities([]));
+   .catch(()=>{setOpportunities([]);setOpportunitiesError(true)})
+   .finally(()=>setOpportunitiesLoading(false));
  },[]);
 
  const sorted=useMemo(()=>[...opportunities].sort((a,b)=>{
@@ -83,6 +89,8 @@ export default function Home(){
   lead:'PairVoice organiza proyectos de voz por tipo de trabajo, país, idioma y requisitos. Te mostramos solo las oportunidades que encajan contigo.',
   available:'Oportunidades disponibles',
   choose:'Elige una oportunidad o únete a la lista general.',
+  catalogEmpty:'Las oportunidades específicas se están preparando. Únete a la lista general y te avisaremos cuando haya una compatible.',
+  general:'Únete a la lista general',
   match:'Quiero esta oportunidad',
   payoutUnknown:'Pago por confirmar',
   pair:'pareja aprobada',
@@ -111,6 +119,8 @@ export default function Home(){
   lead:'PairVoice organizes voice work by job type, country, language, and requirements. We match people to the opportunities they actually qualify for.',
   available:'Available opportunities',
   choose:'Choose an opportunity or join the general list.',
+  catalogEmpty:'Specific opportunities are being prepared. Join the general list and we’ll email you when a match is ready.',
+  general:'Join the general list',
   match:'I want this opportunity',
   payoutUnknown:'Payout being finalized',
   pair:'approved pair',
@@ -188,7 +198,7 @@ export default function Home(){
    <h1>{t.h1}<br/><em>{t.h2}</em></h1>
    <p className="lead">{t.lead}</p>
    <div className="actions"><a className="primary" href="#opportunities">{t.available} →</a><span>{market!=='UNKNOWN'?marketName(market):'Global matching'}</span></div></div>
-   <div className="heroVisual"><img src="/images/pairvoice-early-access-hero.png" alt="Two people recording a paid voice opportunity together" /></div>
+   <div className="heroVisual"><img src="/images/pairvoice-early-access-hero.jpg" alt="Two people recording a paid voice opportunity together" width="1122" height="1402" fetchPriority="high" decoding="async" /></div>
   </section>
 
   <section className="opportunities" id="opportunities">
@@ -197,11 +207,12 @@ export default function Home(){
     <p>{t.choose}</p>
    </div>
    <div className="opportunityGrid">
-    {sorted.map(o=>{
+    {opportunitiesLoading&&<article className="opportunityCard catalogMessage"><h3>{lang==='es'?'Cargando oportunidades…':'Loading opportunities…'}</h3><p>{lang==='es'?'También puedes unirte a la lista general mientras se cargan.':'You can also join the general list while the catalog loads.'}</p><button onClick={()=>document.getElementById('join')?.scrollIntoView({behavior:'smooth'})}>{t.general} →</button></article>}
+    {!opportunitiesLoading&&sorted.map(o=>{
      const payout=o.participantPayoutCents!=null
       ? money(o.participantPayoutCents,o.payoutCurrency)+' / '+(o.payoutUnit==='PAIR'?t.pair:t.person)
       : t.payoutUnknown;
-     const image=o.jobFamily?.toLowerCase().includes('document')?'/images/pairvoice-opportunity-2.png':o.jobFamily?.toLowerCase().includes('finance')?'/images/pairvoice-opportunity-3.png':'/images/pairvoice-opportunity-1.png';
+     const image=o.jobFamily?.toLowerCase().includes('document')?'/images/pairvoice-opportunity-2.jpg':o.jobFamily?.toLowerCase().includes('finance')?'/images/pairvoice-opportunity-3.jpg':'/images/pairvoice-opportunity-1.jpg';
      return <article className={'opportunityCard '+(o.countryCode===market?'marketMatch':'')} key={o.slug}>
       <img className="opportunityImage" src={image} alt="" />
       <div className="opportunityTop"><span>{marketName(o.countryCode)}</span>{o.countryCode===market&&<b>YOUR MARKET</b>}</div>
@@ -217,7 +228,7 @@ export default function Home(){
       <button onClick={()=>choose(o.slug)}>{t.match} →</button>
      </article>
     })}
-    {!sorted.length&&<article className="opportunityCard"><h3>Loading opportunities…</h3></article>}
+    {!opportunitiesLoading&&!sorted.length&&<article className="opportunityCard catalogMessage"><h3>{opportunitiesError?(lang==='es'?'Las oportunidades están por llegar.':'Opportunities are opening soon.'):(lang==='es'?'No hay oportunidades publicadas todavía.':'No opportunities are published yet.')}</h3><p>{t.catalogEmpty}</p><button onClick={()=>document.getElementById('join')?.scrollIntoView({behavior:'smooth'})}>{t.general} →</button></article>}
    </div>
   </section>
 
