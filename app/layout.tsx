@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import './invite.css';
+import './mobile.css';
 
 export const metadata: Metadata = {
   title: 'PairVoice | Get Paid for Voice Work',

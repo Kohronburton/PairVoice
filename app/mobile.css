@@ -1,0 +1,14 @@
+.catalogHero{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,420px);gap:55px;align-items:center;padding-top:72px}
+.heroCopy{min-width:0}
+.heroVisual{border-radius:24px;overflow:hidden;border:1px solid #35443e;box-shadow:0 24px 70px rgba(0,0,0,.28)}
+.heroVisual img{display:block;width:100%;height:auto;aspect-ratio:4/5;object-fit:cover}
+.opportunityCard{padding:0 26px 26px}
+.opportunityImage{width:calc(100% + 52px);height:155px;margin:0 -26px 22px;object-fit:cover;object-position:center 35%;filter:saturate(.9)}
+@media(max-width:800px){
+ .catalogHero{display:flex;flex-direction:column;gap:35px;align-items:stretch;padding-top:42px}
+ .heroVisual{order:-1;width:100%;max-width:520px;margin:auto}
+ .hero h1{font-size:clamp(54px,15vw,82px);letter-spacing:-4px}
+ .opportunityImage{height:190px}
+}
+
+.funnel-panel{margin-top:12px}.funnel-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}.funnel-grid article{background:#0a1411;border-radius:10px;padding:14px 10px}.funnel-grid span{display:block;color:#87938e;font-size:11px;line-height:1.25}.funnel-grid b{display:block;color:#b9ff48;font-size:25px;margin-top:8px}@media(max-width:800px){.funnel-grid{grid-template-columns:repeat(2,1fr)}.funnel-grid article:last-child{grid-column:1/-1}}

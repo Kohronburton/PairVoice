@@ -1,5 +1,7 @@
 'use client';
 import {FormEvent,useEffect,useMemo,useState} from 'react';
+import InviteShareButtons from '../components/InviteShareButtons';
+import {trackFunnelEvent} from '../lib/funnel';
 
 type Opportunity={
  slug:string;
@@ -37,7 +39,7 @@ const money=(cents:number,currency:string)=>{
 };
 
 export default function Home(){
- const[done,setDone]=useState(false);
+ const[done,setDone]=useState(false),[inviteUrl,setInviteUrl]=useState(''),[partnerJoined,setPartnerJoined]=useState(false);
  const[error,setError]=useState('');
  const[loading,setLoading]=useState(false);
  const[lang,setLang]=useState<'en'|'es'>('en');
@@ -49,8 +51,12 @@ export default function Home(){
  useEffect(()=>{
   const locale=navigator.language||'en-US';
   setDetectedLocale(locale);
-  if(locale.toLowerCase().startsWith('es'))setLang('es');
+  const requested=new URLSearchParams(location.search).get('lang');
+  const detected=requested==='es'||(!requested&&locale.toLowerCase().startsWith('es'))?'es':'en';
+  setLang(detected);
+  document.documentElement.lang=detected;
   setMarket(marketForLocale(locale));
+  trackFunnelEvent('landing_view',{market_code:marketForLocale(locale)});
 
   const q=new URLSearchParams(location.search);
   const campaign=q.get('campaign');
@@ -85,13 +91,18 @@ export default function Home(){
   partner:'Se necesita compañero',
   solo:'Individual',
   joinTitle:'Recibe oportunidades compatibles.',
-  email:'Correo electrónico',
+  startCopy:'Comienza con tu nombre y correo. No pedimos datos de pago ahora; los solicitamos después de que una oportunidad sea aprobada.',
+  potential:'Pago potencial',
+  firstName:'Nombre', email:'Correo electrónico', invite:'Invita a tu compañero', inviteHelp:'La mayoría de las oportunidades pagadas requieren dos personas. Envía este enlace a tu compañero.',
   consent:'Quiero recibir oportunidades de PairVoice y actualizaciones por correo.',
   button:'Únete a PairVoice →',
   loading:'Guardando…',
   done:'Ya estás en PairVoice.',
-  next:'Te avisaremos cuando haya una oportunidad compatible.',
-  selected:'Oportunidad seleccionada'
+   next:'Te avisaremos cuando haya una oportunidad compatible.',
+  selected:'Oportunidad seleccionada',
+  steps:[['01','Crea un perfil','Tu identidad PairVoice se puede reutilizar en todas las campañas compatibles.'],['02','Encuentra tu campaña','País, idioma, dispositivo y participación anterior determinan tu elegibilidad.'],['03','Forma pareja cuando sea necesario','Algunos trabajos requieren compañero; otros son individuales.'],['04','Sigue cada trabajo','Cada campaña mantiene su propio estado de registro, pareja, entrega y pago.']],
+  free:'Gratis. No necesitas pagar ni grabar tu voz para registrarte.',
+  footer:'Un perfil de voz. Múltiples oportunidades pagadas.'
  }:{
   join:'Early access',
   eyebrow:'PAID VOICE WORK',
@@ -108,27 +119,37 @@ export default function Home(){
   partner:'Partner required',
   solo:'Individual',
   joinTitle:'Get matched with paid voice work.',
-  email:'Email address',
+  startCopy:'Start with your name and email. We do not ask for payment details now; we request them after an opportunity is approved.',
+  potential:'Potential payout',
+  firstName:'First name', email:'Email address', invite:'Invite your partner', inviteHelp:'Most paid conversation opportunities require two people. Send this link to your partner.',
   consent:'Send me PairVoice opportunities and launch updates by email.',
   button:'Join PairVoice →',
   loading:'Saving…',
   done:"You're on PairVoice.",
   next:"We'll email you when a matching opportunity is ready.",
-  selected:'Selected opportunity'
+  selected:'Selected opportunity',
+  steps:[['01','Create one profile','Your PairVoice identity is reusable across eligible campaigns.'],['02','Match by campaign','Country, language, device and prior participation determine eligibility.'],['03','Pair only when needed','Conversation jobs can require a partner; solo recording jobs do not.'],['04','Track work separately','Each campaign keeps its own enrollment, pair, submission and payout status.']],
+  free:'Free to join. No payment details or voice recording required at signup.',
+  footer:'One voice profile. Multiple paid opportunities.'
  };
 
  function choose(slug:string){
   setSelectedCampaign(slug);
   setDone(false);
+  trackFunnelEvent('opportunity_view',{campaign_slug:slug});
+  trackFunnelEvent('signup_started',{campaign_slug:slug});
   requestAnimationFrame(()=>document.getElementById('join')?.scrollIntoView({behavior:'smooth'}));
  }
 
  async function submit(e:FormEvent<HTMLFormElement>){
   e.preventDefault();setLoading(true);setError('');
+  trackFunnelEvent('signup_submitted',{campaign_slug:selectedCampaign||'general',language:lang});
   const f=new FormData(e.currentTarget),q=new URLSearchParams(location.search);
   const payload={
-   email:f.get('email'),
+   first_name:f.get('first_name'),email:f.get('email'),
+   referral_code:q.get('ref')||q.get('invite')||null,
    market_code:market,
+   language:lang,
    consent:f.get('consent')==='on',
    detected_locale:detectedLocale,
    detected_languages:Array.from(navigator.languages||[]),
@@ -149,9 +170,8 @@ export default function Home(){
   const r=await fetch('/api/lead',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});
   const d=await r.json();setLoading(false);
   if(!r.ok){setError(d.error||'Signup failed');return}
-  setDone(true);
+  setInviteUrl(d.inviteUrl||'');setPartnerJoined(!!d.partnerJoined);setDone(true);trackFunnelEvent('signup_completed',{campaign_slug:selectedCampaign||'general'});trackFunnelEvent('email_queued');trackFunnelEvent('invite_created',{has_invite:Boolean(d.inviteUrl)});
  }
-
  return <main>
   <nav>
    <div className="logo">PAIR<span>VOICE</span></div>
@@ -164,10 +184,11 @@ export default function Home(){
   </nav>
 
   <section className="hero catalogHero">
-   <div className="eyebrow">{t.eyebrow}</div>
+   <div className="heroCopy"><div className="eyebrow">{t.eyebrow}</div>
    <h1>{t.h1}<br/><em>{t.h2}</em></h1>
    <p className="lead">{t.lead}</p>
-   <div className="actions"><a className="primary" href="#opportunities">{t.available} →</a><span>{market!=='UNKNOWN'?marketName(market):'Global matching'}</span></div>
+   <div className="actions"><a className="primary" href="#opportunities">{t.available} →</a><span>{market!=='UNKNOWN'?marketName(market):'Global matching'}</span></div></div>
+   <div className="heroVisual"><img src="/images/pairvoice-early-access-hero.png" alt="Two people recording a paid voice opportunity together" /></div>
   </section>
 
   <section className="opportunities" id="opportunities">
@@ -180,11 +201,13 @@ export default function Home(){
      const payout=o.participantPayoutCents!=null
       ? money(o.participantPayoutCents,o.payoutCurrency)+' / '+(o.payoutUnit==='PAIR'?t.pair:t.person)
       : t.payoutUnknown;
+     const image=o.jobFamily?.toLowerCase().includes('document')?'/images/pairvoice-opportunity-2.png':o.jobFamily?.toLowerCase().includes('finance')?'/images/pairvoice-opportunity-3.png':'/images/pairvoice-opportunity-1.png';
      return <article className={'opportunityCard '+(o.countryCode===market?'marketMatch':'')} key={o.slug}>
+      <img className="opportunityImage" src={image} alt="" />
       <div className="opportunityTop"><span>{marketName(o.countryCode)}</span>{o.countryCode===market&&<b>YOUR MARKET</b>}</div>
       <h3>{o.name}</h3>
       <p className="opportunityType">{o.jobFamily||'Voice recording'}</p>
-      <strong className="payout">{payout}</strong>
+      <strong className="payout"><small>{t.potential}</small>{payout}</strong>
       <div className="opportunityMeta">
        <span>{o.languageCode.toUpperCase()}</span>
        <span>{o.requiresPair?t.partner:t.solo}</span>
@@ -199,10 +222,7 @@ export default function Home(){
   </section>
 
   <section className="steps">
-   <div><i>01</i><h3>Create one profile</h3><p>Your PairVoice identity is reusable across eligible campaigns.</p></div>
-   <div><i>02</i><h3>Match by campaign</h3><p>Country, language, device and prior participation determine eligibility.</p></div>
-   <div><i>03</i><h3>Pair only when needed</h3><p>Conversation jobs can require a partner; solo recording jobs do not.</p></div>
-   <div><i>04</i><h3>Track work separately</h3><p>Each campaign keeps its own enrollment, pair, submission and payout status.</p></div>
+   {t.steps.map(([n,title,body])=><div key={n}><i>{n}</i><h3>{title}</h3><p>{body}</p></div>)}
   </section>
 
   <section className="join" id="join">
@@ -210,21 +230,21 @@ export default function Home(){
     <div className="eyebrow">PAIRVOICE MATCHING</div>
     <h2>{t.joinTitle}</h2>
     {selected&&<div className="selectedJob"><small>{t.selected}</small><strong>{selected.name}</strong></div>}
-    <p>Start with your email. We only ask for additional information when a real opportunity requires it.</p>
+    <p>{t.startCopy}</p>
    </div>
    <div className="card">
-    {done?<div className="success"><div>✓</div><h3>{t.done}</h3><p>{t.next}</p></div>:
+    {done?<div className="success"><div>✓</div><h3>{partnerJoined?(lang==='es'?'¡Tu pareja está conectada!':'Your pair is connected!'):t.done}</h3><p>{partnerJoined?(lang==='es'?'Te enviaremos los próximos pasos.':'We’ll email you the next steps.'):t.next}</p>{!partnerJoined&&<><p className="inviteHelp">{t.inviteHelp}</p><InviteShareButtons inviteUrl={inviteUrl} language={lang}/></>}</div>:
     <form onSubmit={submit}>
      <h3>{selected?selected.name:t.joinTitle}</h3>
-     <label>{t.email}<input required type="email" name="email" autoComplete="email"/></label>
-     <label className="check"><input required name="consent" type="checkbox"/><span>{t.consent}</span></label>
+     <label htmlFor="early-access-first-name">{t.firstName}</label><input id="early-access-first-name" required name="first_name" autoComplete="given-name" autoCapitalize="words" enterKeyHint="next"/><label htmlFor="early-access-email">{t.email}</label><input id="early-access-email" required type="email" name="email" autoComplete="email" inputMode="email" autoCapitalize="none" spellCheck={false} enterKeyHint="done"/>
+     <label className="check" htmlFor="early-access-consent"><input id="early-access-consent" required name="consent" type="checkbox"/><span>{t.consent}</span></label>
      {error&&<p className="error">{error}</p>}
      <button disabled={loading}>{loading?t.loading:t.button}</button>
-     <small>Free to join. No payment details or voice recording required at signup.</small>
+     <small>{t.free}</small>
     </form>}
    </div>
   </section>
 
-  <footer><div className="logo">PAIR<span>VOICE</span></div><p>One voice profile. Multiple paid opportunities.</p></footer>
+  <footer><div className="logo">PAIR<span>VOICE</span></div><p>{t.footer}</p></footer>
  </main>
 }
