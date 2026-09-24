@@ -6,7 +6,10 @@ alter table public.leads
   add column if not exists preferred_language_code text,
   add column if not exists invite_code text,
   add column if not exists referred_by_lead_id uuid references public.leads(id) on delete set null,
-  add column if not exists partner_joined_at timestamptz;
+  add column if not exists partner_joined_at timestamptz,
+  add column if not exists marketing_campaign_key text,
+  add column if not exists campaign_id uuid references public.campaigns(id) on delete set null,
+  add column if not exists source_posting_id uuid references public.source_postings(id) on delete set null;
 
 create unique index if not exists leads_invite_code_idx on public.leads(invite_code) where invite_code is not null;
 create index if not exists leads_referred_by_idx on public.leads(referred_by_lead_id);
