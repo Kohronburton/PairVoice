@@ -327,3 +327,11 @@
 @media(max-width:980px){.hormoziHero{grid-template-columns:1fr;gap:34px;padding-top:52px}.hormoziStory{max-width:720px}.valueCards,.riskGrid{grid-template-columns:1fr 1fr}.finalOffer{grid-template-columns:1fr;gap:28px;margin-left:16px;margin-right:16px}}
 @media(max-width:760px){.hormoziNav .navlinks{display:none}.hormoziHero{padding:44px 18px 55px}.heroMessage h1{font-size:58px;letter-spacing:-3.5px}.hormoziProof{grid-template-columns:1fr 1fr}.hormoziProof>div:nth-child(2){border-right:0}.valueSection,.riskSection,.faqSection{padding:72px 18px}.valueCards,.riskGrid,.faqGrid{grid-template-columns:1fr}.offerCardHeadline{grid-template-columns:1fr}.offerCardHeadline>div:last-child{text-align:left}.offerCardHeadline small{text-align:left}.offerQuickFacts{grid-template-columns:1fr}}
 @media(max-width:520px){.hormoziNav .navsignin{display:none}.heroMessage h1{font-size:49px;line-height:.93;letter-spacing:-2.9px}.hormoziLead{font-size:14.5px}.heroDealMain strong{font-size:31px}.heroDealMain b{font-size:12px}.hormoziActions{flex-direction:column}.hormoziActions .heroCtaPrimary,.hormoziActions .heroCtaSecondary{width:100%;text-align:center}.trustPills{gap:5px}.trustPills span{font-size:8.5px}.hormoziProof>div{padding:16px}.hormoziProof b{font-size:20px}.hormoziProof span{font-size:8px}.hormoziOfferCard{padding:22px;min-height:0}.offerCardHeadline strong{font-size:34px}.finalOffer{padding:34px 22px;margin-bottom:92px}.finalOffer h2{font-size:41px;letter-spacing:-2px}}
+
+
+/* Low-friction account capture */
+.joinAccountCard .fieldHelp{display:block;text-align:left;margin:6px 0 0;color:#6f7974;font-size:9px;line-height:1.45;font-weight:500}
+.joinAccountCard .sentTo{margin:14px 0;color:#57635d;font-size:12px;line-height:1.5}
+.joinAccountCard .sentTo strong{color:#07100e;overflow-wrap:anywhere}
+.joinAccountCard .resendStatus{margin:10px 0 0;color:#4f5c55;font-size:11px;text-align:center}
+.joinAccountCard .success button[disabled]{opacity:.55;cursor:not-allowed}
