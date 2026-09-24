@@ -1,5 +1,5 @@
 import {NextRequest,NextResponse} from 'next/server';
-import {sessionClient,serviceClient} from '../../../lib/supabase-server';
+import {sessionClient} from '../../../lib/supabase-server';
 
 export async function GET(req:NextRequest){
  const u=new URL(req.url),code=u.searchParams.get('code'),requested=u.searchParams.get('next')||'/dashboard';
@@ -9,8 +9,7 @@ export async function GET(req:NextRequest){
   const auth=await sessionClient();
   const {data,error}=await auth.auth.exchangeCodeForSession(code);
   if(error||!data.user?.email)throw error||new Error('Missing authenticated email');
-  const admin=serviceClient();
-  const {error:claimError}=await admin.rpc('claim_pairvoice_identity',{p_auth_user_id:data.user.id,p_email:data.user.email});
+  const {error:claimError}=await auth.rpc('claim_pairvoice_identity_self');
   if(claimError){
    if(String(claimError.message).includes('early_access_identity_not_found')){
     return NextResponse.redirect(new URL('/?auth=join-first',u.origin));
