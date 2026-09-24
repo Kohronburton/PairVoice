@@ -210,8 +210,8 @@ Commit:
 | FunCrowd manual external adapter | VERIFIED #134 |
 | Internal/client QA workflow/API | VERIFIED #134; queue UI remains |
 | Provider-neutral payout reconciliation | VERIFIED #134; live provider adapter remains |
-| Referral qualification/reward execution | IMPLEMENTED / VERIFY |
-| Durable lifecycle messaging/retry | IMPLEMENTED / VERIFY |
+| Referral qualification/reward execution | VERIFIED #148 |
+| Durable lifecycle messaging/retry | VERIFIED #148 |
 | Full mobile production E2E | PLANNED |
 | Staging acceptance | PLANNED |
 | Paid traffic | BLOCKED until end-to-end launch gates pass |
@@ -405,7 +405,7 @@ covers message deduplication, claim behavior, retry status, messaging pause/resu
 
 
 ## Checkpoint N — Referral qualification
-**IMPLEMENTED / VERIFY**
+**VERIFIED on PairVoice Verify #148**
 
 Approved work is now the qualification event for referrals.
 - campaign referral commission is paid only when the approved campaign version explicitly configures a non-zero `referral_commission_cents`;
@@ -417,7 +417,7 @@ Approved work is now the qualification event for referrals.
 Test: `supabase/tests/referral_qualification_invariants.sql`.
 
 ## Checkpoint O — Production subsystem controls
-**IMPLEMENTED / VERIFY**
+**VERIFIED on PairVoice Verify #148**
 
 Added audited kill switches for:
 - MATCHING
@@ -438,7 +438,7 @@ Only SUPER_ADMIN can change controls through `/api/admin/controls`; every change
 Test: `supabase/tests/subsystem_controls_invariants.sql`.
 
 ## Checkpoint P — Durable lifecycle messaging
-**IMPLEMENTED / VERIFY**
+**VERIFIED on PairVoice Verify #148**
 
 Pair/payout state changes now enqueue deduplicated lifecycle messages into the durable `outbox_events` table.
 Templates:
@@ -465,7 +465,7 @@ Test: `supabase/tests/lifecycle_messaging_invariants.sql` proves dedupe count, m
 ## Latest verified CI
 - PairVoice Verify #134: **PASSED**.
 - Includes app typecheck/unit tests/build/audit plus database migrations and invariants through the payout reconciliation slice.
-- Referral, controls and lifecycle messaging commits are newer and remain **IMPLEMENTED / VERIFY** until their current-head run passes.
+- PairVoice Verify #148: **PASSED** referral qualification, subsystem controls, lifecycle messaging migrations/invariants plus the full existing app/database suite.
 
 ## Remaining finish-critical work
 1. Verify current head and repair only evidence-based failures.
@@ -497,3 +497,23 @@ Correction:
 - the invariant now claims the queue normally but counts/asserts only lifecycle events belonging to its own generated pair;
 - production outbox behavior was not weakened;
 - the dedicated `lifecycle_messaging_invariants.sql` already passed in #146.
+
+
+## Verified finish-line status — #148
+PairVoice Verify #148 completed successfully after the test-isolation correction.
+- app: PASSED
+- database: PASSED
+- referral qualification invariants: PASSED
+- lifecycle messaging invariants: PASSED
+- subsystem/operational controls messaging invariant: PASSED
+- prior workflow/provider/payout/recovery invariants remained green.
+
+The remaining launch blockers are now external/operational:
+1. configure production environment variables/secrets and worker scheduler;
+2. configure real FunCrowd launch URL/invitation data through admin storage;
+3. decide/configure the actual payout rail or use the controlled manual reconciliation fallback;
+4. complete admin mutation UI convenience controls if desired (APIs are already protected/available);
+5. real-device iPhone + Android E2E;
+6. controlled real-participant staging pilot;
+7. production migration/deploy + smoke/rollback drill;
+8. approved-pair CAC observation before paid scaling.
