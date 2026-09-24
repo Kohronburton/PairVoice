@@ -68,3 +68,41 @@ Phase 2 cannot be called production-ready until tests prove:
 
 ## Definition of done
 Implementation + state transition + API/service + participant UX where applicable + admin control + audit event + metrics + unit/integration/state/E2E/failure tests + recovery path + documentation + staging evidence.
+
+
+## Passes 22–31 — Production Hardening Expansion
+
+These passes extend the 21-pass master process. They are release gates, not optional polish.
+
+### Pass 22 — Concurrency, Race Conditions & Idempotency
+Attack simultaneous partner acceptance, matching, capacity reservation, Niva allocation, QA approval, earning creation, referral qualification and payout requests. Prove database constraints + transactional locks + idempotency keys prevent double assignment, double earnings, duplicate milestone rewards and duplicate payouts.
+
+### Pass 23 — Financial Integrity & Reconciliation
+Reconstruct every participant balance from the immutable ledger. Reconcile approved work → earning → available balance → payout request → provider transfer → settlement. Test adjustments, holds, reversals, failed/unknown provider responses, duplicate callbacks and provider-side success with PairVoice-side timeout.
+
+### Pass 24 — Fraud, Abuse & Sybil Resistance
+Threat-model duplicate humans/accounts, self-referrals, referral rings, shared payout destinations, device/account farming, location manipulation, repeated campaign attempts, collusive pairs, credential abuse and suspicious payout behavior. Risk signals may hold/review; they must not silently rewrite financial or participation history.
+
+### Pass 25 — Provider Chaos & Dependency Failure
+Inject Niva exhaustion/bad credentials, FunCrowd downtime/timeouts/schema changes, messaging failures, storage failures and payout-provider outages. PairVoice must preserve source-of-truth state, retry safely, reconcile uncertain external results and allow provider replacement without recreating participants/pairs/earnings.
+
+### Pass 26 — Admin Error, RBAC & Insider-Safety
+Attempt every sensitive action using wrong roles. Test accidental bulk operations, credential exposure, campaign edits, eligibility overrides, QA overrides, financial holds/releases, referral adjustments and payout actions. Require reason/evidence for consequential overrides, step-up auth where appropriate, audit history and reversible/compensating recovery.
+
+### Pass 27 — Disaster Recovery, Backup & Restore
+Run backup/restore drills for database and critical configuration. Define RPO/RTO targets before production. Restore to isolated environment, validate schema/migrations, rebuild projections, reconcile ledger/payout/provider state, verify credential assignments and prove no duplicate external action occurs after recovery.
+
+### Pass 28 — Load, Scale & Marketplace Liquidity
+Load-test signup spikes, magic links, partner-pool matching, campaign launch bursts, notification fan-out, admin queues, Niva assignment and payout batches. Measure p50/p95/p99 latency, queue depth, DB contention and failure rate. Add liquidity metrics: pool size, immediately matchable supply, time-to-match and supply gaps by language/country/campaign.
+
+### Pass 29 — Mobile, Accessibility & Hostile-Network UX
+Run supported iOS/Android mobile E2E under slow/intermittent networks, refresh/back navigation, duplicate taps, expired links, interrupted audio upload and session resume. Verify keyboard/screen-reader semantics, focus order, contrast, touch targets, localization expansion and recovery messaging.
+
+### Pass 30 — Privacy, Consent, Retention & Data Lifecycle
+Verify purpose/versioned consent, communication preferences, qualification-audio handling, provider data minimization, retention/deletion policy implementation, export/deletion workflows where applicable, secret redaction, logs/analytics minimization and jurisdiction/campaign configuration. Commercial reuse of qualification audio requires an explicit separate basis/consent.
+
+### Pass 31 — Adversarial Launch Certification
+Run the complete production chain plus deliberately broken variants from acquisition through payout/referral. Trace every critical requirement to Screen/API → DB → Event → Test → Admin Control → Documentation → Release Evidence. No P0/P1 unresolved defects, no untested financial mutation, no unowned recovery path, no undocumented state transition. Production activation requires signed release evidence and tested kill switches.
+
+## 31-pass release rule
+A feature is not complete because its happy path works. It is complete only when its state model, authorization, concurrency behavior, failure recovery, audit evidence, metrics, tests, operator controls and documentation all agree.
