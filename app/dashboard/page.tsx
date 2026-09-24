@@ -31,6 +31,7 @@ export default async function Dashboard(){
    {!pool&&<PartnerPoolButton/>}
    {pool?.status==='WAITING'&&<p>✓ You’re in the Partner Pool. We’ll match you with a compatible participant.</p>}
   </section>
+  <p style={{margin:'18px 0 28px'}}><a className="primary" href="/wallet">Open Wallet →</a></p>
   <div className="opportunityGrid">
    <section className="opportunityCard"><small>PROFILE</small><h3>{p.primary_language_code.toUpperCase()} · {p.country_code}</h3><p>{p.phone_verified_at?'Phone verified ✓':'Phone verification needed'}</p></section>
    <section className="opportunityCard"><small>PARTNER</small><h3>{pool?.status==='WAITING'?'Finding a match…':pool?.status||'Not connected'}</h3><p>Bring someone, connect an existing user, or let PairVoice find someone.</p></section>
