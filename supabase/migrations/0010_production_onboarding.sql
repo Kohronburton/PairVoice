@@ -178,7 +178,7 @@ begin
 
   if v_pair.state='PAIRED' then
     update pairs set state='READINESS_PENDING' where id=v_pair.id;
-    v_pair.state='READINESS_PENDING';
+    v_pair.state:='READINESS_PENDING';
   end if;
 
   update pair_members
@@ -195,7 +195,7 @@ begin
      and v_active_members>=2
      and v_ready_members=v_active_members then
     update pairs set state='READY' where id=v_pair.id;
-    v_pair.state='READY';
+    v_pair.state:='READY';
   end if;
 
   insert into activity_events(
