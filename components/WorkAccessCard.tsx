@@ -15,7 +15,7 @@ export default function WorkAccessCard({pairId,pairCode,campaignName,state}:{pai
  async function update(action:'START'|'SUBMIT'){
   if(!access)return;
   if(action==='SUBMIT')setBusy(true);
-  const r=await fetch('/api/work/access',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({pairId,runId:access.runId,action})});
+  const r=await fetch('/api/work/access',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({pairId,runId:access.runId,action}),keepalive:action==='START'});
   const d=await r.json();
   if(action==='SUBMIT')setBusy(false);
   if(!r.ok){setError(d.error||'Unable to update work status.');return}
