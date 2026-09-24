@@ -517,3 +517,46 @@ The remaining launch blockers are now external/operational:
 6. controlled real-participant staging pilot;
 7. production migration/deploy + smoke/rollback drill;
 8. approved-pair CAC observation before paid scaling.
+
+
+## Verification checkpoint — PairVoice Verify #151
+**VERIFIED** on branch head `c6a8b0570b813d49db93c2e67784eb6e095e07f4`.
+
+Run #151 passed:
+- TypeScript typecheck;
+- unit tests;
+- production Next.js build;
+- production dependency audit;
+- all database migrations through the controls/messaging/referral/payout work present at that head;
+- all database invariant suites present at that head.
+
+This verifies the accumulated implementation through:
+- admin authorization hardening;
+- authoritative funnel milestones;
+- manual external FunCrowd work path;
+- QA/rework;
+- payout request/execution/reconciliation;
+- referral qualification/configurable rewards;
+- subsystem controls;
+- durable lifecycle messaging;
+- production operations console;
+- messaging test-isolation correction.
+
+The backup/restore drill and computed release-readiness view were added after #151 and require their own current-head green run before being marked VERIFIED.
+
+## Checkpoint P — Release readiness calculation
+**IMPLEMENTED / VERIFY**
+
+Added protected `GET /api/admin/release-readiness` and `/admin/readiness`.
+
+Blocking checks include:
+- core subsystem controls;
+- unresolved UNKNOWN/MANUAL_REVIEW payouts;
+- required Supabase/service/site/messaging/worker/encryption environment configuration;
+- active campaign published version;
+- active WORK provider binding;
+- FunCrowd/manual external launch URL;
+- campaign invitation code when required by version policy;
+- available credential inventory when the campaign has an active CREDENTIAL provider binding.
+
+Dead-letter lifecycle messages are surfaced as a watch condition. The protected API returns a single `ready` boolean plus the exact blocking checks; it does not override staging/mobile acceptance evidence.
