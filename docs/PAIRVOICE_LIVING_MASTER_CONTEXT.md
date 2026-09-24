@@ -298,3 +298,13 @@ Current implementation additions:
 
 Current status: **IMPLEMENTED / UNVERIFIED** until the latest PairVoice Verify run passes.
 Do not start paid acquisition before the launch-gate table in `docs/IMPLEMENTATION_PROGRESS.md` is satisfied.
+
+
+## Finish-line checkpoint — payments, referrals and failure isolation
+The Phase 2 branch now also contains:
+- provider-neutral payout request/execution/reconciliation with explicit UNKNOWN handling;
+- configuration-driven referral qualification/rewards after approved work;
+- audited subsystem controls for matching/work/payout/messaging/referrals;
+- durable lifecycle email outbox with retry/backoff/dead-letter behavior.
+
+Operational status and verification evidence remain in `docs/IMPLEMENTATION_PROGRESS.md`.
