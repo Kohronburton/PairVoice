@@ -1059,3 +1059,25 @@ Verification:
 - staging service started successfully on the new instance.
 
 The prior visible signup error was caused by missing server configuration, not participant eligibility or form validation.
+
+
+## Staging auth redirect fix — 2026-09-24
+**FIXED / DEPLOYED**
+
+Observed symptom:
+- Supabase confirmation email opened `localhost:3000` on mobile and failed with `ERR_CONNECTION_FAILED`.
+
+Evidence:
+- Supabase Auth logs for the confirmation requests showed `referer=http://localhost:3000`.
+
+Root cause:
+- the magic-link route preferred `NEXT_PUBLIC_SITE_URL`, which still contained the local development URL.
+
+Fix:
+- `/api/auth/magic-link` now derives the callback origin from the actual incoming request host;
+- staging Render `NEXT_PUBLIC_SITE_URL` corrected to `https://staging.pairvoice.com`;
+- callback remains `/auth/callback?next=/dashboard`;
+- build/CI passed and Render deployment `dep-daqng4nlot8c73ak0ln0` is LIVE.
+
+Operational note:
+- auth emails generated before this deployment retain their original localhost redirect and must not be reused; request a fresh link after deployment.
