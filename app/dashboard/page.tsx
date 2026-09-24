@@ -1,5 +1,6 @@
 import {redirect} from 'next/navigation';
 import {sessionClient,serviceClient} from '../../lib/supabase-server';
+import PartnerPoolButton from '../../components/PartnerPoolButton';
 
 export default async function Dashboard(){
  const auth=await sessionClient(),{data}=await auth.auth.getUser();
@@ -18,7 +19,7 @@ export default async function Dashboard(){
   <p className="eyebrow">YOUR PAIRVOICE</p>
   <h1>Hi {p.first_name}. <em>Here’s what’s next.</em></h1>
   <section className="card"><small>NEXT STEP</small><h2>{nextAction}</h2>
-   {!pool&&<form action="/api/partner-pool" method="post"><button type="submit">Find my partner →</button></form>}
+   {!pool&&<PartnerPoolButton/>}
    {pool?.status==='WAITING'&&<p>✓ You’re in the Partner Pool. We’ll match you with a compatible participant.</p>}
   </section>
   <div className="opportunityGrid">
