@@ -1,5 +1,4 @@
 import {NextRequest,NextResponse} from 'next/server';
-import {createClient} from '@supabase/supabase-js';
 import {clampText,isValidEmail,normalizeEmail,normalizeMarket,normalizePhone} from '../../../lib/validation';
 import {sendEarlyAccessWelcome,sendPartnerJoinedEmail} from '../../../lib/email';
 
@@ -49,14 +48,6 @@ export async function POST(req:NextRequest){
    catch(e){console.error('partner joined email failed',e)}
   }
 
-  let magicLinkSent=false;
-  try{
-   const auth=createClient(url,key,{auth:{persistSession:false}});
-   const redirectTo=`${site}/auth/callback?next=${encodeURIComponent('/dashboard')}`;
-   const {error:authError}=await auth.auth.signInWithOtp({email,options:{emailRedirectTo:redirectTo,shouldCreateUser:true}});
-   if(authError)console.error('magic link failed',authError);else magicLinkSent=true;
-  }catch(e){console.error('magic link failed',e)}
-
-  return NextResponse.json({...result,inviteUrl,emailStatus,magicLinkSent,phoneCaptured:true});
+  return NextResponse.json({...result,inviteUrl,emailStatus,phoneCaptured:true});
  }catch(e){console.error(e);return NextResponse.json({error:'Unable to create account.'},{status:500})}
 }
