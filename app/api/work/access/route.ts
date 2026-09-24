@@ -1,5 +1,5 @@
 import {NextRequest,NextResponse} from 'next/server';
-import {sessionClient,serviceClient} from '../../../lib/supabase-server';
+import {sessionClient,serviceClient} from '../../../../lib/supabase-server';
 
 async function context(pairId:string){
  const auth=await sessionClient(),{data}=await auth.auth.getUser();
@@ -8,7 +8,7 @@ async function context(pairId:string){
  const {data:participant}=await db.from('participants').select('id').eq('auth_user_id',data.user.id).maybeSingle();
  if(!participant)return null;
  const {data:enrollments}=await db.from('campaign_enrollments').select('id').eq('participant_id',participant.id);
- const ids=(enrollments||[]).map(e=>e.id);
+ const ids=(enrollments||[]).map((e:{id:string})=>e.id);
  if(!ids.length)return null;
  const {data:member}=await db.from('pair_members').select('pair_id').eq('pair_id',pairId).in('enrollment_id',ids).eq('active',true).maybeSingle();
  if(!member)return null;
