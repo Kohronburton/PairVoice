@@ -23,9 +23,13 @@ begin
  if (select count(*) from outbox_events where event_type='PAIR_LIFECYCLE_EMAIL' and payload->>'pair_id'=p::text and payload->>'template_key'='WORK_READY')<>2
   then raise exception 'work_ready_messages_wrong'; end if;
 
- select count(*) into claimed from claim_message_outbox(20);
- if claimed<>4 then raise exception 'message_claim_count_wrong:%',claimed; end if;
- select id into evt from outbox_events where status='PROCESSING' order by created_at,id limit 1;
+ perform claim_message_outbox(100);
+ select count(*) into claimed from outbox_events
+  where status='PROCESSING' and event_type='PAIR_LIFECYCLE_EMAIL' and payload->>'pair_id'=p::text;
+ if claimed<>4 then raise exception 'pair_message_claim_count_wrong:%',claimed; end if;
+ select id into evt from outbox_events
+  where status='PROCESSING' and event_type='PAIR_LIFECYCLE_EMAIL' and payload->>'pair_id'=p::text
+  order by created_at,id limit 1;
  perform finish_message_outbox(evt,false,'temporary failure');
  if (select status from outbox_events where id=evt)<>'FAILED' then raise exception 'failed_message_not_retryable'; end if;
 
