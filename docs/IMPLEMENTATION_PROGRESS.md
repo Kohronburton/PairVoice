@@ -1031,3 +1031,31 @@ Not added because PairVoice does not yet have verified public evidence:
 - fake capacity/scarcity.
 
 The next conversion upgrade should use real operating proof collected from controlled staging/production pairs.
+
+
+## Staging signup outage fix — 2026-09-24
+**FIXED / DEPLOYED**
+
+Observed symptom:
+- production join UI showed `Unable to complete signup.`
+
+Confirmed root cause from Render runtime logs:
+- `Error: Supabase service configuration missing`
+- staging Render did not have `SUPABASE_SERVICE_ROLE_KEY`;
+- `/api/signup` depended directly on `serviceClient()`.
+
+Fix:
+- deployed Supabase Edge Function `pairvoice-signup` to the isolated PairVoice Staging project;
+- Edge Function uses Supabase's built-in server secret environment and invokes the private `register_campaign_participant` RPC;
+- Render/browser never receive the Supabase service-role/secret key;
+- `/api/signup` now validates input and delegates registration to the Edge Function using the staging publishable key;
+- privileged database RPC remains service-role only;
+- Supabase Edge Function source is excluded from the Next.js TypeScript project so Deno runtime types do not break the web build.
+
+Verification:
+- direct staging DB registration RPC smoke test passed inside a rollback transaction;
+- PairVoice Verify run #225: PASS;
+- Render deploy `dep-daqnas7lot8c73ajoidg`: LIVE;
+- staging service started successfully on the new instance.
+
+The prior visible signup error was caused by missing server configuration, not participant eligibility or form validation.
