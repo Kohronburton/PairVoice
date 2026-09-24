@@ -906,3 +906,72 @@ Changes:
 Next proof upgrade after real staging/production data exists:
 - expose verified campaign capacity/remaining slots if operations approves it for public display;
 - replace generic product proof with measured completed-pair, approval, payout, or participant metrics only after those figures are trustworthy.
+
+
+## Four additional conversion passes — 2026-09-24
+**IMPLEMENTED**
+
+These passes build on the production marketplace conversion pass and intentionally avoid fabricated testimonials, fake urgency, unsupported approval rates, or invented payout timing.
+
+### Pass 1 — Offer compression
+Goal: remove the need to mentally assemble the offer from multiple sections.
+
+Changes:
+- gig cards now show the work action, approval/payment condition, estimated recording duration when campaign data provides it, and the immediate next step;
+- payout remains visually dominant;
+- campaign requirements stay ahead of signup;
+- offer structure is now closer to: **payout → what you do → time/partner requirement → qualification CTA**.
+
+### Pass 2 — Objection removal
+Goal: increase perceived likelihood and trust without using unverifiable social proof.
+
+Added a dedicated **No surprises** section answering:
+- Do I need experience?
+- Do I need a partner?
+- When do I get paid?
+- Do I pay to join?
+
+Every answer is constrained to current PairVoice product behavior:
+- experience is not assumed;
+- partner requirement is campaign-specific;
+- payment follows completed-work review/approval;
+- account creation is free and does not require a card.
+
+### Pass 3 — Signup friction reduction
+Goal: stop making campaign users re-enter facts the selected campaign already determines.
+
+Changes to `/join?campaign=...`:
+- campaign country and language are now locked campaign facts instead of editable dropdowns;
+- values are still submitted server-side from the selected campaign;
+- first name, email, age confirmation and consent remain the required participant inputs;
+- compact progress cue added: **Account → Partner → Work**;
+- selected gig payout/market/partner context remains visible beside the form.
+
+This reduces unnecessary choices while preserving campaign eligibility enforcement on the server.
+
+### Pass 4 — Mobile conversion
+Goal: preserve the best offer/CTA while users scroll on small screens.
+
+Changes:
+- added mobile-only sticky conversion bar for the currently relevant gig;
+- bar includes real published payout when available, gig name and **See if I qualify** CTA;
+- CTA routes directly into the selected campaign join flow;
+- trust section, campaign facts, micro-progress and CTA layout collapse cleanly for narrow mobile screens;
+- no sticky desktop obstruction was added.
+
+### Current conversion philosophy
+The page now prioritizes:
+1. concrete economic outcome;
+2. real published opportunity;
+3. reduced uncertainty;
+4. minimal next action;
+5. campaign-specific qualification;
+6. partner flow;
+7. work/approval/payment transparency.
+
+The next major conversion upgrade should come from **real operating proof**, not more speculative copy:
+- verified completed-pair counts;
+- verified payout totals;
+- measured approval/rejection rates;
+- real campaign capacity/remaining slots if operations approves public display;
+- participant testimonials only after collected with permission.
