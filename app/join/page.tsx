@@ -9,33 +9,34 @@ const money=(c:number,x:string)=>{try{return new Intl.NumberFormat(undefined,{st
 
 export default function JoinPage(){
  const[campaign,setCampaign]=useState(''),[ops,setOps]=useState<Opportunity[]>([]),[lang,setLang]=useState<'en'|'es'>('en');
- const[busy,setBusy]=useState(false),[error,setError]=useState(''),[done,setDone]=useState(false),[magicSent,setMagicSent]=useState(false);
+ const[busy,setBusy]=useState(false),[error,setError]=useState(''),[done,setDone]=useState(false),[magicSent,setMagicSent]=useState(false),[submittedEmail,setSubmittedEmail]=useState(''),[resendBusy,setResendBusy]=useState(false),[resendMessage,setResendMessage]=useState(''),[resendCooldown,setResendCooldown]=useState(0);
  useEffect(()=>{
   const q=new URLSearchParams(location.search),slug=q.get('campaign')||'',locale=navigator.language||'en-US';
   setCampaign(slug);setLang(locale.toLowerCase().startsWith('es')?'es':'en');
   fetch('/api/opportunities').then(r=>r.ok?r.json():Promise.reject()).then(d=>setOps(Array.isArray(d.opportunities)?d.opportunities:[])).catch(()=>{});
   trackFunnelEvent('signup_started',{campaign_slug:slug||'general',surface:'production_join'});
  },[]);
+ useEffect(()=>{if(resendCooldown<=0)return;const t=window.setInterval(()=>setResendCooldown(v=>v<=1?0:v-1),1000);return()=>window.clearInterval(t)},[resendCooldown]);
  const selected=useMemo(()=>ops.find(o=>o.slug===campaign)||null,[ops,campaign]);
  const es=lang==='es';
  const t=es?{
   title:campaign?'Únete a este proyecto':'Crea tu cuenta PairVoice',lead:campaign?'Tu proyecto ya está seleccionado. Crea tu cuenta, confirma los datos básicos y comprueba si calificas antes de grabar.':'Crea una cuenta reutilizable para ver y participar en proyectos compatibles.',
-  first:'Nombre',email:'Correo electrónico',country:'País',language:'Idioma',age:'Confirmo que tengo 18 años o más.',consent:'Acepto crear una cuenta PairVoice y recibir comunicaciones necesarias sobre mis proyectos.',fixed:'Ya configurado por este proyecto',
+  first:'Nombre',email:'Correo electrónico',phone:'Número de teléfono',phoneHelp:'Lo usaremos para coordinación del proyecto, recordatorios y opciones como WhatsApp/SMS.',country:'País',language:'Idioma',age:'Confirmo que tengo 18 años o más.',consent:'Acepto crear una cuenta PairVoice y recibir comunicaciones necesarias sobre mis proyectos.',fixed:'Ya configurado por este proyecto',resend:'Reenviar enlace',resent:'Nuevo enlace enviado.',sending:'Enviando…',
   button:campaign?'Crear cuenta y comprobar elegibilidad':'Crear cuenta PairVoice',saving:'Creando cuenta…',done:'Revisa tu correo.',next:'Te enviamos un enlace seguro para entrar a PairVoice.',
   back:'Volver a proyectos',signin:'¿Ya tienes cuenta? Entrar',partner:'Compañero requerido',payout:'Pago por pareja aprobada'
  }:{
   title:campaign?'Join this gig':'Create your PairVoice account',lead:campaign?'Your gig is already selected. Create your account, confirm the basics, and check your eligibility before you record.':'Create one reusable account to discover and join compatible paid voice gigs.',
-  first:'First name',email:'Email address',country:'Country',language:'Language',age:'I confirm I am 18 or older.',consent:'I agree to create a PairVoice account and receive communications required for my gigs.',fixed:'Already set by this gig',
+  first:'First name',email:'Email address',phone:'Phone number',phoneHelp:'We use this for gig coordination, reminders, and options like WhatsApp/SMS.',country:'Country',language:'Language',age:'I confirm I am 18 or older.',consent:'I agree to create a PairVoice account and receive communications required for my gigs.',fixed:'Already set by this gig',resend:'Resend link',resent:'New link sent.',sending:'Sending…',
   button:campaign?'Create account & check eligibility':'Create PairVoice account',saving:'Creating account…',done:'Check your email.',next:'We sent you a secure link to enter PairVoice.',
   back:'Back to gigs',signin:'Already have an account? Sign in',partner:'Partner required',payout:'Payout per approved pair'
  };
  async function submit(e:FormEvent<HTMLFormElement>){
   e.preventDefault();setBusy(true);setError('');setMagicSent(false);
-  const f=new FormData(e.currentTarget),email=String(f.get('email')||''),firstName=String(f.get('first_name')||'');
+  const f=new FormData(e.currentTarget),email=String(f.get('email')||''),firstName=String(f.get('first_name')||''),phone=String(f.get('phone')||'');
   try{
    if(campaign){
     const r=await fetch('/api/signup',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({
-     campaign,firstName,email,phone:null,countryCode:String(f.get('country')||selected?.countryCode||'US'),
+     campaign,firstName,email,phone,countryCode:String(f.get('country')||selected?.countryCode||'US'),
      languageCode:String(f.get('language')||selected?.languageCode||'en'),is18Plus:f.get('age')==='on',consent:f.get('consent')==='on',
      ref:new URLSearchParams(location.search).get('ref')
     })});
@@ -43,7 +44,7 @@ export default function JoinPage(){
    }else{
     const locale=navigator.language||'en-US',parts=locale.replace('_','-').split('-');
     const r=await fetch('/api/lead',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({
-     first_name:firstName,email,consent:f.get('consent')==='on',market_code:(parts[1]||'US').toUpperCase(),language:lang,
+     first_name:firstName,email,phone,consent:f.get('consent')==='on',market_code:(parts[1]||'US').toUpperCase(),language:lang,
      detected_locale:locale,detected_languages:Array.from(navigator.languages||[]),source:'production_join',
      marketing_campaign_key:'account_creation',landing_path:location.pathname,referrer:document.referrer||null
     })});
@@ -51,9 +52,20 @@ export default function JoinPage(){
    }
    const m=await fetch('/api/auth/magic-link',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email,next:'/dashboard'})});
    const md=await m.json();if(!m.ok)throw new Error(md.error||'Account created, but sign-in email could not be sent.');
-   setMagicSent(true);setDone(true);trackFunnelEvent('signup_completed',{campaign_slug:campaign||'general',surface:'production_join'});
+   setSubmittedEmail(email);setMagicSent(true);setDone(true);setResendCooldown(30);trackFunnelEvent('signup_completed',{campaign_slug:campaign||'general',surface:'production_join'});
   }catch(err){setError(err instanceof Error?err.message:'Unable to create account.')}
   finally{setBusy(false)}
+ }
+
+ async function resendMagicLink(){
+  if(!submittedEmail||resendBusy||resendCooldown>0)return;
+  setResendBusy(true);setResendMessage('');
+  try{
+   const r=await fetch('/api/auth/magic-link',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:submittedEmail,next:'/dashboard'})});
+   const d=await r.json();if(!r.ok)throw new Error(d.error||'Unable to resend link.');
+   setResendMessage(t.resent);setResendCooldown(30);setMagicSent(true);
+  }catch(err){setResendMessage(err instanceof Error?err.message:'Unable to resend link.')}
+  finally{setResendBusy(false)}
  }
  return <main className="prodJoin">
   <nav className="pvnav"><a className="logo" href="/">PAIR<span>VOICE</span></a><div className="navright"><a className="navsignin" href="/">{t.back}</a><a className="navcta" href="/signin">{es?'Entrar':'Sign in'}</a></div></nav>
@@ -62,10 +74,11 @@ export default function JoinPage(){
     <h1>{t.title}</h1><p>{t.lead}</p>
     {selected&&<article className="selectedGigCard"><small>{countryName(selected.countryCode)}</small><h2>{selected.name}</h2><p>{selected.jobFamily||'Voice recording'}</p>{selected.participantPayoutCents!=null&&<strong>{money(selected.participantPayoutCents,selected.payoutCurrency)} <span>{t.payout}</span></strong>}<div className="chips"><span>{selected.languageCode.toUpperCase()}</span>{selected.requiresPair&&<span>{t.partner}</span>}</div><div className="joinPromise"><b>{es?'ANTES DE GRABAR':'BEFORE YOU RECORD'}</b><span>✓ {es?'Compruebas elegibilidad':'Check eligibility'}</span><span>✓ {es?'Ves requisitos del proyecto':'See gig requirements'}</span><span>✓ {es?'Conectas a tu compañero si hace falta':'Connect a partner if required'}</span></div></article>}
    </div>
-   <div className="joinAccountCard">{done?<div className="success"><div>✓</div><h2>{t.done}</h2><p>{t.next}</p>{magicSent&&<a className="primary" href="/signin">{es?'Volver a enviar enlace':'Send another sign-in link'}</a>}</div>:
+   <div className="joinAccountCard">{done?<div className="success"><div>✓</div><h2>{t.done}</h2><p>{t.next}</p>{submittedEmail&&<p className="sentTo">{es?'Enviado a':'Sent to'} <strong>{submittedEmail}</strong></p>}{magicSent&&<button type="button" onClick={resendMagicLink} disabled={resendBusy||resendCooldown>0}>{resendBusy?t.sending:resendCooldown>0?t.resend+' ('+resendCooldown+'s)':t.resend+' →'}</button>}{resendMessage&&<p role="status" className="resendStatus">{resendMessage}</p>}</div>:
     <form onSubmit={submit}><div className="formTop"><span>PAIRVOICE</span><b>{es?'CUENTA':'ACCOUNT'}</b></div>{campaign&&<div className="microSteps"><span className="active">1 {es?'Cuenta':'Account'}</span><span>2 {es?'Compañero':'Partner'}</span><span>3 {es?'Trabajo':'Work'}</span></div>}
      <label>{t.first}<input name="first_name" required autoComplete="given-name"/></label>
      <label>{t.email}<input name="email" required type="email" autoComplete="email" inputMode="email"/></label>
+     <label>{t.phone}<input name="phone" required type="tel" autoComplete="tel" inputMode="tel" placeholder={selected?.countryCode==='ES'?'+34 612 345 678':'+1 305 555 0123'}/><small className="fieldHelp">{t.phoneHelp}</small></label>
      {campaign&&<>
       <input type="hidden" name="country" value={selected?.countryCode||'US'}/>
       <input type="hidden" name="language" value={selected?.languageCode||'en'}/>
