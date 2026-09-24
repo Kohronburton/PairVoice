@@ -152,6 +152,7 @@ export default function Home(){
    <div className="accountCtaCard"><span>{es?'SIN TARIFA DE REGISTRO':'NO SIGNUP FEE'}</span><strong>{es?'Mira el pago. Comprueba si calificas. Luego empieza.':'See the payout. Check your fit. Then start.'}</strong><p>{es?'Después eliges proyectos, verificas requisitos y conectas a tu compañero cuando haga falta.':'Then choose gigs, verify requirements, and connect a partner when needed.'}</p><a href="/join">{t.cta} →</a><a className="accountSignin" href="/signin">{t.signIn}</a></div>
   </section>
 
+  {featured&&<div className="mobileConversionBar"><div>{featuredPayout&&<strong>{featuredPayout}</strong>}<span>{featured.name}</span></div><button onClick={()=>openGig(featured.slug)}>{t.browse} →</button></div>}
   <footer><div className="logo">PAIR<span>VOICE</span></div><p>{t.footer}</p><div className="footerLinks"><a href="/privacy">Privacy</a><a href="/terms">Terms</a></div><span>© 2026 PairVoice</span></footer>
  </main>;
 }
