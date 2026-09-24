@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="PairVoice">
+  <rect width="64" height="64" rx="16" fill="#07100e"/>
+  <path d="M18 18h13c8 0 13 4 13 11 0 5-3 9-8 10l9 10h-9l-8-9h-3v9h-7V18Zm7 7v9h5c4 0 7-1 7-4s-3-5-7-5h-5Z" fill="#f5f4ed"/>
+  <path d="M42 18h7v28h-7z" fill="#b9ff48"/>
+</svg>
