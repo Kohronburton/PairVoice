@@ -38,7 +38,11 @@ export async function POST(req:NextRequest){
 export async function GET(){
  const admin=await requireAdmin(['SUPER_ADMIN','PAYMENTS']);
  if(!admin)return NextResponse.json({error:'Forbidden'},{status:403});
- const {data,error}=await admin.db.from('payouts').select('id,participant_id,amount_cents,currency,state,provider,external_reference,failure_reason,created_at,updated_at').order('created_at',{ascending:false}).limit(100);
- if(error)return NextResponse.json({error:'Unable to load payouts.'},{status:500});
- return NextResponse.json({payouts:data||[]});
+ const [{data:payoutRows,error},{data:attemptRows,error:attemptError}]=await Promise.all([
+  admin.db.from('payouts').select('id,participant_id,payout_method_id,amount_cents,currency,state,provider,external_reference,failure_reason,created_at,updated_at,participants(first_name,email,public_code)').order('created_at',{ascending:false}).limit(100),
+  admin.db.from('provider_payout_attempts').select('id,payout_id,provider,state,provider_reference,last_error,created_at,updated_at').order('created_at',{ascending:false}).limit(200)
+ ]);
+ if(error||attemptError)return NextResponse.json({error:'Unable to load payouts.'},{status:500});
+ const latest=new Map<string,any>();for(const a of attemptRows||[]){if(!latest.has(a.payout_id))latest.set(a.payout_id,a)}
+ return NextResponse.json({payouts:(payoutRows||[]).map((p:any)=>({...p,latestAttempt:latest.get(p.id)||null}))});
 }
