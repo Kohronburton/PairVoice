@@ -20,7 +20,7 @@ grant execute on function public.register_campaign_participant(text,text,text,te
 
 -- Legacy lead RPCs are retained for compatibility but may only be called server-side.
 revoke all on function public.upsert_public_lead(text,text,boolean,text,text[],text,text,text,text,text,text,text,text,text,text,text) from public,anon,authenticated;
-grant execute on function public.upsert_public_lead(text,text,boolean,text,text[],text,text,text,text,text,text,text,text,text,text,text,text) to service_role;
+grant execute on function public.upsert_public_lead(text,text,boolean,text,text[],text,text,text,text,text,text,text,text,text,text,text) to service_role;
 
 revoke all on function public.upsert_public_lead_v2(text,text,boolean,text,text[],text,text,text,text,text,text,text,text,text,text,text,text,text) from public,anon,authenticated;
 grant execute on function public.upsert_public_lead_v2(text,text,boolean,text,text[],text,text,text,text,text,text,text,text,text,text,text,text,text) to service_role;
