@@ -19,6 +19,9 @@ export default function InviteShareButtons({inviteUrl,language}:Props){
   email:`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`,
   facebook:`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(inviteUrl)}&quote=${encodeURIComponent(message)}`
  };
- function click(channel:string){trackFunnelEvent('share_clicked',{channel});}
+ function click(channel:string){
+  trackFunnelEvent('partner_invite_share_clicked',{channel});
+  trackFunnelEvent('share_clicked',{channel,share_type:'partner_invite'});
+ }
  return <div className="sharePanel"><p className="shareLabel">{language==='es'?'Envíalo por:':'Share it by:'}</p><div className="shareButtons"><a className="shareButton whatsapp" href={links.whatsapp} onClick={()=>click('whatsapp')} target="_blank" rel="noreferrer"><span>◉</span> WhatsApp</a><a className="shareButton sms" href={links.sms} onClick={()=>click('sms')}><span>✉</span> SMS</a><a className="shareButton email" href={links.email} onClick={()=>click('email')}><span>✉</span> Email</a><a className="shareButton facebook" href={links.facebook} onClick={()=>click('facebook')} target="_blank" rel="noreferrer"><span>f</span> Facebook</a><button className="shareButton copy" type="button" onClick={()=>{click('copy');copy()}}><span>⧉</span> {copied?(language==='es'?'¡Copiado!':'Copied!'):(language==='es'?'Copiar enlace':'Copy link')}</button></div></div>;
 }
