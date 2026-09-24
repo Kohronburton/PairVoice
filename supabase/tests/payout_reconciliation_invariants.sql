@@ -20,6 +20,8 @@ begin
  payout1_retry:=request_participant_payout(p,3000,'USD','payout-request:test-1');
  if payout1<>payout1_retry then raise exception 'payout_request_not_idempotent'; end if;
  if (select count(*) from payouts where participant_id=p)<>1 then raise exception 'duplicate_payout_request'; end if;
+ if (select payout_method_id from payouts where id=payout1) is null then raise exception 'payout_method_not_frozen'; end if;
+ if (select provider from participant_payout_methods where id=(select payout_method_id from payouts where id=payout1))<>'MANUAL' then raise exception 'wrong_frozen_payout_method'; end if;
 
  balance:=participant_available_balance(p,'USD');
  if balance<>3000 then raise exception 'pending_payout_not_reserved:%',balance; end if;
