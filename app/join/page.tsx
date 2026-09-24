@@ -20,12 +20,12 @@ export default function JoinPage(){
  const es=lang==='es';
  const t=es?{
   title:campaign?'Únete a este proyecto':'Crea tu cuenta PairVoice',lead:campaign?'Crea tu cuenta y confirma los datos necesarios para este proyecto.':'Crea una cuenta reutilizable para ver y participar en proyectos compatibles.',
-  first:'Nombre',email:'Correo electrónico',country:'País',language:'Idioma',age:'Confirmo que tengo 18 años o más.',consent:'Acepto crear una cuenta PairVoice y recibir comunicaciones necesarias sobre mis proyectos.',
+  first:'Nombre',email:'Correo electrónico',country:'País',language:'Idioma',age:'Confirmo que tengo 18 años o más.',consent:'Acepto crear una cuenta PairVoice y recibir comunicaciones necesarias sobre mis proyectos.',fixed:'Ya configurado por este proyecto',
   button:campaign?'Continuar con este proyecto':'Crear cuenta PairVoice',saving:'Creando cuenta…',done:'Revisa tu correo.',next:'Te enviamos un enlace seguro para entrar a PairVoice.',
   back:'Volver a proyectos',signin:'¿Ya tienes cuenta? Entrar',partner:'Compañero requerido',payout:'Pago por pareja aprobada'
  }:{
   title:campaign?'Join this gig':'Create your PairVoice account',lead:campaign?'Create your account and confirm the information required for this gig.':'Create one reusable account to discover and join compatible paid voice gigs.',
-  first:'First name',email:'Email address',country:'Country',language:'Language',age:'I confirm I am 18 or older.',consent:'I agree to create a PairVoice account and receive communications required for my gigs.',
+  first:'First name',email:'Email address',country:'Country',language:'Language',age:'I confirm I am 18 or older.',consent:'I agree to create a PairVoice account and receive communications required for my gigs.',fixed:'Already set by this gig',
   button:campaign?'Continue with this gig':'Create PairVoice account',saving:'Creating account…',done:'Check your email.',next:'We sent you a secure link to enter PairVoice.',
   back:'Back to gigs',signin:'Already have an account? Sign in',partner:'Partner required',payout:'Payout per approved pair'
  };
@@ -63,12 +63,13 @@ export default function JoinPage(){
     {selected&&<article className="selectedGigCard"><small>{countryName(selected.countryCode)}</small><h2>{selected.name}</h2><p>{selected.jobFamily||'Voice recording'}</p>{selected.participantPayoutCents!=null&&<strong>{money(selected.participantPayoutCents,selected.payoutCurrency)} <span>{t.payout}</span></strong>}<div className="chips"><span>{selected.languageCode.toUpperCase()}</span>{selected.requiresPair&&<span>{t.partner}</span>}</div></article>}
    </div>
    <div className="joinAccountCard">{done?<div className="success"><div>✓</div><h2>{t.done}</h2><p>{t.next}</p>{magicSent&&<a className="primary" href="/signin">{es?'Volver a enviar enlace':'Send another sign-in link'}</a>}</div>:
-    <form onSubmit={submit}><div className="formTop"><span>PAIRVOICE</span><b>{es?'CUENTA':'ACCOUNT'}</b></div>
+    <form onSubmit={submit}><div className="formTop"><span>PAIRVOICE</span><b>{es?'CUENTA':'ACCOUNT'}</b></div>{campaign&&<div className="microSteps"><span className="active">1 {es?'Cuenta':'Account'}</span><span>2 {es?'Compañero':'Partner'}</span><span>3 {es?'Trabajo':'Work'}</span></div>}
      <label>{t.first}<input name="first_name" required autoComplete="given-name"/></label>
      <label>{t.email}<input name="email" required type="email" autoComplete="email" inputMode="email"/></label>
      {campaign&&<>
-      <label>{t.country}<select name="country" defaultValue={selected?.countryCode||'US'}><option value="US">United States</option><option value="ES">Spain</option></select></label>
-      <label>{t.language}<select name="language" defaultValue={selected?.languageCode||'en'}><option value="en">English</option><option value="es">Español</option></select></label>
+      <input type="hidden" name="country" value={selected?.countryCode||'US'}/>
+      <input type="hidden" name="language" value={selected?.languageCode||'en'}/>
+      {selected&&<div className="lockedGigFacts"><div><b>{t.country}</b><span>{countryName(selected.countryCode)}</span></div><div><b>{t.language}</b><span>{selected.languageCode.toUpperCase()}</span></div><small>{t.fixed}</small></div>}
       <label className="check"><input name="age" type="checkbox" required/><span>{t.age}</span></label>
      </>}
      <label className="check"><input name="consent" type="checkbox" required/><span>{t.consent}</span></label>
