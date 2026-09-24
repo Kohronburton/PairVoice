@@ -8,7 +8,7 @@ export async function GET(){
  if(!admin)return NextResponse.json({error:'Forbidden'},{status:403});
  try{
   const db=admin.db;
-  const [controlsQ,payoutQ,outboxQ,campaignsQ,versionsQ,accessQ,bindingsQ,providersQ,credentialsQ]=await Promise.all([
+  const [controlsQ,payoutQ,outboxQ,campaignsQ,versionsQ,accessQ,bindingsQ,providersQ,credentialsQ,legalQ]=await Promise.all([
    db.from('subsystem_controls').select('subsystem,enabled,reason'),
    db.from('provider_payout_attempts').select('id,state').in('state',['UNKNOWN','MANUAL_REVIEW']),
    db.from('outbox_events').select('id').eq('status','DEAD_LETTER'),
@@ -17,9 +17,10 @@ export async function GET(){
    db.from('campaign_access').select('campaign_id,provider,invitation_code,launch_url'),
    db.from('campaign_provider_bindings').select('campaign_id,campaign_version_id,provider_id,purpose,active').eq('active',true),
    db.from('provider_integrations').select('id,provider_key,provider_type,status'),
-   db.from('provider_credentials').select('provider_id,campaign_id,status').eq('status','AVAILABLE')
+   db.from('provider_credentials').select('provider_id,campaign_id,status').eq('status','AVAILABLE'),
+   db.from('legal_documents').select('id,scope,document_key,campaign_version_id,locale,status').eq('status','PUBLISHED')
   ]);
-  const queryError=[controlsQ.error,payoutQ.error,outboxQ.error,campaignsQ.error,versionsQ.error,accessQ.error,bindingsQ.error,providersQ.error,credentialsQ.error].find(Boolean);
+  const queryError=[controlsQ.error,payoutQ.error,outboxQ.error,campaignsQ.error,versionsQ.error,accessQ.error,bindingsQ.error,providersQ.error,credentialsQ.error,legalQ.error].find(Boolean);
   if(queryError)throw queryError;
 
   const checks:Check[]=[];
@@ -41,7 +42,8 @@ export async function GET(){
   ] as const;
   for(const [key,label,pass,detail] of envChecks)checks.push({key,label,pass,blocking:true,detail:pass?'Configured':`Missing ${detail}`});
 
-  const versions=versionsQ.data||[],access=accessQ.data||[],bindings=bindingsQ.data||[],providers=providersQ.data||[],credentials=credentialsQ.data||[];
+  const versions=versionsQ.data||[],access=accessQ.data||[],bindings=bindingsQ.data||[],providers=providersQ.data||[],credentials=credentialsQ.data||[],legal=legalQ.data||[];
+  for(const key of ['PRIVACY','TERMS']){const ok=legal.some(d=>d.scope==='SITE'&&d.document_key===key&&d.locale==='en');checks.push({key:`legal_site_${key.toLowerCase()}`,label:`Published site ${key.toLowerCase()}`,pass:ok,blocking:true,detail:ok?'Published':'Missing reviewed published document'});}
   for(const campaign of campaignsQ.data||[]){
    const version=versions.find(v=>v.campaign_id===campaign.id);
    const ca=access.find(a=>a.campaign_id===campaign.id);
@@ -55,6 +57,7 @@ export async function GET(){
    if(version?.invitation_code_mode&&version.invitation_code_mode!=='NONE'){
     checks.push({key:`campaign_${campaign.slug}_code`,label:`${campaign.name}: invitation code`,pass:Boolean(ca?.invitation_code),blocking:true,detail:ca?.invitation_code?'Configured':'Missing invitation code'});
    }
+   if(version){const campaignDocs=legal.filter(d=>d.scope==='CAMPAIGN'&&d.campaign_version_id===version.id);for(const key of ['CAMPAIGN_TERMS','PARTICIPANT_CONSENT']){const ok=campaignDocs.some(d=>d.document_key===key);checks.push({key:`campaign_${campaign.slug}_${key.toLowerCase()}`,label:`${campaign.name}: ${key.toLowerCase().replaceAll('_',' ')}`,pass:ok,blocking:true,detail:ok?'Published':'Missing reviewed published document'});}}
    const credentialBindings=version?bindings.filter(b=>b.campaign_version_id===version.id&&b.purpose==='CREDENTIAL'):[];
    if(credentialBindings.length){
     const available=credentialBindings.reduce((sum,b)=>sum+credentials.filter(c=>c.provider_id===b.provider_id&&c.campaign_id===campaign.id).length,0);
