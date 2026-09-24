@@ -345,3 +345,60 @@ Relevant commits:
 - `dfdcc2392ac712f71aea0e66132b2d36be53f191` — participant payout request API
 - `3159530dffe1717040af025826b39ba3847cdb6a` — payments-admin reconciliation API
 - `8989544583cd936e0607350744d476b731a36d28` — payout invariant test
+
+
+## Checkpoint N — Referral qualification and configurable rewards
+**IMPLEMENTED / VERIFY**
+
+Referral money is configuration-driven. Current production campaign versions still carry zero referral commission unless explicitly changed through a versioned campaign decision.
+
+Implemented:
+- approved pair state triggers referral qualification for referred participants;
+- campaign `referral_commission_cents > 0` creates one AVAILABLE commission and one immutable REFERRAL_EARNING ledger entry per referral relationship/pair;
+- zero commission creates no cash entry;
+- `referral_pair_completed` telemetry records the successful referred pair independent of whether cash is configured;
+- active `referral_programs` evaluate qualified referred participants by approved-job count;
+- milestone award requires the configured number of qualified referrals;
+- milestone bonus is created only when the active program has a nonzero configured bonus;
+- unique keys on commission, milestone award and ledger entries make repeated processing idempotent;
+- disabling the REFERRAL subsystem skips reward processing without blocking core pair approval.
+
+Test: `supabase/tests/referral_qualification_invariants.sql`.
+
+## Checkpoint O — Subsystem isolation and lifecycle messaging
+**IMPLEMENTED / VERIFY**
+
+Subsystem controls:
+- MATCHING
+- WORK
+- PAYOUT
+- MESSAGING
+- REFERRAL
+
+Only SUPER_ADMIN can change subsystem controls through `/api/admin/controls`; every change requires a reason and creates audit evidence.
+
+Isolation behavior:
+- MATCHING pause blocks new partner-pool joins;
+- WORK pause blocks new work access/starts but does not block an already-working participant from submitting;
+- PAYOUT pause blocks new payout requests and new execution attempts but does not block reconciliation of money already in flight;
+- MESSAGING pause prevents outbox claiming while preserving queued messages;
+- REFERRAL pause skips reward qualification without blocking campaign approval.
+
+Lifecycle messaging:
+- Pair formed → PAIR_FORMED
+- Ready → WORK_READY
+- Submitted → SUBMISSION_RECEIVED
+- Rework → REWORK_REQUIRED
+- Payable/approved earning → APPROVED
+- Rejected → REJECTED
+- Payout reconciled paid → PAYOUT_PAID
+
+Messages are inserted into `outbox_events` with deterministic dedupe keys. The worker claims rows with SKIP LOCKED, retries failures with backoff, and moves exhausted failures to DEAD_LETTER. Delivery is through the existing Resend integration using bilingual EN/ES lifecycle templates. Missing provider configuration is treated as a delivery failure, not a false success.
+
+Internal worker:
+`POST /api/internal/outbox`
+requires `PAIRVOICE_INTERNAL_SECRET` or `CRON_SECRET`.
+
+Test:
+`supabase/tests/operational_controls_messaging_invariants.sql`
+covers message deduplication, claim behavior, retry status, messaging pause/resume and default subsystem state.
