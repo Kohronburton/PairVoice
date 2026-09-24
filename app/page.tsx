@@ -1,261 +1,156 @@
 'use client';
-import {FormEvent,useEffect,useMemo,useState} from 'react';
-import InviteShareButtons from '../components/InviteShareButtons';
+import {useEffect,useMemo,useState} from 'react';
 import {trackFunnelEvent} from '../lib/funnel';
 
 type Opportunity={
- slug:string;
- name:string;
- countryCode:string;
- languageCode:string;
- locale:string|null;
- accentTarget:string|null;
- participantCount:number;
- sessionCount:number|null;
- sessionMinutesMin:number|null;
- sessionMinutesMax:number|null;
+ slug:string;name:string;countryCode:string;languageCode:string;locale:string|null;
+ participantPayoutCents:number|null;payoutCurrency:string;payoutUnit:'PAIR'|'PARTICIPANT'|'HOURLY'|'FIXED';
+ jobFamily:string|null;requiresPair:boolean;sessionCount:number|null;sessionMinutesMin:number|null;sessionMinutesMax:number|null;
  deviceRequirement:string|null;
- participantPayoutCents:number|null;
- payoutCurrency:string;
- payoutUnit:'PAIR'|'PARTICIPANT'|'HOURLY'|'FIXED';
- jobFamily:string|null;
- recordingMode:string|null;
- requiresPair:boolean;
 };
 
 const marketForLocale=(locale:string)=>{
  const parts=(locale||'en-US').replace('_','-').split('-');
  return (parts[1]||'').toUpperCase()||'UNKNOWN';
 };
-
-const marketName=(code:string)=>({
- US:'United States',CA:'Canada',ES:'Spain',AU:'Australia',GB:'United Kingdom',
- IT:'Italy',MX:'Mexico',AR:'Argentina',CO:'Colombia'
-} as Record<string,string>)[code]||code;
-
-const money=(cents:number,currency:string)=>{
+const marketName=(code:string)=>({US:'United States',ES:'Spain',CA:'Canada',AU:'Australia',GB:'United Kingdom',IT:'Italy',MX:'Mexico',AR:'Argentina',CO:'Colombia'} as Record<string,string>)[code]||code;
+const money=(cents:number|null,currency:string)=>{
+ if(cents==null)return null;
  try{return new Intl.NumberFormat(undefined,{style:'currency',currency,maximumFractionDigits:0}).format(cents/100)}
  catch{return '$'+Math.round(cents/100)}
 };
 
 export default function Home(){
- const[done,setDone]=useState(false),[inviteUrl,setInviteUrl]=useState(''),[partnerJoined,setPartnerJoined]=useState(false);
- const[error,setError]=useState('');
- const[loading,setLoading]=useState(false);
- const[lang,setLang]=useState<'en'|'es'>('en');
- const[market,setMarket]=useState('UNKNOWN');
- const[detectedLocale,setDetectedLocale]=useState('');
- const[opportunities,setOpportunities]=useState<Opportunity[]>([]);
- const[opportunitiesLoading,setOpportunitiesLoading]=useState(true);
- const[opportunitiesError,setOpportunitiesError]=useState(false);
- const[selectedCampaign,setSelectedCampaign]=useState<string|null>(null);
+ const[lang,setLang]=useState<'en'|'es'>('en'),[market,setMarket]=useState('UNKNOWN');
+ const[opportunities,setOpportunities]=useState<Opportunity[]>([]),[loading,setLoading]=useState(true),[failed,setFailed]=useState(false);
 
  useEffect(()=>{
-  const locale=navigator.language||'en-US';
-  setDetectedLocale(locale);
-  const requested=new URLSearchParams(location.search).get('lang');
-  const detected=requested==='es'||(!requested&&locale.toLowerCase().startsWith('es'))?'es':'en';
-  setLang(detected);
-  document.documentElement.lang=detected;
-  setMarket(marketForLocale(locale));
-  trackFunnelEvent('landing_view',{market_code:marketForLocale(locale)});
-
-  const q=new URLSearchParams(location.search);
-  const campaign=q.get('campaign');
-  if(campaign)setSelectedCampaign(campaign);
-
+  const q=new URLSearchParams(location.search),locale=navigator.language||'en-US';
+  const detected=q.get('lang')==='es'||(!q.get('lang')&&locale.toLowerCase().startsWith('es'))?'es':'en';
+  setLang(detected);document.documentElement.lang=detected;setMarket(marketForLocale(locale));
+  trackFunnelEvent('landing_view',{market_code:marketForLocale(locale),surface:'production'});
   fetch('/api/opportunities')
-   .then(async r=>{
-    if(!r.ok)throw new Error('catalog unavailable');
-    return r.json();
-   })
+   .then(r=>r.ok?r.json():Promise.reject(new Error('catalog unavailable')))
    .then(d=>setOpportunities(Array.isArray(d.opportunities)?d.opportunities:[]))
-   .catch(()=>{setOpportunities([]);setOpportunitiesError(true)})
-   .finally(()=>setOpportunitiesLoading(false));
+   .catch(()=>setFailed(true))
+   .finally(()=>setLoading(false));
  },[]);
 
- const sorted=useMemo(()=>[...opportunities].sort((a,b)=>{
-  const am=a.countryCode===market?0:1,bm=b.countryCode===market?0:1;
-  return am-bm||a.name.localeCompare(b.name);
- }),[opportunities,market]);
-
- const selected=opportunities.find(o=>o.slug===selectedCampaign)||null;
-
- const t=lang==='es'?{
-  join:'Acceso anticipado',
-  eyebrow:'TRABAJOS DE VOZ PAGADOS',
-  h1:'Una cuenta.',
-  h2:'Múltiples oportunidades.',
-  lead:'PairVoice organiza proyectos de voz por tipo de trabajo, país, idioma y requisitos. Te mostramos solo las oportunidades que encajan contigo.',
-  available:'Oportunidades disponibles',
-  choose:'Elige una oportunidad o únete a la lista general.',
-  catalogEmpty:'Las oportunidades específicas se están preparando. Únete a la lista general y te avisaremos cuando haya una compatible.',
-  general:'Únete a la lista general',
-  match:'Quiero esta oportunidad',
-  payoutUnknown:'Pago por confirmar',
-  pair:'pareja aprobada',
-  person:'participante aprobado',
-  sessions:'conversaciones',
-  partner:'Se necesita compañero',
-  solo:'Individual',
-  joinTitle:'Recibe oportunidades compatibles.',
-  startCopy:'Comienza con tu nombre y correo. No pedimos datos de pago ahora; los solicitamos después de que una oportunidad sea aprobada.',
-  potential:'Pago potencial',
-  firstName:'Nombre', email:'Correo electrónico', invite:'Invita a tu compañero', inviteHelp:'La mayoría de las oportunidades pagadas requieren dos personas. Envía este enlace a tu compañero.',
-  consent:'Quiero recibir oportunidades de PairVoice y actualizaciones por correo.',
-  button:'Únete a PairVoice →',
-  loading:'Guardando…',
-  done:'Ya estás en PairVoice.',
-   next:'Te avisaremos cuando haya una oportunidad compatible.',
-  selected:'Oportunidad seleccionada',
-  steps:[['01','Crea un perfil','Tu identidad PairVoice se puede reutilizar en todas las campañas compatibles.'],['02','Encuentra tu campaña','País, idioma, dispositivo y participación anterior determinan tu elegibilidad.'],['03','Forma pareja cuando sea necesario','Algunos trabajos requieren compañero; otros son individuales.'],['04','Sigue cada trabajo','Cada campaña mantiene su propio estado de registro, pareja, entrega y pago.']],
-  free:'Gratis. No necesitas pagar ni grabar tu voz para registrarte.',
-  footer:'Un perfil de voz. Múltiples oportunidades pagadas.'
+ const sorted=useMemo(()=>[...opportunities].sort((a,b)=>(a.countryCode===market?0:1)-(b.countryCode===market?0:1)||a.name.localeCompare(b.name)),[opportunities,market]);
+ const es=lang==='es';
+ const copy=es?{
+  navWork:'Trabajos',how:'Cómo funciona',signin:'Entrar',join:'Ver trabajos',
+  eyebrow:'TRABAJO DE VOZ PAGADO',
+  heroA:'Hablad.',heroB:'Grabad.',heroC:'Cobrad.',
+  lead:'PairVoice te conecta con proyectos de conversación remunerados. Elige un trabajo, forma tu pareja, sigue las instrucciones y controla tu progreso desde una sola cuenta.',
+  cta:'Ver trabajos disponibles',account:'Ya tengo cuenta',
+  trust:'Sin cuotas para registrarte. Sin datos de pago al inicio. Cada proyecto muestra sus requisitos antes de participar.',
+  jobsEyebrow:'TRABAJOS DISPONIBLES',jobsTitle:'Elige cuánto quieres ganar.',jobsLead:'Empieza con un proyecto compatible con tu país e idioma. El pago mostrado es el total de la pareja.',
+  loading:'Cargando oportunidades…',empty:'Nuevos proyectos estarán disponibles pronto.',start:'Empezar este trabajo',
+  perPair:'por pareja',partner:'Se necesita compañero',solo:'Individual',sessions:'sesiones',
+  howEyebrow:'UN CAMINO CLARO',howTitle:'No tienes que adivinar qué hacer.',
+  steps:[
+   ['01','Elige un trabajo','Mira el pago, país, idioma y requisitos antes de registrarte.'],
+   ['02','Crea tu cuenta','Regístrate una vez. Tu panel te muestra exactamente qué hacer después.'],
+   ['03','Forma tu pareja','Invita a alguien que conozcas. La opción de encontrar pareja en PairVoice llegará próximamente.'],
+   ['04','Graba y cobra','Busca un lugar tranquilo, sigue las instrucciones del proyecto, habla sobre el tema y completa el trabajo para recibir el pago indicado.']
+  ],
+  finalTitle:'Tu voz tiene valor.',finalBody:'Empieza con el trabajo que encaje contigo y deja que PairVoice te guíe paso a paso.',finalCta:'Encontrar un trabajo →',
+  footer:'Trabajo de voz pagado, organizado de principio a fin.'
  }:{
-  join:'Early access',
+  navWork:'Gigs',how:'How it works',signin:'Sign in',join:'Find a gig',
   eyebrow:'PAID VOICE WORK',
-  h1:'One account.',
-  h2:'Multiple opportunities.',
-  lead:'PairVoice organizes voice work by job type, country, language, and requirements. We match people to the opportunities they actually qualify for.',
-  available:'Available opportunities',
-  choose:'Choose an opportunity or join the general list.',
-  catalogEmpty:'Specific opportunities are being prepared. Join the general list and we’ll email you when a match is ready.',
-  general:'Join the general list',
-  match:'I want this opportunity',
-  payoutUnknown:'Payout being finalized',
-  pair:'approved pair',
-  person:'approved participant',
-  sessions:'conversations',
-  partner:'Partner required',
-  solo:'Individual',
-  joinTitle:'Get matched with paid voice work.',
-  startCopy:'Start with your name and email. We do not ask for payment details now; we request them after an opportunity is approved.',
-  potential:'Potential payout',
-  firstName:'First name', email:'Email address', invite:'Invite your partner', inviteHelp:'Most paid conversation opportunities require two people. Send this link to your partner.',
-  consent:'Send me PairVoice opportunities and launch updates by email.',
-  button:'Join PairVoice →',
-  loading:'Saving…',
-  done:"You're on PairVoice.",
-  next:"We'll email you when a matching opportunity is ready.",
-  selected:'Selected opportunity',
-  steps:[['01','Create one profile','Your PairVoice identity is reusable across eligible campaigns.'],['02','Match by campaign','Country, language, device and prior participation determine eligibility.'],['03','Pair only when needed','Conversation jobs can require a partner; solo recording jobs do not.'],['04','Track work separately','Each campaign keeps its own enrollment, pair, submission and payout status.']],
-  free:'Free to join. No payment details or voice recording required at signup.',
-  footer:'One voice profile. Multiple paid opportunities.'
+  heroA:'Talk together.',heroB:'Record.',heroC:'Get paid.',
+  lead:'PairVoice connects you with paid conversation projects. Choose a gig, form your pair, follow the instructions, and track every step from one account.',
+  cta:'See available gigs',account:'I already have an account',
+  trust:'Free to sign up. No payout details up front. Every gig shows the requirements before you join.',
+  jobsEyebrow:'AVAILABLE GIGS',jobsTitle:'Choose what you want to earn.',jobsLead:'Start with a project that matches your country and language. The payout shown is the total for the pair.',
+  loading:'Loading opportunities…',empty:'New paid gigs are opening soon.',start:'Start this gig',
+  perPair:'per pair',partner:'Partner required',solo:'Individual',sessions:'sessions',
+  howEyebrow:'ONE CLEAR PATH',howTitle:'You should never have to guess what happens next.',
+  steps:[
+   ['01','Choose a gig','See the payout, country, language, and requirements before you sign up.'],
+   ['02','Create your account','Register once. Your dashboard tells you exactly what to do next.'],
+   ['03','Form your pair','Invite someone you know. PairVoice partner matching is coming soon.'],
+   ['04','Record and get paid','Find a quiet place, follow the gig instructions, talk about the assigned topic, and complete the work for the listed payout.']
+  ],
+  finalTitle:'Your voice has value.',finalBody:'Start with the gig that fits you and let PairVoice guide you from signup through payout.',finalCta:'Find a paid gig →',
+  footer:'Paid voice work, organized from start to finish.'
  };
 
  function choose(slug:string){
-  setSelectedCampaign(slug);
-  setDone(false);
-  trackFunnelEvent('opportunity_view',{campaign_slug:slug});
-  trackFunnelEvent('signup_started',{campaign_slug:slug});
-  requestAnimationFrame(()=>document.getElementById('join')?.scrollIntoView({behavior:'smooth'}));
+  trackFunnelEvent('opportunity_view',{campaign_slug:slug,surface:'homepage'});
+  location.href=`/join?campaign=${encodeURIComponent(slug)}&lang=${lang}`;
  }
 
- async function submit(e:FormEvent<HTMLFormElement>){
-  e.preventDefault();setLoading(true);setError('');
-  trackFunnelEvent('signup_submitted',{campaign_slug:selectedCampaign||'general',language:lang});
-  const f=new FormData(e.currentTarget),q=new URLSearchParams(location.search);
-  const payload={
-   first_name:f.get('first_name'),email:f.get('email'),
-   referral_code:q.get('ref')||q.get('invite')||null,
-   market_code:market,
-   language:lang,
-   consent:f.get('consent')==='on',
-   detected_locale:detectedLocale,
-   detected_languages:Array.from(navigator.languages||[]),
-   source:q.get('source')||q.get('src')||null,
-   marketing_campaign_key:q.get('campaign_key')||q.get('utm_campaign')||'organic',
-   campaign_slug:selectedCampaign,
-   source_posting_external_id:q.get('job'),
-   landing_path:location.pathname,
-   referrer:document.referrer||null,
-   fbclid:q.get('fbclid'),
-   gclid:q.get('gclid'),
-   utm_source:q.get('utm_source'),
-   utm_medium:q.get('utm_medium'),
-   utm_campaign:q.get('utm_campaign'),
-   utm_content:q.get('utm_content'),
-   utm_term:q.get('utm_term')
-  };
-  const r=await fetch('/api/lead',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});
-  const d=await r.json();setLoading(false);
-  if(!r.ok){setError(d.error||'Signup failed');return}
-  setInviteUrl(d.inviteUrl||'');setPartnerJoined(!!d.partnerJoined);setDone(true);trackFunnelEvent('signup_completed',{campaign_slug:selectedCampaign||'general'});trackFunnelEvent('email_queued');trackFunnelEvent('invite_created',{has_invite:Boolean(d.inviteUrl)});
- }
- return <main>
-  <nav>
-   <div className="logo">PAIR<span>VOICE</span></div>
+ return <main className="productionHome">
+  <nav className="productionNav">
+   <a className="logo logoLink" href="/">PAIR<span>VOICE</span></a>
+   <div className="homeNavLinks"><a href="#gigs">{copy.navWork}</a><a href="#how">{copy.how}</a></div>
    <div className="navright">
-    <select className="language" value={lang} onChange={e=>setLang(e.target.value as 'en'|'es')}>
-     <option value="en">EN</option><option value="es">ES</option>
-    </select>
-    <a href="#join">{t.join}</a>
+    <button className="language" onClick={()=>{const next=es?'en':'es';setLang(next);document.documentElement.lang=next}}>{es?'EN':'ES'}</button>
+    <a className="navSignIn" href="/login">{copy.signin}</a>
+    <a href="#gigs">{copy.join}</a>
    </div>
   </nav>
 
-  <section className="hero catalogHero">
-   <div className="heroCopy"><div className="eyebrow">{t.eyebrow}</div>
-   <h1>{t.h1}<br/><em>{t.h2}</em></h1>
-   <p className="lead">{t.lead}</p>
-   <div className="actions"><a className="primary" href="#opportunities">{t.available} →</a><span>{market!=='UNKNOWN'?marketName(market):'Global matching'}</span></div></div>
-   <div className="heroVisual"><img src="/images/pairvoice-early-access-hero.jpg" alt="Two people recording a paid voice opportunity together" width="1122" height="1402" fetchPriority="high" decoding="async" /></div>
+  <section className="productionHero">
+   <div className="productionHeroCopy">
+    <div className="eyebrow">{copy.eyebrow}</div>
+    <h1>{copy.heroA}<br/><em>{copy.heroB}</em><br/>{copy.heroC}</h1>
+    <p className="lead">{copy.lead}</p>
+    <div className="heroCtas"><a className="primary" href="#gigs">{copy.cta} →</a><a className="secondaryCta" href="/login">{copy.account}</a></div>
+    <p className="trustCopy">{copy.trust}</p>
+   </div>
+   <div className="productionHeroImage">
+    <img src="/images/pairvoice-early-access-hero.jpg" alt={es?'Dos personas preparándose para un proyecto de voz remunerado':'Two people preparing for a paid voice project'} width="1122" height="1402" fetchPriority="high"/>
+    <div className="earningsFloat"><span>{es?'PROCESO':'PROCESS'}</span><strong>Sign up → Pair → Record → Get paid</strong></div>
+   </div>
   </section>
 
-  <section className="opportunities" id="opportunities">
+  <section className="productionProof">
+   <div><strong>1</strong><span>{es?'cuenta':'account'}</span></div>
+   <div><strong>2</strong><span>{es?'personas por conversación':'people per conversation'}</span></div>
+   <div><strong>EN / ES</strong><span>{es?'experiencia bilingüe':'bilingual experience'}</span></div>
+   <div><strong>100%</strong><span>{es?'progreso visible':'visible workflow'}</span></div>
+  </section>
+
+  <section className="productionJobs" id="gigs">
    <div className="sectionHead">
-    <div><div className="eyebrow">PAIRVOICE JOB CATALOG</div><h2>{t.available}</h2></div>
-    <p>{t.choose}</p>
+    <div><div className="eyebrow">{copy.jobsEyebrow}</div><h2>{copy.jobsTitle}</h2></div>
+    <p>{copy.jobsLead}</p>
    </div>
-   <div className="opportunityGrid">
-    {opportunitiesLoading&&<article className="opportunityCard catalogMessage"><h3>{lang==='es'?'Cargando oportunidades…':'Loading opportunities…'}</h3><p>{lang==='es'?'También puedes unirte a la lista general mientras se cargan.':'You can also join the general list while the catalog loads.'}</p><button onClick={()=>document.getElementById('join')?.scrollIntoView({behavior:'smooth'})}>{t.general} →</button></article>}
-    {!opportunitiesLoading&&sorted.map(o=>{
-     const payout=o.participantPayoutCents!=null
-      ? money(o.participantPayoutCents,o.payoutCurrency)+' / '+(o.payoutUnit==='PAIR'?t.pair:t.person)
-      : t.payoutUnknown;
-     const image=o.jobFamily?.toLowerCase().includes('document')?'/images/pairvoice-opportunity-2.jpg':o.jobFamily?.toLowerCase().includes('finance')?'/images/pairvoice-opportunity-3.jpg':'/images/pairvoice-opportunity-1.jpg';
-     return <article className={'opportunityCard '+(o.countryCode===market?'marketMatch':'')} key={o.slug}>
-      <img className="opportunityImage" src={image} alt="" />
-      <div className="opportunityTop"><span>{marketName(o.countryCode)}</span>{o.countryCode===market&&<b>YOUR MARKET</b>}</div>
-      <h3>{o.name}</h3>
-      <p className="opportunityType">{o.jobFamily||'Voice recording'}</p>
-      <strong className="payout"><small>{t.potential}</small>{payout}</strong>
-      <div className="opportunityMeta">
-       <span>{o.languageCode.toUpperCase()}</span>
-       <span>{o.requiresPair?t.partner:t.solo}</span>
-       {o.sessionCount&&<span>{o.sessionCount} {t.sessions}</span>}
-       {o.deviceRequirement&&<span>{o.deviceRequirement}</span>}
+   <div className="productionJobGrid">
+    {loading&&<article className="productionJobCard messageCard"><h3>{copy.loading}</h3></article>}
+    {!loading&&sorted.map((o,index)=>{
+     const payout=money(o.participantPayoutCents,o.payoutCurrency);
+     const image=index%3===0?'/images/pairvoice-opportunity-1.jpg':index%3===1?'/images/pairvoice-opportunity-2.jpg':'/images/pairvoice-opportunity-3.jpg';
+     return <article className={'productionJobCard '+(o.countryCode===market?'localJob':'')} key={o.slug}>
+      <img src={image} alt="" className="productionJobImage"/>
+      <div className="productionJobBody">
+       <div className="productionJobTop"><span>{marketName(o.countryCode)}</span>{o.countryCode===market&&<b>{es?'TU MERCADO':'YOUR MARKET'}</b>}</div>
+       <h3>{o.name}</h3>
+       <p>{o.jobFamily||'Conversation recording'}</p>
+       <div className="productionPayout"><small>{es?'PAGO DEL PROYECTO':'GIG PAYOUT'}</small><strong>{payout||'TBD'}</strong><span>{copy.perPair}</span></div>
+       <div className="jobChips"><span>{o.languageCode.toUpperCase()}</span><span>{o.requiresPair?copy.partner:copy.solo}</span>{o.sessionCount&&<span>{o.sessionCount} {copy.sessions}</span>}</div>
+       <button onClick={()=>choose(o.slug)}>{copy.start} →</button>
       </div>
-      <button onClick={()=>choose(o.slug)}>{t.match} →</button>
      </article>
     })}
-    {!opportunitiesLoading&&!sorted.length&&<article className="opportunityCard catalogMessage"><h3>{opportunitiesError?(lang==='es'?'Las oportunidades están por llegar.':'Opportunities are opening soon.'):(lang==='es'?'No hay oportunidades publicadas todavía.':'No opportunities are published yet.')}</h3><p>{t.catalogEmpty}</p><button onClick={()=>document.getElementById('join')?.scrollIntoView({behavior:'smooth'})}>{t.general} →</button></article>}
+    {!loading&&!sorted.length&&<article className="productionJobCard messageCard"><h3>{copy.empty}</h3><p>{failed?(es?'Vuelve a intentarlo en breve.':'Please check back shortly.'):(es?'Estamos preparando el siguiente lote.':'We are preparing the next batch.')}</p></article>}
    </div>
   </section>
 
-  <section className="steps">
-   {t.steps.map(([n,title,body])=><div key={n}><i>{n}</i><h3>{title}</h3><p>{body}</p></div>)}
+  <section className="productionHow" id="how">
+   <div className="eyebrow">{copy.howEyebrow}</div><h2>{copy.howTitle}</h2>
+   <div className="productionSteps">{copy.steps.map(([n,title,body])=><article key={n}><span>{n}</span><h3>{title}</h3><p>{body}</p></article>)}</div>
   </section>
 
-  <section className="join" id="join">
-   <div>
-    <div className="eyebrow">PAIRVOICE MATCHING</div>
-    <h2>{t.joinTitle}</h2>
-    {selected&&<div className="selectedJob"><small>{t.selected}</small><strong>{selected.name}</strong></div>}
-    <p>{t.startCopy}</p>
-   </div>
-   <div className="card">
-    {done?<div className="success"><div>✓</div><h3>{partnerJoined?(lang==='es'?'¡Tu pareja está conectada!':'Your pair is connected!'):t.done}</h3><p>{partnerJoined?(lang==='es'?'Te enviaremos los próximos pasos.':'We’ll email you the next steps.'):t.next}</p>{!partnerJoined&&<><p className="inviteHelp">{t.inviteHelp}</p><InviteShareButtons inviteUrl={inviteUrl} language={lang}/></>}</div>:
-    <form onSubmit={submit}>
-     <h3>{selected?selected.name:t.joinTitle}</h3>
-     <label htmlFor="early-access-first-name">{t.firstName}</label><input id="early-access-first-name" required name="first_name" autoComplete="given-name" autoCapitalize="words" enterKeyHint="next"/><label htmlFor="early-access-email">{t.email}</label><input id="early-access-email" required type="email" name="email" autoComplete="email" inputMode="email" autoCapitalize="none" spellCheck={false} enterKeyHint="done"/>
-     <label className="check" htmlFor="early-access-consent"><input id="early-access-consent" required name="consent" type="checkbox"/><span>{t.consent}</span></label>
-     {error&&<p className="error">{error}</p>}
-     <button disabled={loading}>{loading?t.loading:t.button}</button>
-     <small>{t.free}</small>
-    </form>}
-   </div>
+  <section className="productionFinal">
+   <div><div className="eyebrow">PAIRVOICE</div><h2>{copy.finalTitle}</h2><p>{copy.finalBody}</p></div>
+   <a className="primary" href="#gigs">{copy.finalCta}</a>
   </section>
 
-  <footer><div className="logo">PAIR<span>VOICE</span></div><p>{t.footer}</p></footer>
- </main>
+  <footer><div className="logo">PAIR<span>VOICE</span></div><p>{copy.footer}</p><a className="footerLogin" href="/login">{copy.signin}</a></footer>
+ </main>;
 }
