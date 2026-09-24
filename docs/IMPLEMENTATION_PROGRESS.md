@@ -280,3 +280,38 @@ Test: `supabase/tests/qa_rework_invariants.sql`
 - proves rework loop returns through recording/submission;
 - proves internal pass advances to client QA;
 - proves client approval creates exactly two pair-member earnings and authoritative approval telemetry.
+
+
+## Checkpoint L — Manual external FunCrowd work path
+**IMPLEMENTED / VERIFY**
+
+Repository evidence identifies FunCrowd as the current external work provider for the U.S. English and Spain Spanish paired-conversation campaigns, but no verified FunCrowd API contract exists in this repository. The implementation therefore uses a controlled **MANUAL external WorkProvider adapter** instead of inventing an API.
+
+Implemented:
+- `funcrowd` registered as a WORK provider in MANUAL mode;
+- published campaigns whose canonical provider is FUNCROWD bind to that provider through `campaign_provider_bindings`;
+- `campaign_access.launch_url` stores the external work destination server-side;
+- existing campaign invitation code remains in `campaign_access`, outside source control;
+- `prepare_pair_work_access(...)` reveals external access only for PairVoice pairs in an allowed ready/work state;
+- secure participant `/api/work/access` verifies authenticated participant → enrollment → active pair membership before returning provider access;
+- participant START and SUBMIT actions call the idempotent PairVoice work-state transition rather than treating the external provider as canonical state;
+- participant dashboard shows READY / RECORDING / REWORK_REQUIRED / SUBMITTED work;
+- provider navigation uses a keepalive START checkpoint to reduce lost state when leaving PairVoice.
+
+Verification test:
+`supabase/tests/manual_external_work_adapter_invariants.sql`
+- provider exists;
+- access preparation is idempotent;
+- exactly one work run is created;
+- configured launch URL + invitation code are returned;
+- start advances the pair to RECORDING and emits `gig_started`;
+- submit advances the pair to SUBMITTED and emits `submission_completed`.
+
+Relevant commits:
+- `26b18ff1ee4110fd427ca3b6a9ab63e24bb69953` — manual external provider adapter
+- `39e593e460f39b2ee1d5baf3a4f7bebcb7b4fa07` — secure participant work-access API
+- `e9968d65ece0011d401391951a0b2f05073c1055` — admin launch URL configuration
+- `927d1f7a88c925fdb6522f335962260399ac764e` — participant work card
+- `039853a25dfb04aa9e6f4e30428fc56a5bdf7f30` — dashboard work surface
+- `73e7a73df126657951845fbe2eb6b0d57d5898e2` — manual adapter invariants
+- `f240752adf06bb1c348fb6d9145fc7cf42c05a00` — navigation checkpoint reliability
