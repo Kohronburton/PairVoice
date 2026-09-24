@@ -1,5 +1,5 @@
 import {NextRequest,NextResponse} from 'next/server';
-import {requireAdmin} from '../../../../../lib/admin-server';
+import {requireAdmin} from '../../../../../../lib/admin-server';
 
 const allowedRevealStates=new Set(['PARTNER_PENDING','PAIRED','READY','IN_PROGRESS']);
 
