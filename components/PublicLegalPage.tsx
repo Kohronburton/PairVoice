@@ -1,4 +1,4 @@
-import {serviceClient} from '../../lib/supabase-server';
+import {serviceClient} from '../lib/supabase-server';
 export const dynamic='force-dynamic';
 export default async function LegalPage({kind}:{kind:'PRIVACY'|'TERMS'}){
  const db=serviceClient();
