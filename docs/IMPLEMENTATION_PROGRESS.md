@@ -790,3 +790,21 @@ These are configuration/evidence gates, not unimplemented core workflow:
 - real-pair operational throughput.
 
 Those require external environment/provider/human evidence and must not be inferred from CI.
+
+
+## Live Early Access replacement cutover
+A separate, deliberately narrow production PR was created from `main` so the new PairVoice Early Access presentation can replace the old live presentation without merging the entire Phase 2/staging branch.
+
+Production cutover PR:
+- PR #10 — **Replace current Early Access with new PairVoice paid-gig experience**
+- Branch: `replace-current-early-access`
+- Base: `main`
+- Scope: `app/page.tsx` only
+- Backend/database changes: none
+
+Reason:
+- `main` and PR #9 already share the same `/api/lead` signup endpoint and partner invite page.
+- The replacement page uses funnel event names already supported on `main`.
+- This allows the public messaging/experience to become **Get paid to talk / Hablad. Grabad. Cobrad.** immediately while the larger Phase 2 workflow remains behind staging certification.
+
+Do not let later Phase 2 merges revert the live homepage copy to the former **One account / Multiple opportunities / Early access** presentation.
