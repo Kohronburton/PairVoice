@@ -18,6 +18,16 @@ export async function POST(req:NextRequest){
     const site=process.env.NEXT_PUBLIC_SITE_URL||new URL(req.url).origin,inviteUrl=`${site}/invite/${encodeURIComponent(result.inviteCode||'')}`;
     let emailStatus={sent:false,queued:true};try{emailStatus=await sendEarlyAccessWelcome({to:email,firstName:String(b.first_name).trim(),language:result.languageCode==='es'?'es':'en',inviteUrl,partnerJoined:result.partnerJoined});}catch(e){console.error('welcome email failed',e);}
     if(result.referrerEmail){try{await sendPartnerJoinedEmail(result.referrerEmail,result.referrerFirstName||'there',result.referrerLanguage==='es'?'es':'en');}catch(e){console.error('partner joined email failed',e);}}
-    return NextResponse.json({...result,inviteUrl,emailStatus});
+    let magicLinkSent=false;
+    try{
+      const publicKey=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+      if(publicKey){
+        const auth=createClient(url,publicKey,{auth:{persistSession:false}});
+        const redirectTo=`${site}/auth/callback?next=${encodeURIComponent('/dashboard')}`;
+        const {error:authError}=await auth.auth.signInWithOtp({email,options:{emailRedirectTo:redirectTo,shouldCreateUser:true}});
+        if(authError)console.error('magic link failed',authError);else magicLinkSent=true;
+      }
+    }catch(e){console.error('magic link failed',e);}
+    return NextResponse.json({...result,inviteUrl,emailStatus,magicLinkSent});
   }catch(e){console.error(e);return NextResponse.json({error:'Unable to join the early-access list.'},{status:500});}
 }

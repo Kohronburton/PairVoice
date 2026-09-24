@@ -53,14 +53,19 @@ jobs:
           create function auth.uid() returns uuid language sql stable as $$ select null::uuid $$;
           create role anon nologin;
           create role authenticated nologin;
+          create role service_role nologin;
           SQL
-      - name: Apply clean baseline
-        run: psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 -f supabase/migrations/0001_baseline.sql
-      - name: Apply admin operations
-        run: psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 -f supabase/migrations/0002_admin_operations.sql
-      - name: Apply catalog extension
-        run: psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 -f supabase/migrations/0003_catalog_extension.sql
-      - name: Verify core invariants
-        run: psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 -f supabase/tests/core_invariants.sql
-      - name: Verify catalog invariants
-        run: psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 -f supabase/tests/catalog_invariants.sql
+      - name: Apply all migrations
+        run: |
+          set -euo pipefail
+          for migration in supabase/migrations/*.sql; do
+            echo "Applying $migration"
+            psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 -f "$migration"
+          done
+      - name: Verify all database invariants
+        run: |
+          set -euo pipefail
+          for testfile in supabase/tests/*.sql; do
+            echo "Running $testfile"
+            psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 -f "$testfile"
+          done
