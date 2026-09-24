@@ -6,7 +6,7 @@ export const funnelEvents=[
  'partner_invite_share_clicked','partner_invite_opened','partner_invite_accepted',
  'pair_created','pair_qualified','gig_instructions_viewed','gig_started',
  'submission_started','submission_completed','submission_approved','submission_rejected',
- 'payment_created','payment_completed','referral_shared','referral_clicked','referral_signup','referral_pair_completed',
+ 'earning_available','payout_requested','payout_completed','referral_shared','referral_clicked','referral_signup','referral_pair_completed',
  'share_clicked'
 ] as const;
 export type FunnelEventName=typeof funnelEvents[number];
