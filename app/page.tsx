@@ -1,158 +1,159 @@
-'use client';
-import {useEffect,useMemo,useState} from 'react';
-import {trackFunnelEvent} from '../lib/funnel';
+import type {Metadata} from 'next';
+import {headers} from 'next/headers';
+import {getPublicOpportunities,type PublicOpportunity} from '../lib/public-marketplace';
+import {LandingTelemetry,TrackedGigLink} from '../components/MarketplaceClientBits';
 
-type Opportunity={
- slug:string;name:string;countryCode:string;languageCode:string;locale:string|null;
- accentTarget:string|null;participantCount:number;sessionCount:number|null;
- sessionMinutesMin:number|null;sessionMinutesMax:number|null;deviceRequirement:string|null;
- participantPayoutCents:number|null;payoutCurrency:string;payoutUnit:'PAIR'|'PARTICIPANT'|'HOURLY'|'FIXED';
- jobFamily:string|null;recordingMode:string|null;requiresPair:boolean;
+export const metadata:Metadata={
+ title:'Get Paid to Talk | PairVoice',
+ description:'Browse paid voice gigs, see payout and requirements before you start, connect your partner, record, submit, and track approval and payment.'
 };
 
-const marketForLocale=(l:string)=>{const p=(l||'en-US').replace('_','-').split('-');return(p[1]||'').toUpperCase()||'UNKNOWN'};
+const marketForLocale=(l:string)=>{
+ const first=(l||'en-US').split(',')[0].split(';')[0].trim().replace('_','-');
+ const p=first.split('-');return(p[1]||'').toUpperCase()||'UNKNOWN';
+};
 const marketName=(c:string)=>({US:'United States',ES:'Spain',CA:'Canada',GB:'United Kingdom',AU:'Australia',MX:'Mexico',AR:'Argentina',CO:'Colombia'} as Record<string,string>)[c]||c;
-const money=(c:number,x:string)=>{try{return new Intl.NumberFormat(undefined,{style:'currency',currency:x,maximumFractionDigits:0}).format(c/100)}catch{return'$'+Math.round(c/100)}};
+const money=(c:number,x:string)=>{try{return new Intl.NumberFormat('en-US',{style:'currency',currency:x,maximumFractionDigits:0}).format(c/100)}catch{return'$'+Math.round(c/100)}};
 
-export default function Home(){
- const[lang,setLang]=useState<'en'|'es'>('en');
- const[market,setMarket]=useState('UNKNOWN');
- const[ops,setOps]=useState<Opportunity[]>([]);
- const[loading,setLoading]=useState(true);
- const[error,setError]=useState(false);
+function sortOpportunities(ops:PublicOpportunity[],market:string){
+ return [...ops].sort((a,b)=>(a.countryCode===market?0:1)-(b.countryCode===market?0:1)||a.name.localeCompare(b.name));
+}
 
- useEffect(()=>{
-  const locale=navigator.language||'en-US',q=new URLSearchParams(location.search),requested=q.get('lang');
-  const detected=requested==='es'||(!requested&&locale.toLowerCase().startsWith('es'))?'es':'en';
-  setLang(detected);document.documentElement.lang=detected;setMarket(marketForLocale(locale));
-  trackFunnelEvent('landing_view',{market_code:marketForLocale(locale),surface:'production_marketplace'});
-  fetch('/api/opportunities').then(async r=>{if(!r.ok)throw new Error('catalog');return r.json()})
-   .then(d=>setOps(Array.isArray(d.opportunities)?d.opportunities:[]))
-   .catch(()=>{setOps([]);setError(true)}).finally(()=>setLoading(false));
- },[]);
-
- const sorted=useMemo(()=>[...ops].sort((a,b)=>(a.countryCode===market?0:1)-(b.countryCode===market?0:1)||a.name.localeCompare(b.name)),[ops,market]);
+export default async function Home({searchParams}:{searchParams:Promise<{lang?:string}>}){
+ const [sp,h,ops]=await Promise.all([searchParams,headers(),getPublicOpportunities()]);
+ const acceptLanguage=h.get('accept-language')||'en-US';
+ const market=marketForLocale(acceptLanguage);
+ const es=sp.lang==='es'||(!sp.lang&&acceptLanguage.toLowerCase().startsWith('es'));
+ const sorted=sortOpportunities(ops,market);
  const featured=sorted.find(o=>o.countryCode===market)||sorted[0]||null;
  const featuredPayout=featured?.participantPayoutCents!=null?money(featured.participantPayoutCents,featured.payoutCurrency):null;
- const es=lang==='es';
+
  const t=es?{
   work:'Proyectos',how:'Cómo funciona',signIn:'Entrar',create:'Crear cuenta',
-  eyebrow:'PROYECTOS DE VOZ REMUNERADOS',title:'Cobrad por hablar.',accent:'Con alguien que ya conoces.',
-  lead:'Elige un proyecto, revisa el pago y los requisitos antes de empezar, conecta a tu compañero y sigue el trabajo hasta la aprobación y el pago.',
-  browse:'Ver si califico',account:'Ver todos los proyectos',open:'PROYECTOS DISPONIBLES',pick:'Elige el proyecto. Mira el pago primero.',
-  fit:'Sin experiencia requerida. Verás el mercado, idioma, requisitos y pago antes de empezar.',
-  partner:'Compañero requerido',solo:'Individual',sessions:'conversaciones',join:'Ver si califico',
-  payout:'Pago',proof1:'gratis para registrarte',proof2:'proyectos publicados',proof3:'requisitos antes de grabar',proof4:'pago tras aprobación',
-  howTitle:'Así funciona PairVoice',steps:[
-   ['Elige un proyecto','Consulta el pago, mercado, idioma y requisitos antes de registrarte.'],
-   ['Comprueba si calificas','Responde solo lo necesario para ese proyecto.'],
-   ['Conecta a tu compañero','Si el trabajo requiere dos personas, invita o conecta a la persona correcta.'],
-   ['Graba, envía y cobra','Sigue el trabajo, revisión, aprobación y pago desde PairVoice.']
-  ],
-  ctaTitle:'Una cuenta. Más oportunidades.',ctaBody:'Crea tu perfil PairVoice una vez y úsalo en los proyectos para los que calificas.',cta:'Crear cuenta gratis',
-  effort:'TIEMPO ESTIMADO',nextStep:'SIGUIENTE PASO',qualify:'Comprueba requisitos y elegibilidad',
-  trustTitle:'Antes de empezar, sabrás exactamente qué esperar.',trustLead:'PairVoice reduce la incertidumbre antes de que grabes nada.',
-  trustItems:[['¿Necesito experiencia?','No. Cada proyecto muestra sus requisitos antes de que empieces.'],['¿Necesito compañero?','Solo cuando el proyecto lo indique. Puedes invitar o conectar a alguien que ya tenga PairVoice.'],['¿Cuándo cobro?','Después de que el trabajo requerido sea revisado y aprobado.'],['¿Tengo que pagar para entrar?','No. Crear una cuenta PairVoice es gratis y no requiere tarjeta.']],
-  loading:'Cargando proyectos…',empty:'No hay proyectos publicados en este momento.',footer:'Tu voz tiene valor.'
+  eyebrow:'PROYECTOS DE VOZ REMUNERADOS',title:'Cobrad por hablar.',accent:'Con alguien que conoces.',
+  lead:'Mira el pago y los requisitos antes de empezar. Conecta a tu compañero, sigue las instrucciones y rastrea el trabajo hasta la aprobación y el pago.',
+  qualify:'Ver si califico',all:'Ver proyectos',available:'DISPONIBLE AHORA',perPair:'por pareja aprobada',perPerson:'por participante aprobado',
+  proofA:'GRATIS',proofALabel:'crear cuenta',proofBLabel:'proyectos publicados',proofC:'ANTES',proofCLabel:'requisitos antes de grabar',proofD:'RASTREO',proofDLabel:'aprobación y pago',
+  open:'PROYECTOS DISPONIBLES',pick:'Mira el pago. Elige el proyecto.',fit:'Sin experiencia requerida. Mercado, idioma, requisitos y pago visibles antes de empezar.',
+  partner:'Compañero requerido',solo:'Individual',sessions:'conversaciones',effort:'TIEMPO ESTIMADO',next:'SIGUIENTE PASO',nextText:'Comprueba requisitos y elegibilidad',
+  what:'QUÉ HACES',whatText:'Graba conversaciones siguiendo las instrucciones del proyecto.',when:'CUÁNDO COBRAS',whenText:'Después de que tu trabajo sea revisado y aprobado.',
+  noSurprises:'SIN SORPRESAS',trustTitle:'Sabes qué esperar antes de grabar.',trustLead:'PairVoice reduce la incertidumbre antes de que hagas el trabajo.',
+  trust:[['¿Necesito experiencia?','No. Cada proyecto muestra sus requisitos antes de empezar.'],['¿Necesito compañero?','Solo cuando el proyecto lo indique. Puedes invitar o conectar a alguien que ya tenga PairVoice.'],['¿Cuándo cobro?','Después de que el trabajo requerido sea revisado y aprobado.'],['¿Tengo que pagar?','No. Crear una cuenta PairVoice es gratis y no requiere tarjeta.']],
+  howTitle:'De proyecto a pago, paso a paso.',steps:[['Elige','Mira pago y requisitos.'],['Califica','Confirma que encajas.'],['Conecta','Invita o enlaza a tu compañero.'],['Completa','Graba, envía y sigue el pago.']],
+  accountEyebrow:'TU CUENTA PAIRVOICE',ctaTitle:'Una cuenta. Más oportunidades.',ctaBody:'Crea tu perfil una vez y úsalo en los proyectos para los que calificas.',cta:'Crear cuenta gratis',
+  ctaStrong:'Mira el pago. Comprueba si calificas. Luego empieza.',ctaText:'Después eliges proyectos, verificas requisitos y conectas a tu compañero cuando haga falta.',
+  footer:'Tu voz tiene valor.',catalogUnavailable:'No hay proyectos publicados en este momento.'
  }:{
   work:'Gigs',how:'How it works',signIn:'Sign in',create:'Create account',
-  eyebrow:'PAID VOICE GIGS',title:'Get paid to talk.',accent:'With someone you already know.',
-  lead:'Choose a real voice gig, see the payout and requirements before you start, connect your partner, and track the work through approval and payment.',
-  browse:'See if I qualify',account:'See all gigs',open:'AVAILABLE GIGS',pick:'Choose the gig. See the money first.',
-  fit:'No experience required. See the market, language, requirements and payout before you start.',
-  partner:'Partner required',solo:'Individual',sessions:'conversations',join:'See if I qualify',
-  payout:'Payout',proof1:'free to join',proof2:'published gigs',proof3:'requirements before recording',proof4:'paid after approval',
-  howTitle:'How PairVoice works',steps:[
-   ['Choose a gig','See payout, market, language and requirements before you register.'],
-   ['Check your fit','Answer only what that campaign actually needs.'],
-   ['Connect your partner','If the work requires two people, invite or connect the right person.'],
-   ['Record, submit & get paid','Track work, review, approval and payout from PairVoice.']
-  ],
-  ctaTitle:'One account. More opportunities.',ctaBody:'Create your PairVoice profile once and reuse it across gigs you qualify for.',cta:'Create free account',
-  effort:'ESTIMATED TIME',nextStep:'NEXT STEP',qualify:'Check requirements & eligibility',
-  trustTitle:'Before you start, know exactly what to expect.',trustLead:'PairVoice removes uncertainty before you record anything.',
-  trustItems:[['Do I need experience?','No. Each gig shows its requirements before you start.'],['Do I need a partner?','Only when the gig says so. You can invite someone or connect with an existing PairVoice user.'],['When do I get paid?','After the required work is reviewed and approved.'],['Do I pay to join?','No. Creating a PairVoice account is free and requires no card.']],
-  loading:'Loading gigs…',empty:'No gigs are published right now.',footer:'Your voice has value.'
+  eyebrow:'PAID VOICE GIGS',title:'Get paid to talk.',accent:'Bring someone you know.',
+  lead:'See the payout and requirements before you start. Connect your partner, follow the instructions, and track the work through approval and payment.',
+  qualify:'See if I qualify',all:'See all gigs',available:'AVAILABLE NOW',perPair:'per approved pair',perPerson:'per approved participant',
+  proofA:'FREE',proofALabel:'to create an account',proofBLabel:'published gigs',proofC:'BEFORE',proofCLabel:'requirements before recording',proofD:'TRACKED',proofDLabel:'approval and payout',
+  open:'AVAILABLE GIGS',pick:'See the money. Choose the gig.',fit:'No experience required. Market, language, requirements and payout are visible before you start.',
+  partner:'Partner required',solo:'Individual',sessions:'conversations',effort:'ESTIMATED TIME',next:'NEXT STEP',nextText:'Check requirements & eligibility',
+  what:'WHAT YOU DO',whatText:'Record conversations by following the gig instructions.',when:'WHEN YOU GET PAID',whenText:'After your completed work is reviewed and approved.',
+  noSurprises:'NO SURPRISES',trustTitle:'Know what to expect before you record.',trustLead:'PairVoice removes uncertainty before you do the work.',
+  trust:[['Do I need experience?','No. Each gig shows its requirements before you start.'],['Do I need a partner?','Only when the gig says so. Invite someone or connect with an existing PairVoice user.'],['When do I get paid?','After the required work is reviewed and approved.'],['Do I pay to join?','No. Creating a PairVoice account is free and requires no card.']],
+  howTitle:'From gig to payout, step by step.',steps:[['Choose','See payout and requirements.'],['Qualify','Confirm you fit the gig.'],['Connect','Invite or link your partner.'],['Complete','Record, submit, and track payout.']],
+  accountEyebrow:'YOUR PAIRVOICE ACCOUNT',ctaTitle:'One account. More opportunities.',ctaBody:'Create your profile once and reuse it across gigs you qualify for.',cta:'Create free account',
+  ctaStrong:'See the payout. Check your fit. Then start.',ctaText:'Then choose gigs, verify requirements, and connect a partner when needed.',
+  footer:'Your voice has value.',catalogUnavailable:'No gigs are published right now.'
  };
 
- function openGig(slug:string){
-  trackFunnelEvent('campaign_cta_click',{campaign_slug:slug,surface:'production_marketplace'});
-  location.href='/join?campaign='+encodeURIComponent(slug);
- }
+ const joinHref=(slug:string)=>'/join?campaign='+encodeURIComponent(slug)+(es?'&lang=es':'');
 
  return <main className="pv2 productionMarketplace">
-  <nav className="pvnav">
-   <a className="logo" href="/">PAIR<span>VOICE</span></a>
+  <LandingTelemetry market={market}/>
+
+  <nav className="pvnav" aria-label="Primary">
+   <a className="logo" href={es?'/?lang=es':'/'} aria-label="PairVoice home">PAIR<span>VOICE</span></a>
    <div className="navlinks"><a href="#work">{t.work}</a><a href="#how">{t.how}</a></div>
    <div className="navright">
-    <select className="language" value={lang} onChange={e=>setLang(e.target.value as 'en'|'es')}><option value="en">EN</option><option value="es">ES</option></select>
+    <div className="langToggle" aria-label="Language"><a className={!es?'active':''} href="/">EN</a><a className={es?'active':''} href="/?lang=es">ES</a></div>
     <a className="navsignin" href="/signin">{t.signIn}</a>
-    <a className="navcta" href="/join">{t.create}</a>
+    <a className="navcta" href={es?'/join?lang=es':'/join'}>{t.create}</a>
    </div>
   </nav>
 
-  <section className="pvhero productionHero">
-   <div className="heroCopy">
+  <section className="productionHeroV2">
+   <div className="heroCopyV2">
     <div className="statusline"><span></span>{t.eyebrow}</div>
-    <h1>{t.title}<br/><em>{t.accent}</em></h1>
-    {featured&&featuredPayout&&<div className="heroOffer"><span>{es?'PROYECTO DISPONIBLE AHORA':'AVAILABLE NOW'}</span><strong>{featuredPayout}</strong><b>{featured.name}</b><small>{featured.requiresPair?(es?'por pareja aprobada':'per approved pair'):(es?'por participante aprobado':'per approved participant')}</small></div>}
-    <p>{t.lead}</p>
-    <div className="heroActions">{featured?<button className="primary heroPrimary" onClick={()=>openGig(featured.slug)}>{t.browse} →</button>:<a className="primary" href="#work">{t.account} →</a>}<a className="secondary" href="#work">{t.account}</a></div>
-    <div className="trustline">✓ {es?'Sin experiencia requerida · Gratis para registrarte · Sin tarjeta · Requisitos antes de grabar':'No experience required · Free to join · No card required · Requirements shown before recording'}</div>
+    <h1>{t.title}<em>{t.accent}</em></h1>
+    <p className="heroLeadV2">{t.lead}</p>
+
+    {featured&&featuredPayout&&<div className="featuredOfferV2">
+     <div><span>{t.available}</span><strong>{featuredPayout}</strong><small>{featured.requiresPair?t.perPair:t.perPerson}</small></div>
+     <div><b>{featured.name}</b><p>{marketName(featured.countryCode)} · {featured.languageCode.toUpperCase()} · {featured.requiresPair?t.partner:t.solo}</p></div>
+    </div>}
+
+    <div className="heroActionsV2">
+     {featured?<TrackedGigLink className="heroCtaPrimary" slug={featured.slug} href={joinHref(featured.slug)}>{t.qualify} →</TrackedGigLink>:<a className="heroCtaPrimary" href="#work">{t.all} →</a>}
+     <a className="heroCtaSecondary" href="#work">{t.all}</a>
+    </div>
+    <p className="microTrust">✓ {es?'Sin experiencia requerida · Gratis · Sin tarjeta · Requisitos antes de grabar':'No experience required · Free to join · No card · Requirements before recording'}</p>
    </div>
-   <div className="heroVisual productionVisual">
-    <div className="voiceOrb"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-    <div className="floatCard fc1"><small>{es?'FLUJO':'WORKFLOW'}</small><strong>Gig → Pair → Work</strong><span>{es?'Todo en una cuenta':'One PairVoice account'}</span><div className="miniMeter"><b></b></div></div>
-    <div className="floatCard fc2"><small>{es?'PAGO':'PAYOUT'}</small><strong>{es?'Después de aprobación':'After approval'}</strong><span>{es?'Estado rastreable':'Trackable status'}</span></div>
-   </div>
+
+   <aside className="productStory" aria-label={es?'Cómo funciona PairVoice':'How PairVoice works'}>
+    <div className="storyTop"><span>PAIRVOICE FLOW</span><b>{es?'Trabajo simple. Estado claro.':'Simple work. Clear status.'}</b></div>
+    <div className="storyOrb" aria-hidden="true"><div className="waveBars">{[28,48,72,96,68,46,26].map((h,i)=><i key={i} style={{height:h}}/> )}</div></div>
+    <div className="storySteps">
+     <div><span>01</span><b>{es?'PROYECTO':'GIG'}</b></div><i>→</i>
+     <div><span>02</span><b>{es?'PAREJA':'PAIR'}</b></div><i>→</i>
+     <div><span>03</span><b>{es?'GRABA':'RECORD'}</b></div><i>→</i>
+     <div><span>04</span><b>{es?'COBRA':'PAID'}</b></div>
+    </div>
+    <div className="storyStatus"><span>{es?'PAGO':'PAYOUT'}</span><strong>{es?'Después de aprobación':'After approval'}</strong><small>{es?'Estado visible en tu cuenta':'Status visible in your account'}</small></div>
+   </aside>
   </section>
 
-  <section className="proofStrip">
-   <div><b>1</b><span>{t.proof1}</span></div>
-   <div><b>{loading?'—':ops.length}</b><span>{t.proof2}</span></div>
-   <div><b>✓</b><span>{t.proof3}</span></div>
-   <div><b>✓</b><span>{t.proof4}</span></div>
+  <section className="proofStripV2" aria-label={es?'Datos de PairVoice':'PairVoice facts'}>
+   <div><b>{t.proofA}</b><span>{t.proofALabel}</span></div>
+   <div><b>{ops.length}</b><span>{t.proofBLabel}</span></div>
+   <div><b>{t.proofC}</b><span>{t.proofCLabel}</span></div>
+   <div><b>{t.proofD}</b><span>{t.proofDLabel}</span></div>
   </section>
 
-  <section className="workSection" id="work">
-   <div className="sectionIntro"><div><div className="eyebrow">{t.open}</div><h2>{t.pick}</h2></div><p>{t.fit}</p></div>
-   <div className="missionGrid">
-    {loading&&<article className="missionCardPublic skeleton"><h3>{t.loading}</h3></article>}
-    {!loading&&sorted.map((o,n)=>{
+  <section className="marketSection" id="work">
+   <div className="sectionIntroV2"><div><div className="eyebrow">{t.open}</div><h2>{t.pick}</h2></div><p>{t.fit}</p></div>
+   <div className="missionGridV2">
+    {sorted.map((o,n)=>{
      const payout=o.participantPayoutCents!=null?money(o.participantPayoutCents,o.payoutCurrency):(es?'Pago por confirmar':'Payout being finalized');
-     return <article className={'missionCardPublic '+(o.countryCode===market?'featured':'')} key={o.slug}>
-      <div className="missionTop"><span className="missionNo">{String(n+1).padStart(2,'0')}</span><div>{o.countryCode===market&&<b>{es?'TU MERCADO':'YOUR MARKET'}</b>}<span>{marketName(o.countryCode)}</span></div></div>
-      <h3>{o.name}</h3><p>{o.jobFamily||'Voice recording'}</p>
-      <div className="bigPayout">{payout}</div><small>{o.payoutUnit==='PAIR'?(es?'por pareja aprobada':'per approved pair'):(es?'por participante aprobado':'per approved participant')}</small>
-      <div className="gigFacts">
-       <div><b>{es?'QUÉ HACES':'WHAT YOU DO'}</b><span>{es?'Graba conversaciones siguiendo las instrucciones del proyecto.':'Record conversations by following the gig instructions.'}</span></div>
-       <div><b>{es?'CUÁNDO COBRAS':'WHEN YOU GET PAID'}</b><span>{es?'Después de que tu trabajo sea revisado y aprobado.':'After your completed work is reviewed and approved.'}</span></div>
-       {(o.sessionMinutesMin||o.sessionMinutesMax)&&<div><b>{t.effort}</b><span>{o.sessionMinutesMin&&o.sessionMinutesMax?(o.sessionMinutesMin+'–'+o.sessionMinutesMax+' min'):o.sessionMinutesMax?('Up to '+o.sessionMinutesMax+' min'):(o.sessionMinutesMin+'+ min')}{o.sessionCount&&o.sessionCount>1?(' × '+o.sessionCount):''}</span></div>}
-       <div><b>{t.nextStep}</b><span>{t.qualify}</span></div>
-      </div>
+     const duration=o.sessionMinutesMin&&o.sessionMinutesMax?o.sessionMinutesMin+'–'+o.sessionMinutesMax+' min':o.sessionMinutesMax?'Up to '+o.sessionMinutesMax+' min':o.sessionMinutesMin?o.sessionMinutesMin+'+ min':null;
+     return <article className={'gigCardV2 '+(o.countryCode===market?'marketFit':'')} key={o.slug}>
+      <header><span>{String(n+1).padStart(2,'0')}</span><div>{o.countryCode===market&&<b>{es?'TU MERCADO':'YOUR MARKET'}</b>}<small>{marketName(o.countryCode)}</small></div></header>
+      <h3>{o.name}</h3><p className="gigType">{o.jobFamily||'Voice recording'}</p>
+      <div className="gigMoney"><strong>{payout}</strong><span>{o.requiresPair?t.perPair:t.perPerson}</span></div>
+      <dl className="gigQuickFacts">
+       <div><dt>{t.what}</dt><dd>{t.whatText}</dd></div>
+       <div><dt>{t.when}</dt><dd>{t.whenText}</dd></div>
+       {duration&&<div><dt>{t.effort}</dt><dd>{duration}{o.sessionCount&&o.sessionCount>1?' × '+o.sessionCount:''}</dd></div>}
+       <div><dt>{t.next}</dt><dd>{t.nextText}</dd></div>
+      </dl>
       <div className="chips"><span>{o.languageCode.toUpperCase()}</span><span>{o.requiresPair?t.partner:t.solo}</span>{o.sessionCount&&<span>{o.sessionCount} {t.sessions}</span>}{o.deviceRequirement&&<span>{o.deviceRequirement}</span>}</div>
-      <button onClick={()=>openGig(o.slug)}>{t.join} →</button>
+      <TrackedGigLink className="gigCtaV2" slug={o.slug} href={joinHref(o.slug)}>{t.qualify} →</TrackedGigLink>
      </article>
     })}
-    {!loading&&!sorted.length&&<article className="missionCardPublic skeleton"><h3>{error?(es?'El catálogo no está disponible ahora.':'The catalog is temporarily unavailable.'):t.empty}</h3><p>{es?'Vuelve a intentarlo en unos minutos.':'Please check back in a few minutes.'}</p></article>}
+    {!sorted.length&&<article className="gigCardV2 emptyGig"><h3>{t.catalogUnavailable}</h3></article>}
    </div>
   </section>
 
-  <section className="trustSection">
-   <div className="sectionIntro trustIntro"><div><div className="eyebrow">{es?'SIN SORPRESAS':'NO SURPRISES'}</div><h2>{t.trustTitle}</h2></div><p>{t.trustLead}</p></div>
-   <div className="trustGrid">{t.trustItems.map((item,i)=><article key={i}><span>0{i+1}</span><h3>{item[0]}</h3><p>{item[1]}</p></article>)}</div>
+  <section className="trustSectionV2">
+   <div className="sectionIntroV2"><div><div className="eyebrow">{t.noSurprises}</div><h2>{t.trustTitle}</h2></div><p>{t.trustLead}</p></div>
+   <div className="trustGridV2">{t.trust.map((item,i)=><article key={item[0]}><span>0{i+1}</span><h3>{item[0]}</h3><p>{item[1]}</p></article>)}</div>
   </section>
 
-  <section className="howSection" id="how"><div className="eyebrow">PAIRVOICE FLOW</div><h2>{t.howTitle}</h2>
-   <div className="flowGrid">{t.steps.map((x,i)=><div key={i}><i>{i+1}</i><h3>{x[0]}</h3><p>{x[1]}</p></div>)}</div>
+  <section className="flowSectionV2" id="how">
+   <div className="eyebrow">PAIRVOICE FLOW</div><h2>{t.howTitle}</h2>
+   <div className="flowRail">{t.steps.map((x,i)=><article key={x[0]}><span>0{i+1}</span><div><h3>{x[0]}</h3><p>{x[1]}</p></div></article>)}</div>
   </section>
 
-  <section className="joinV2 productionCta">
-   <div className="joinCopy"><div className="eyebrow">{es?'TU CUENTA PAIRVOICE':'YOUR PAIRVOICE ACCOUNT'}</div><h2>{t.ctaTitle}</h2><p>{t.ctaBody}</p></div>
-   <div className="accountCtaCard"><span>{es?'SIN TARIFA DE REGISTRO':'NO SIGNUP FEE'}</span><strong>{es?'Mira el pago. Comprueba si calificas. Luego empieza.':'See the payout. Check your fit. Then start.'}</strong><p>{es?'Después eliges proyectos, verificas requisitos y conectas a tu compañero cuando haga falta.':'Then choose gigs, verify requirements, and connect a partner when needed.'}</p><a href="/join">{t.cta} →</a><a className="accountSignin" href="/signin">{t.signIn}</a></div>
+  <section className="accountBanner">
+   <div><div className="eyebrow">{t.accountEyebrow}</div><h2>{t.ctaTitle}</h2><p>{t.ctaBody}</p></div>
+   <aside><span>{es?'SIN TARIFA DE REGISTRO':'NO SIGNUP FEE'}</span><strong>{t.ctaStrong}</strong><p>{t.ctaText}</p><a href={es?'/join?lang=es':'/join'}>{t.cta} →</a><a className="textLink" href="/signin">{t.signIn}</a></aside>
   </section>
 
-  {featured&&<div className="mobileConversionBar"><div>{featuredPayout&&<strong>{featuredPayout}</strong>}<span>{featured.name}</span></div><button onClick={()=>openGig(featured.slug)}>{t.browse} →</button></div>}
+  {featured&&<div className="mobileConversionBar"><div>{featuredPayout&&<strong>{featuredPayout}</strong>}<span>{featured.name}</span></div><TrackedGigLink slug={featured.slug} href={joinHref(featured.slug)}>{t.qualify} →</TrackedGigLink></div>}
+
   <footer><div className="logo">PAIR<span>VOICE</span></div><p>{t.footer}</p><div className="footerLinks"><a href="/privacy">Privacy</a><a href="/terms">Terms</a></div><span>© 2026 PairVoice</span></footer>
  </main>;
 }
