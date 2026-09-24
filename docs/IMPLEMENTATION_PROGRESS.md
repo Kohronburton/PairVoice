@@ -37,7 +37,7 @@
 - inventory exhaustion protection.
 
 ## Checkpoint C — Credential recovery
-**IMPLEMENTED / current-head verification pending**
+**VERIFIED on PairVoice Verify #116**
 - credential replacement now honors the caller idempotency key before rotating again;
 - old credential assignment remains preserved as REPLACED;
 - old credential is revoked instead of erased;
@@ -50,7 +50,7 @@ Relevant commits:
 - `c8082d5c9964f7ba35e62d8a7568cef76476e510` — recovery/work-run invariants
 
 ## Checkpoint D — Anonymous acquisition instrumentation
-**IMPLEMENTED / current-head verification pending**
+**VERIFIED on PairVoice Verify #116**
 - expanded funnel vocabulary from landing through referral;
 - persistent first-touch attribution;
 - current/last-touch attribution;
@@ -70,8 +70,8 @@ Relevant commits:
 - `6b4c525d466edb35593d38bcc9d4758b7effc8a5`
 - privacy-contract correction: `860b9c0d354a8e7efb171afdb855ba84190133cc`
 
-## CI finding from PairVoice Verify #109
-Run #109 failed **only in the app unit-test job** because the old privacy test prohibits funnel event names containing the word `payment`.
+## CI history
+Run #109 failed **only in the app unit-test job** because the old privacy test prohibits funnel event names containing the word `payment`. That issue was corrected without weakening the privacy rule.\n\n**PairVoice Verify #116 PASSED on head `bef29f1f06f0e3866763b745bee051e984597092`.**\n- app typecheck: PASSED\n- unit tests: PASSED\n- production build: PASSED\n- production dependency audit: 0 high/critical vulnerabilities\n- all migrations: PASSED\n- all database invariants, including launch instrumentation/recovery tests: PASSED
 - database job: **PASSED**
 - typecheck before tests: **PASSED**
 - existing matching/workflow/invite/crypto/validation tests: **PASSED**
@@ -79,7 +79,7 @@ Run #109 failed **only in the app unit-test job** because the old privacy test p
 - resolution: preserved the privacy rule and renamed financial status telemetry to payout/earning terminology instead of weakening the test.
 
 ## Checkpoint E — Authoritative business milestones
-**IMPLEMENTED / current-head verification pending**
+**VERIFIED on PairVoice Verify #116**
 
 Migration: `0015_launch_instrumentation_work_transitions.sql`
 
@@ -108,7 +108,7 @@ Relevant commits:
 - `7144e21867205fe3665a78eac42d488ae40fb660` — trusted invite-acceptance milestone
 
 ## Checkpoint F — Recoverable work transitions
-**IMPLEMENTED / current-head verification pending**
+**VERIFIED on PairVoice Verify #116**
 
 New server function:
 `transition_work_provider_run(...)`
@@ -134,7 +134,7 @@ Admin route:
 - authorized roles: SUPER_ADMIN, OPERATIONS
 
 ## Checkpoint G — Approval / earnings
-**IMPLEMENTED / current-head verification pending**
+**VERIFIED on PairVoice Verify #116**
 
 Admin route:
 - `POST /api/admin/approve`
@@ -143,7 +143,7 @@ Admin route:
 - pair state transition emits authoritative approval + earning milestones automatically.
 
 ## Checkpoint H — Admin authorization + funnel command center
-**IMPLEMENTED / current-head verification pending**
+**VERIFIED on PairVoice Verify #116**
 
 Security correction:
 - previous `/api/admin/funnel` read from the service-role client without checking an authenticated admin membership.
@@ -171,7 +171,7 @@ Relevant commits:
 - `c9fdd71711c881ef5f4156f43764c3cab2cf9826` — admin funnel page
 
 ## Checkpoint I — Launch milestone invariants
-**IMPLEMENTED / current-head verification pending**
+**VERIFIED on PairVoice Verify #116**
 
 Test:
 `supabase/tests/launch_instrumentation_invariants.sql`
@@ -200,13 +200,13 @@ Commit:
 | Find-partner foundation | VERIFIED |
 | Readiness/capacity | VERIFIED earlier slice |
 | Credential reservation | VERIFIED earlier slice |
-| Credential recovery | IMPLEMENTED / VERIFY |
-| Attribution chain | IMPLEMENTED / VERIFY |
-| Authoritative pair milestones | IMPLEMENTED / VERIFY |
-| Work start/submission lifecycle | IMPLEMENTED / VERIFY |
-| Approval → earnings | IMPLEMENTED / VERIFY |
-| Payout status telemetry | IMPLEMENTED / VERIFY |
-| Admin funnel view | IMPLEMENTED / VERIFY |
+| Credential recovery | VERIFIED #116 |
+| Attribution chain | VERIFIED #116 |
+| Authoritative pair milestones | VERIFIED #116 |
+| Work start/submission lifecycle | VERIFIED #116 |
+| Approval → earnings | VERIFIED #116 |
+| Payout status telemetry | VERIFIED #116 |
+| Admin funnel view | VERIFIED #116 |
 | Real FunCrowd launch adapter | PLANNED |
 | Internal/client QA operating UI | PLANNED |
 | Real payout-provider execution + reconciliation | PLANNED |
