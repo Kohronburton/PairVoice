@@ -235,3 +235,48 @@ No paid scaling is authorized until the system can trace:
 
 ## Resume instruction
 When work resumes, start with this file, the living master context, PR #9 current head, and the latest PairVoice Verify run. Do not re-plan completed slices or reset database/history to solve failures.
+
+
+## Checkpoint J — Admin authorization hardening
+**IMPLEMENTED / VERIFY**
+
+All known `/api/admin/*` service-role surfaces now require an authenticated active admin membership.
+- campaign access GET/PATCH: SUPER_ADMIN / OPERATIONS
+- catalog: SUPER_ADMIN / OPERATIONS
+- credential inventory/create/assign/release: SUPER_ADMIN / OPERATIONS
+- pair queue: active admin
+- pair state transition: SUPER_ADMIN / OPERATIONS
+- stats/funnel: active admin
+- work transitions: SUPER_ADMIN / OPERATIONS
+- approval/QA: SUPER_ADMIN / QA_REVIEWER / OPERATIONS
+
+Mutating pair/campaign operations now carry the authenticated admin user into audit/activity evidence where applicable.
+
+## Checkpoint K — QA / rework
+**IMPLEMENTED / VERIFY**
+
+Added `record_pair_review(...)` and `POST /api/admin/qa`.
+
+Internal QA:
+- SUBMITTED → INTERNAL_QA
+- APPROVED → CLIENT_QA
+- REWORK_REQUIRED → REWORK_REQUIRED
+- REJECTED → REJECTED
+
+Client QA:
+- APPROVED → existing idempotent approval + earnings flow
+- REWORK_REQUIRED → REWORK_REQUIRED
+- REJECTED → REJECTED
+
+Properties:
+- mandatory idempotency key;
+- immutable review row retained;
+- activity + audit evidence;
+- duplicate review request returns original response;
+- approval remains the only path that creates campaign earnings.
+
+Test: `supabase/tests/qa_rework_invariants.sql`
+- proves duplicate review request does not duplicate review;
+- proves rework loop returns through recording/submission;
+- proves internal pass advances to client QA;
+- proves client approval creates exactly two pair-member earnings and authoritative approval telemetry.
