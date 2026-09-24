@@ -28,7 +28,7 @@ export async function POST(req:NextRequest){
 
   if(error){
    const msg=String(error.message||''),status=msg.includes('already_enrolled')?409:msg.includes('eligibility')||msg.includes('campaign_')?400:500;
-   return NextResponse.json({error:status===409?'You are already enrolled in this campaign.':status===400?'You are not eligible for this campaign as submitted.':'Unable to complete signup.'},{status});
+   return NextResponse.json({error:status===409?'You are already enrolled in this campaign.':status===400?'You are not eligible for this campaign as submitted.':'Unable to complete signup.',code:status===409?'ALREADY_ENROLLED':status===400?'INELIGIBLE':'SIGNUP_FAILED'},{status});
   }
 
   const result=(data||{})as{participantCode?:string;pairCode?:string;inviteCode?:string};
