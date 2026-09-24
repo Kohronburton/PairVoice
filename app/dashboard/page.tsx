@@ -22,7 +22,7 @@ export default async function Dashboard(){
  const {data:allActivePairs}=pairIds.length?await db.from('pairs').select('id,public_code,state,campaigns(name,slug)').in('id',pairIds):{data:[] as any[]};
  const workPairs=(allActivePairs||[]).filter((pair:any)=>['READY','RECORDING','REWORK_REQUIRED','SUBMITTED'].includes(pair.state));
  const pendingPairs=(allActivePairs||[]).filter((pair:any)=>pair.state==='PARTNER_PENDING');
- const nextAction=!p.phone_verified_at?'Verify your phone':!pool?'Find a partner':'You are ready for matching';
+ const nextAction=pendingPairs.length?'Connect your partner':workPairs.length?'Continue your active job':!pool?'Find a partner':'You are ready for matching';
  return <main style={{maxWidth:760,margin:'0 auto',padding:'32px 20px'}}>
   <div className="logo">PAIR<span>VOICE</span></div>
   <p className="eyebrow">YOUR PAIRVOICE</p>
@@ -33,7 +33,7 @@ export default async function Dashboard(){
   </section>
   <p style={{margin:'18px 0 28px'}}><a className="primary" href="/wallet">Open Wallet →</a></p>
   <div className="opportunityGrid">
-   <section className="opportunityCard"><small>PROFILE</small><h3>{p.primary_language_code.toUpperCase()} · {p.country_code}</h3><p>{p.phone_verified_at?'Phone verified ✓':'Phone verification needed'}</p></section>
+   <section className="opportunityCard"><small>PROFILE</small><h3>{p.primary_language_code.toUpperCase()} · {p.country_code}</h3><p>{p.phone_verified_at?'Phone verified ✓':'Phone verification is requested only when a campaign requires it.'}</p></section>
    <section className="opportunityCard"><small>PARTNER</small><h3>{pool?.status==='WAITING'?'Finding a match…':pool?.status||'Not connected'}</h3><p>Bring someone, connect an existing user, or let PairVoice find someone.</p></section>
    <section className="opportunityCard"><small>PROGRESS</small><h3>{approvedJobs||0} approved jobs</h3><p>{referrals||0} people referred · milestone rewards unlock only after qualification.</p></section>
   </div>
