@@ -315,3 +315,33 @@ Relevant commits:
 - `039853a25dfb04aa9e6f4e30428fc56a5bdf7f30` — dashboard work surface
 - `73e7a73df126657951845fbe2eb6b0d57d5898e2` — manual adapter invariants
 - `f240752adf06bb1c348fb6d9145fc7cf42c05a00` — navigation checkpoint reliability
+
+
+## Checkpoint M — Payout execution and reconciliation
+**IMPLEMENTED / VERIFY**
+
+The repository did not contain a verified live payout-provider adapter. This slice therefore establishes the provider-neutral financial safety layer and a controlled/manual first rail; real PayPal/Cash App/provider APIs remain separate integrations until their contracts and credentials are verified.
+
+Implemented:
+- `provider_payout_attempts` with INTENT / PROCESSING / SUCCEEDED / FAILED / UNKNOWN / MANUAL_REVIEW;
+- only one unresolved payout attempt per payout;
+- `participant_available_balance(...)` = immutable ledger balance minus REQUESTED/PROCESSING payout reservations;
+- `request_participant_payout(...)` requires a VERIFIED default payout method, locks the participant, checks available balance and is idempotent;
+- `create_payout_attempt(...)` is idempotent and moves the payout to PROCESSING;
+- `reconcile_payout_attempt(...)` never infers success from a timeout;
+- UNKNOWN / MANUAL_REVIEW keep the payout PROCESSING and create no payout ledger entry;
+- only explicit SUCCEEDED reconciliation with a provider reference creates the negative immutable PAYOUT ledger entry and marks the payout PAID;
+- repeat successful reconciliation cannot duplicate the ledger deduction;
+- participant `POST /api/payout` uses the authenticated PairVoice identity;
+- admin `/api/admin/payouts` is limited to SUPER_ADMIN / PAYMENTS for execution/reconciliation;
+- payout request/completion telemetry contains status/currency context, not recipient/payment credentials.
+
+Verification test:
+`supabase/tests/payout_reconciliation_invariants.sql`
+covers balance reservation, duplicate payout request, overdraw prevention, UNKNOWN provider outcome, later successful reconciliation, exactly-one ledger deduction, payout-completed telemetry, and post-payout balance.
+
+Relevant commits:
+- `44e6385c8ba67384b0abbf08b52c2087bcc199dc` — payout safety/reconciliation migration
+- `dfdcc2392ac712f71aea0e66132b2d36be53f191` — participant payout request API
+- `3159530dffe1717040af025826b39ba3847cdb6a` — payments-admin reconciliation API
+- `8989544583cd936e0607350744d476b731a36d28` — payout invariant test
