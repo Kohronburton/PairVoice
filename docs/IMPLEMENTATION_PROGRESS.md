@@ -670,3 +670,62 @@ Payments console:
 Dashboard cleanup:
 - removed the misleading "Verify your phone" next-step blocker because no launch SMS verification rail exists;
 - phone verification remains data capability that can be requested later by a campaign when a real verification provider/workflow is implemented.
+
+
+## Checkpoint U — Versioned legal documents and exact campaign consent
+**IMPLEMENTED / current-head verification pending at time of this entry**
+
+The prior `accepted_terms_at` timestamp was insufficient by itself because it did not prove which text a participant accepted. The production workflow now records the exact published document versions.
+
+Migration:
+- `0024_versioned_legal_consent.sql`
+
+Data model:
+- `legal_documents`
+  - SITE: PRIVACY / TERMS
+  - CAMPAIGN: CAMPAIGN_TERMS / PARTICIPANT_CONSENT
+  - locale + version + SHA-256 + status
+- `legal_document_acceptances`
+  - participant
+  - campaign enrollment when applicable
+  - exact document ID
+  - acceptance timestamp/context
+
+Publication safety:
+- documents are created as DRAFT;
+- SUPER_ADMIN publication requires a reason;
+- publication writes audit evidence;
+- publishing a replacement retires the prior published version for the same scope/key/locale/campaign version;
+- published document content is immutable;
+- no placeholder legal language was generated as production policy text.
+
+Participant consent:
+- `GET/POST /api/consent`
+- `CampaignConsentCard` in the participant dashboard;
+- campaign terms + participant consent must both be published for the participant's language and exact campaign version;
+- acceptance records both exact document IDs;
+- `accepted_terms_at` is set only through the exact-document acceptance flow;
+- the participant's own `CONSENT_A` or `CONSENT_B` readiness gate is passed with exact document IDs as evidence;
+- one participant's acceptance never passes the other participant's gate;
+- repeat acceptance is idempotent.
+
+Public legal routes:
+- `/privacy`
+- `/terms`
+render only PUBLISHED site documents. Missing publication displays a not-certified message rather than fabricated legal text.
+
+Admin:
+- `/admin/legal`
+- `GET/POST /api/admin/legal-documents`
+for reviewed draft creation and audited publication.
+
+Release readiness:
+- English site PRIVACY and TERMS are blocking launch gates;
+- each active campaign's published version must have CAMPAIGN_TERMS and PARTICIPANT_CONSENT before release readiness can pass.
+
+Invariant test:
+- `supabase/tests/versioned_legal_consent_invariants.sql`
+proves published immutability, exact two-document acceptance, readiness evidence, per-participant isolation, repeat idempotency and partial-acceptance rejection.
+
+### Remaining legal/operator input
+Engineering intentionally does **not** invent or approve the final legal language. Before staging certification can pass, reviewed/approved Privacy, Terms, Campaign Terms and Participant Consent text must be supplied and published through the admin console.
