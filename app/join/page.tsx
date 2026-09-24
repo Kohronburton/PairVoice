@@ -76,9 +76,9 @@ export default function JoinPage(){
    </div>
    <div className="joinAccountCard">{done?<div className="success"><div>✓</div><h2>{t.done}</h2><p>{t.next}</p>{submittedEmail&&<p className="sentTo">{es?'Enviado a':'Sent to'} <strong>{submittedEmail}</strong></p>}{magicSent&&<button type="button" onClick={resendMagicLink} disabled={resendBusy||resendCooldown>0}>{resendBusy?t.sending:resendCooldown>0?t.resend+' ('+resendCooldown+'s)':t.resend+' →'}</button>}{resendMessage&&<p role="status" className="resendStatus">{resendMessage}</p>}</div>:
     <form onSubmit={submit}><div className="formTop"><span>PAIRVOICE</span><b>{es?'CUENTA':'ACCOUNT'}</b></div>{campaign&&<div className="microSteps"><span className="active">1 {es?'Cuenta':'Account'}</span><span>2 {es?'Compañero':'Partner'}</span><span>3 {es?'Trabajo':'Work'}</span></div>}
-     <label>{t.first}<input name="first_name" required autoComplete="given-name"/></label>
-     <label>{t.email}<input name="email" required type="email" autoComplete="email" inputMode="email"/></label>
-     <label>{t.phone}<input name="phone" required type="tel" autoComplete="tel" inputMode="tel" placeholder={selected?.countryCode==='ES'?'+34 612 345 678':'+1 305 555 0123'}/><small className="fieldHelp">{t.phoneHelp}</small></label>
+     <label htmlFor="join-first-name">{t.first}<input id="join-first-name" name="first_name" required autoComplete="given-name" enterKeyHint="next"/></label>
+     <label htmlFor="join-email">{t.email}<input id="join-email" name="email" required type="email" autoComplete="email" inputMode="email" autoCapitalize="none" spellCheck={false} enterKeyHint="next"/></label>
+     <label htmlFor="join-phone">{t.phone}<input id="join-phone" name="phone" required type="tel" autoComplete="tel" inputMode="tel" enterKeyHint="next" placeholder={selected?.countryCode==='ES'?'+34 612 345 678':'+1 305 555 0123'}/><small className="fieldHelp">{t.phoneHelp}</small></label>
      {campaign&&<>
       <input type="hidden" name="country" value={selected?.countryCode||'US'}/>
       <input type="hidden" name="language" value={selected?.languageCode||'en'}/>
