@@ -16,7 +16,7 @@ const money=(cents:number|null,currency:string)=>cents==null?'Payout shown befor
 
 export default function JoinPage(){
  const[opps,setOpps]=useState<Opportunity[]>([]),[selectedSlug,setSelectedSlug]=useState(''),[lang,setLang]=useState<'en'|'es'>('en');
- const[loading,setLoading]=useState(false),[catalogLoading,setCatalogLoading]=useState(true),[error,setError]=useState('');
+ const[loading,setLoading]=useState(false),[catalogLoading,setCatalogLoading]=useState(true),[error,setError]=useState(''),[alreadyEnrolled,setAlreadyEnrolled]=useState(false);
  const[result,setResult]=useState<{inviteUrl:string;pairCode:string;participantCode:string;magicLinkSent:boolean}|null>(null);
 
  useEffect(()=>{
@@ -33,7 +33,7 @@ export default function JoinPage(){
  const es=lang==='es';
 
  async function submit(e:FormEvent<HTMLFormElement>){
-  e.preventDefault();if(!selected)return;setLoading(true);setError('');
+  e.preventDefault();if(!selected)return;setLoading(true);setError('');setAlreadyEnrolled(false);
   const f=new FormData(e.currentTarget),q=new URLSearchParams(location.search);
   trackFunnelEvent('signup_submitted',{campaign_slug:selected.slug,surface:'production_onboarding'});
   try{
@@ -44,7 +44,7 @@ export default function JoinPage(){
     consent:f.get('consent')==='on',ref:q.get('ref')||null
    })});
    const data=await response.json();
-   if(!response.ok)throw new Error(data.error||(es?'No se pudo completar el registro.':'Unable to complete enrollment.'));
+   if(!response.ok){if(response.status===409&&data.code==='ALREADY_ENROLLED'){setAlreadyEnrolled(true);return}throw new Error(data.error||(es?'No se pudo completar el registro.':'Unable to complete enrollment.'));}
    let magicLinkSent=false;
    try{
     const supabase=getBrowserSupabase();
@@ -95,8 +95,9 @@ export default function JoinPage(){
       <label className="check"><input name="age" type="checkbox" required disabled={!selected}/><span>{es?'Confirmo que tengo 18 años o más.':'I confirm I am 18 or older.'}</span></label>
       {selected&&<label className="check"><input name="eligibility" type="checkbox" required/><span>{es?`Confirmo que cumplo los requisitos de ${marketName(selected.countryCode)} y puedo grabar en ${selected.languageCode.toUpperCase()}.`:`I confirm I meet the ${marketName(selected.countryCode)} requirements and can record in ${selected.languageCode.toUpperCase()}.`}</span></label>}
       <label className="check"><input name="consent" type="checkbox" required disabled={!selected}/><span>{es?'Acepto recibir instrucciones del proyecto y actualizaciones de PairVoice.':'Send me PairVoice gig instructions and account updates.'}</span></label>
+      {alreadyEnrolled&&<div className="recoveryNotice"><strong>{es?'Ya estás inscrito/a en este proyecto.':'You’re already enrolled in this gig.'}</strong><p>{es?'No vuelvas a registrarte. Entra con el mismo correo para continuar donde lo dejaste.':'Do not sign up again. Use the same email to continue where you left off.'}</p><a className="darkCta" href={`/login?lang=${lang}`}>{es?'Abrir mi cuenta →':'Open my account →'}</a></div>}
       {error&&<p className="error">{error}</p>}
-      <button disabled={!selected||loading}>{loading?(es?'Creando tu cuenta…':'Creating your account…'):(es?'Reservar mi plaza →':'Claim my spot →')}</button>
+      <button disabled={!selected||loading||alreadyEnrolled}>{loading?(es?'Creando tu cuenta…':'Creating your account…'):(es?'Reservar mi plaza →':'Claim my spot →')}</button>
       <small>{es?'No pedimos datos de pago ahora. Los pagos se configuran después de la aprobación.':'No payout details are requested now. Payout setup comes after approved work.'}</small>
      </form>
     </section>
