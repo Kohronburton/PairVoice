@@ -975,3 +975,59 @@ The next major conversion upgrade should come from **real operating proof**, not
 - measured approval/rejection rates;
 - real campaign capacity/remaining slots if operations approves public display;
 - participant testimonials only after collected with permission.
+
+
+## 10/10 conversion redesign — 2026-09-24
+**IMPLEMENTED**
+
+The staging/production candidate homepage was redesigned around a conversion-first value architecture inspired by Alex Hormozi's offer principles, while keeping all public claims grounded in actual PairVoice behavior.
+
+### Sales architecture
+- One dominant acquisition promise: **Talk together. Record. Get paid.**
+- The current market-relevant published gig payout is visible above the fold.
+- Primary CTA is qualification-focused: **See if I qualify**.
+- Secondary CTA is browse-oriented for people who want to compare gigs first.
+- Partner requirement, market, language, approval condition, and estimated session duration are surfaced before signup when campaign data provides them.
+
+### Value equation implementation
+The page explicitly increases:
+- **desired outcome** — paid conversational voice work;
+- **perceived likelihood** — visible requirements, approval rules, and trackable status.
+
+The page explicitly decreases:
+- **time delay** — one account and one guided workflow;
+- **effort/sacrifice** — no signup fee, no card, no prior experience requirement, and campaign facts locked into the join flow.
+
+### Risk reversal / objection handling
+Without inventing guarantees:
+- payout shown before work;
+- requirements shown before recording;
+- no cost to create an account;
+- approval/payment status remains visible;
+- FAQ answers experience, partner, payment, and signup-cost questions;
+- final CTA tells the user to check fit before recording anything.
+
+### UX/UI changes
+- premium server-rendered hero;
+- strong real-payout offer block;
+- focused **Why PairVoice** section;
+- conversion-first gig cards with payout, work, payment condition, estimated time, partner requirement, and one CTA;
+- dedicated **Before you record** risk section;
+- four-step gig-to-payout flow;
+- FAQ accordion;
+- final high-contrast CTA with the featured payout;
+- mobile sticky payout + qualification CTA;
+- bilingual EN/ES parity;
+- responsive desktop/tablet/mobile layouts;
+- server-rendered public catalog preserved for speed and SEO.
+
+### Integrity constraints
+Not added because PairVoice does not yet have verified public evidence:
+- fake testimonials;
+- fabricated participant counts;
+- invented approval rates;
+- invented payout-speed claims;
+- fake countdowns;
+- fake capacity/scarcity.
+
+The next conversion upgrade should use real operating proof collected from controlled staging/production pairs.
