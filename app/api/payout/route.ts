@@ -1,11 +1,13 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {sessionClient,serviceClient} from '../../../lib/supabase-server';
+import {subsystemEnabled} from '../../../lib/subsystem-controls';
 
 export async function POST(req:NextRequest){
  try{
   const auth=await sessionClient(),{data}=await auth.auth.getUser();
   if(!data.user)return NextResponse.json({error:'Sign in required.'},{status:401});
   const db=serviceClient();
+  if(!await subsystemEnabled(db,'PAYOUT'))return NextResponse.json({error:'New payout requests are temporarily paused.'},{status:503});
   const {data:participant}=await db.from('participants').select('id').eq('auth_user_id',data.user.id).maybeSingle();
   if(!participant)return NextResponse.json({error:'PairVoice participant not found.'},{status:404});
   const b=await req.json(),amount=Number(b.amountCents),currency=String(b.currency||'USD').toUpperCase();
