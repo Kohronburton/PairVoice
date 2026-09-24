@@ -560,3 +560,113 @@ Blocking checks include:
 - available credential inventory when the campaign has an active CREDENTIAL provider binding.
 
 Dead-letter lifecycle messages are surfaced as a watch condition. The protected API returns a single `ready` boolean plus the exact blocking checks; it does not override staging/mobile acceptance evidence.
+
+
+## Checkpoint Q — Launch positioning on current production funnel
+**VERIFIED by PairVoice Verify runs after commit**
+
+The current PR #9 public page now uses the locked PairVoice acquisition positioning without importing the stale PR #5 implementation:
+- English: **Get paid to talk.**
+- Spanish: **Hablad. Grabad. Cobrad.**
+- campaign cards remain database-driven;
+- first name/email/consent requirements remain intact;
+- attribution instrumentation remains intact;
+- invite URL + partner-share success flow remains intact;
+- empty/error catalog fallback remains intact.
+
+PR #5 remains stale/not mergeable and must not be merged wholesale because it predates current identity/invite/instrumentation contracts.
+
+## Checkpoint R — Existing registered users can connect campaign-specifically
+**VERIFIED by PairVoice Verify #159 and later green runs**
+
+Migration: `0022_existing_partner_linking.sql`.
+
+Implemented:
+- `campaign_partner_requests` with PENDING / ACCEPTED / DECLINED / CANCELLED / EXPIRED;
+- link request uses the target's PairVoice public code rather than searchable email;
+- both participants must already be QUALIFIED for the same published campaign;
+- both participants must still have an active PARTNER_PENDING pair for that campaign;
+- mutual acceptance is required;
+- self-pairing is forbidden;
+- target's old PARTNER_PENDING pair is preserved as CANCELLED, not deleted/reset;
+- target's old active pair membership is deactivated with removal history;
+- requester's pair becomes the canonical PAIRED record;
+- campaign enrollment/history remains unchanged;
+- other stale pending requests involving either participant are cancelled;
+- authoritative `partner_invite_accepted` records source=`existing_user`;
+- normal pair-state trigger emits `pair_created` and lifecycle messaging.
+
+Participant API:
+- `GET/POST /api/existing-partner`
+
+Participant UI:
+- `ExistingPartnerLink` appears for campaign PARTNER_PENDING pairs in the dashboard.
+- user can share/copy their own public code, enter partner code, send request, accept/decline.
+
+Invariant test:
+- `supabase/tests/existing_partner_linking_invariants.sql`
+proves idempotent request/accept, canonical pair, cancelled superseded pair, preserved enrollment history, inactive superseded membership, telemetry, and self-pair protection.
+
+## Checkpoint S — Participant Wallet and payout destination privacy
+**VERIFIED by PairVoice Verify #166 and earlier green runs through the wallet/payout API**
+
+Participant Wallet:
+- `/wallet`
+- available balance from server-authoritative `participant_available_balance`;
+- total positive earnings;
+- reconciled PAID payout total;
+- immutable ledger activity;
+- payout request status;
+- verified/pending payout-method state;
+- one-click request of current available balance only.
+
+Payout-method setup:
+- `GET/POST /api/payout-method`
+- participant selects PayPal / Cash App / controlled manual rail;
+- recipient destination is encrypted with existing AES-256-GCM `PAIRVOICE_CREDENTIAL_ENCRYPTION_KEY`;
+- participant APIs never return the recipient destination after storage;
+- newly supplied method is PENDING and must be verified by authorized payments staff;
+- prior default methods are no longer default when a new destination is supplied.
+
+Payments admin:
+- `GET/PATCH /api/admin/payout-methods`
+- verification/disable requires SUPER_ADMIN or PAYMENTS and a reason;
+- recipient reveal is a separate SUPER_ADMIN/PAYMENTS-only endpoint:
+  `/api/admin/payout-methods/[id]/recipient`;
+- reveal writes an audit event;
+- legacy plaintext destination is tolerated only for backward compatibility; new destinations are encrypted.
+
+Financial history hardening:
+- migration `0023_payout_method_freeze.sql`;
+- each payout request freezes `payout_method_id` to the exact VERIFIED method selected at request time;
+- later default-method changes cannot rewrite an in-flight payout's intended destination;
+- payout reconciliation invariant now explicitly verifies the frozen payout method.
+
+## Checkpoint T — Dedicated QA and Payments operator consoles
+**IMPLEMENTED / current-head verification pending at time of this entry**
+
+QA console:
+- `/admin/qa`
+- lists SUBMITTED / INTERNAL_QA / CLIENT_QA / REWORK_REQUIRED;
+- all decisions call `/api/admin/qa`, never generic state mutation;
+- internal pass → CLIENT_QA;
+- client pass → approved earnings flow;
+- rework/reject require notes/evidence.
+
+QA bypass closed:
+- generic `/api/admin/pairs/transition` now rejects INTERNAL_QA, CLIENT_QA, REWORK_REQUIRED, REJECTED and financial target states;
+- dedicated review/approval/payment operations are required.
+
+Payments console:
+- `/admin/payments`
+- payout-method verify/disable;
+- audited recipient reveal;
+- frozen-destination reveal for an individual payout;
+- start provider attempt;
+- reconcile SUCCEEDED / FAILED / UNKNOWN / MANUAL_REVIEW;
+- provider reference is required before success is recorded;
+- UNKNOWN remains a reconciliation state and cannot silently become paid.
+
+Dashboard cleanup:
+- removed the misleading "Verify your phone" next-step blocker because no launch SMS verification rail exists;
+- phone verification remains data capability that can be requested later by a campaign when a real verification provider/workflow is implemented.
