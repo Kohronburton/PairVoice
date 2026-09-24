@@ -73,7 +73,7 @@ export default function Home(){
    ['¿Cuándo cobro?','Después de que el trabajo requerido sea revisado y aprobado.'],
    ['¿Cuesta entrar?','No. Crear una cuenta PairVoice es gratis y no requiere tarjeta.']
   ],
-  finalTitle:'Si el proyecto encaja contigo, el siguiente paso tarda un minuto.',finalBody:'Comprueba si calificas. Si no, no tienes que grabar nada.',finalCta:'Comprobar si califico',
+  finalTitle:'Si el proyecto encaja contigo, el siguiente paso es sencillo.',finalBody:'Comprueba si calificas. Si no, no tienes que grabar nada.',finalCta:'Comprobar si califico',
   noGigs:'No hay proyectos publicados ahora mismo.',retry:'Vuelve a intentarlo en unos minutos.',footer:'Tu voz tiene valor.'
  }:{
   navGigs:'Gigs',navHow:'How it works',navFaq:'FAQ',signIn:'Sign in',create:'Create account',
@@ -112,7 +112,7 @@ export default function Home(){
    ['When do I get paid?','After the required work is reviewed and approved.'],
    ['Does it cost anything to join?','No. Creating a PairVoice account is free and requires no card.']
   ],
-  finalTitle:'If the gig fits you, the next step takes about a minute.',finalBody:"Check whether you qualify. If you don't, you do not need to record anything.",finalCta:'Check if I qualify',
+  finalTitle:'If the gig fits you, the next step is simple.',finalBody:"Check whether you qualify. If you don't, you do not need to record anything.",finalCta:'Check if I qualify',
   noGigs:'No gigs are published right now.',retry:'Please check back in a few minutes.',footer:'Your voice has value.'
  };
 
@@ -162,13 +162,13 @@ export default function Home(){
 
   <section className="hormoziProof">
    <div><b>{loading?'—':ops.length}</b><span>{es?'proyectos publicados':'published gigs'}</span></div>
-   <div><b>0</b><span>{es?'tarjetas requeridas':'cards required'}</span></div>
+   <div><b>FREE</b><span>{es?'sin tarifa de registro':'no signup fee'}</span></div>
    <div><b>1</b><span>{es?'cuenta PairVoice':'PairVoice account'}</span></div>
    <div><b>✓</b><span>{es?'pago y requisitos primero':'payout + requirements first'}</span></div>
   </section>
 
   <section className="valueSection">
-   <div className="sectionIntro"><div><div className="eyebrow">{es?'LA ECUACIÓN DE VALOR':'THE VALUE EQUATION'}</div><h2>{t.valueTitle}</h2></div><p>{t.valueLead}</p></div>
+   <div className="sectionIntro"><div><div className="eyebrow">{es?'POR QUÉ PAIRVOICE':'WHY PAIRVOICE'}</div><h2>{t.valueTitle}</h2></div><p>{t.valueLead}</p></div>
    <div className="valueCards">{t.valueItems.map((item,i)=><article key={i}><span>0{i+1}</span><small>{item[0]}</small><h3>{item[1]}</h3></article>)}</div>
   </section>
 
@@ -197,7 +197,7 @@ export default function Home(){
   </section>
 
   <section className="riskSection">
-   <div className="sectionIntro"><div><div className="eyebrow">{es?'REDUCCIÓN DE RIESGO':'RISK REVERSAL'}</div><h2>{t.riskTitle}</h2></div><p>{t.riskLead}</p></div>
+   <div className="sectionIntro"><div><div className="eyebrow">{es?'ANTES DE GRABAR':'BEFORE YOU RECORD'}</div><h2>{t.riskTitle}</h2></div><p>{t.riskLead}</p></div>
    <div className="riskGrid">{t.riskItems.map((item,i)=><article key={i}><div>✓</div><h3>{item[0]}</h3><p>{item[1]}</p></article>)}</div>
   </section>
 
