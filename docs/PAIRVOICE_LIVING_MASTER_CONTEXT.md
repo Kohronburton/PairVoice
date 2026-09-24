@@ -282,3 +282,19 @@ Next implementation:
 3. implement recoverable work-provider launch/submission transitions and corresponding telemetry;
 4. add approval/earning/payout-status telemetry at the authoritative server transition;
 5. build the admin funnel view from stored events and campaign state.
+
+
+## Implementation checkpoint — authoritative launch telemetry and operations
+See `docs/IMPLEMENTATION_PROGRESS.md` for the resumable execution log, exact commits, verification status and launch gates.
+
+Current implementation additions:
+- authoritative business funnel event stream separated from anonymous acquisition telemetry;
+- pair-state and payout-state milestone triggers;
+- recoverable/idempotent work-provider state transitions;
+- trusted invite-acceptance milestone recording;
+- admin role helper and protected operations routes;
+- protected 30-day admin funnel command center;
+- end-to-end launch milestone SQL invariant test.
+
+Current status: **IMPLEMENTED / UNVERIFIED** until the latest PairVoice Verify run passes.
+Do not start paid acquisition before the launch-gate table in `docs/IMPLEMENTATION_PROGRESS.md` is satisfied.
