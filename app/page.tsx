@@ -51,6 +51,8 @@ export default function Home(){
   ],
   ctaTitle:'Una cuenta. Más oportunidades.',ctaBody:'Crea tu perfil PairVoice una vez y úsalo en los proyectos para los que calificas.',cta:'Crear cuenta gratis',
   effort:'TIEMPO ESTIMADO',nextStep:'SIGUIENTE PASO',qualify:'Comprueba requisitos y elegibilidad',
+  trustTitle:'Antes de empezar, sabrás exactamente qué esperar.',trustLead:'PairVoice reduce la incertidumbre antes de que grabes nada.',
+  trustItems:[['¿Necesito experiencia?','No. Cada proyecto muestra sus requisitos antes de que empieces.'],['¿Necesito compañero?','Solo cuando el proyecto lo indique. Puedes invitar o conectar a alguien que ya tenga PairVoice.'],['¿Cuándo cobro?','Después de que el trabajo requerido sea revisado y aprobado.'],['¿Tengo que pagar para entrar?','No. Crear una cuenta PairVoice es gratis y no requiere tarjeta.']],
   loading:'Cargando proyectos…',empty:'No hay proyectos publicados en este momento.',footer:'Tu voz tiene valor.'
  }:{
   work:'Gigs',how:'How it works',signIn:'Sign in',create:'Create account',
@@ -68,6 +70,8 @@ export default function Home(){
   ],
   ctaTitle:'One account. More opportunities.',ctaBody:'Create your PairVoice profile once and reuse it across gigs you qualify for.',cta:'Create free account',
   effort:'ESTIMATED TIME',nextStep:'NEXT STEP',qualify:'Check requirements & eligibility',
+  trustTitle:'Before you start, know exactly what to expect.',trustLead:'PairVoice removes uncertainty before you record anything.',
+  trustItems:[['Do I need experience?','No. Each gig shows its requirements before you start.'],['Do I need a partner?','Only when the gig says so. You can invite someone or connect with an existing PairVoice user.'],['When do I get paid?','After the required work is reviewed and approved.'],['Do I pay to join?','No. Creating a PairVoice account is free and requires no card.']],
   loading:'Loading gigs…',empty:'No gigs are published right now.',footer:'Your voice has value.'
  };
 
@@ -132,6 +136,11 @@ export default function Home(){
     })}
     {!loading&&!sorted.length&&<article className="missionCardPublic skeleton"><h3>{error?(es?'El catálogo no está disponible ahora.':'The catalog is temporarily unavailable.'):t.empty}</h3><p>{es?'Vuelve a intentarlo en unos minutos.':'Please check back in a few minutes.'}</p></article>}
    </div>
+  </section>
+
+  <section className="trustSection">
+   <div className="sectionIntro trustIntro"><div><div className="eyebrow">{es?'SIN SORPRESAS':'NO SURPRISES'}</div><h2>{t.trustTitle}</h2></div><p>{t.trustLead}</p></div>
+   <div className="trustGrid">{t.trustItems.map((item,i)=><article key={i}><span>0{i+1}</span><h3>{item[0]}</h3><p>{item[1]}</p></article>)}</div>
   </section>
 
   <section className="howSection" id="how"><div className="eyebrow">PAIRVOICE FLOW</div><h2>{t.howTitle}</h2>
