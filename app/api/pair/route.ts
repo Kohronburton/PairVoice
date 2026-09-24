@@ -1,5 +1,4 @@
 import{NextRequest,NextResponse}from'next/server';
-import{createClient}from'@supabase/supabase-js';
 import{isValidEmail,normalizeEmail}from'../../../lib/validation';
 import{serviceClient}from'../../../lib/supabase-server';
 
@@ -8,9 +7,7 @@ export async function POST(req:NextRequest){
   const b=await req.json(),email=normalizeEmail(b.email);
   if(!b.inviteCode||!b.firstName||!isValidEmail(email)||!b.countryCode||!b.languageCode||b.is18Plus!==true||b.consent!==true)
    return NextResponse.json({error:'Invite, identity, eligibility and consent are required.'},{status:400});
-  const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-  if(!url||!key)return NextResponse.json({error:'Pair service is not configured.'},{status:503});
-  const db=createClient(url,key,{auth:{persistSession:false}});
+  const db=serviceClient();
   const{data,error}=await db.rpc('join_pair_invite',{
    p_invite_code:String(b.inviteCode).toUpperCase(),p_first_name:String(b.firstName).trim(),p_email:email,
    p_phone:b.phone?String(b.phone):null,p_country_code:String(b.countryCode).toUpperCase(),
