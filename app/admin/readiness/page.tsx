@@ -7,7 +7,7 @@ export default async function ReleaseReadiness(){
  const admin=await requireAdmin();
  if(!admin)redirect('/?signin=1');
  const db=admin.db;
- const [controlsQ,payoutQ,outboxQ,campaignsQ,versionsQ,accessQ,bindingsQ,providersQ,credentialsQ]=await Promise.all([
+ const [controlsQ,payoutQ,outboxQ,campaignsQ,versionsQ,accessQ,bindingsQ,providersQ,credentialsQ,legalQ]=await Promise.all([
   db.from('subsystem_controls').select('subsystem,enabled,reason'),
   db.from('provider_payout_attempts').select('id,state').in('state',['UNKNOWN','MANUAL_REVIEW']),
   db.from('outbox_events').select('id').eq('status','DEAD_LETTER'),
@@ -16,7 +16,8 @@ export default async function ReleaseReadiness(){
   db.from('campaign_access').select('campaign_id,invitation_code,launch_url'),
   db.from('campaign_provider_bindings').select('campaign_id,campaign_version_id,provider_id,purpose,active').eq('active',true),
   db.from('provider_integrations').select('id,provider_key,status'),
-  db.from('provider_credentials').select('provider_id,campaign_id,status').eq('status','AVAILABLE')
+  db.from('provider_credentials').select('provider_id,campaign_id,status').eq('status','AVAILABLE'),
+  db.from('legal_documents').select('id,scope,document_key,campaign_version_id,locale,status').eq('status','PUBLISHED')
  ]);
  const checks:Check[]=[];
  for(const key of ['MATCHING','WORK','PAYOUT','MESSAGING','REFERRAL']){
@@ -25,7 +26,8 @@ export default async function ReleaseReadiness(){
  }
  checks.push({key:'payouts',label:'Payout reconciliation queue',pass:(payoutQ.data||[]).length===0,blocking:true,detail:`${(payoutQ.data||[]).length} unresolved`});
  checks.push({key:'messages',label:'Dead-letter messages',pass:(outboxQ.data||[]).length===0,blocking:false,detail:`${(outboxQ.data||[]).length} dead letter`});
- const versions=versionsQ.data||[],access=accessQ.data||[],bindings=bindingsQ.data||[],providers=providersQ.data||[],credentials=credentialsQ.data||[];
+ const versions=versionsQ.data||[],access=accessQ.data||[],bindings=bindingsQ.data||[],providers=providersQ.data||[],credentials=credentialsQ.data||[],legal=legalQ.data||[];
+ for(const key of ['PRIVACY','TERMS']){const ok=legal.some(d=>d.scope==='SITE'&&d.document_key===key&&d.locale==='en');checks.push({key:`legal-${key}`,label:`Site ${key.toLowerCase()}`,pass:ok,blocking:true,detail:ok?'Published':'Missing reviewed published document'})}
  for(const campaign of campaignsQ.data||[]){
   const version=versions.find(v=>v.campaign_id===campaign.id),ca=access.find(a=>a.campaign_id===campaign.id);
   const wb=version?bindings.find(b=>b.campaign_version_id===version.id&&b.purpose==='WORK'):null,wp=wb?providers.find(p=>p.id===wb.provider_id):null;
@@ -33,6 +35,7 @@ export default async function ReleaseReadiness(){
   checks.push({key:`${campaign.slug}-work`,label:`${campaign.name}: work provider`,pass:Boolean(wp&&wp.status==='ACTIVE'),blocking:true,detail:wp?.provider_key||'Missing'});
   if(String(campaign.provider||'').toUpperCase()==='FUNCROWD')checks.push({key:`${campaign.slug}-launch`,label:`${campaign.name}: launch URL`,pass:Boolean(ca?.launch_url),blocking:true,detail:ca?.launch_url?'Configured':'Missing'});
   if(version?.invitation_code_mode&&version.invitation_code_mode!=='NONE')checks.push({key:`${campaign.slug}-code`,label:`${campaign.name}: invitation code`,pass:Boolean(ca?.invitation_code),blocking:true,detail:ca?.invitation_code?'Configured':'Missing'});
+  if(version){for(const key of ['CAMPAIGN_TERMS','PARTICIPANT_CONSENT']){const ok=legal.some(d=>d.scope==='CAMPAIGN'&&d.campaign_version_id===version.id&&d.document_key===key);checks.push({key:`${campaign.slug}-${key}`,label:`${campaign.name}: ${key.toLowerCase().replaceAll('_',' ')}`,pass:ok,blocking:true,detail:ok?'Published':'Missing reviewed published document'})}}
   const cb=version?bindings.filter(b=>b.campaign_version_id===version.id&&b.purpose==='CREDENTIAL'):[];
   if(cb.length){const n=cb.reduce((sum,b)=>sum+credentials.filter(c=>c.provider_id===b.provider_id&&c.campaign_id===campaign.id).length,0);checks.push({key:`${campaign.slug}-creds`,label:`${campaign.name}: credentials`,pass:n>0,blocking:true,detail:`${n} available`})}
  }
