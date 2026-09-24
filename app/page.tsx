@@ -50,6 +50,7 @@ export default function Home(){
    ['Graba, envía y cobra','Sigue el trabajo, revisión, aprobación y pago desde PairVoice.']
   ],
   ctaTitle:'Una cuenta. Más oportunidades.',ctaBody:'Crea tu perfil PairVoice una vez y úsalo en los proyectos para los que calificas.',cta:'Crear cuenta gratis',
+  effort:'TIEMPO ESTIMADO',nextStep:'SIGUIENTE PASO',qualify:'Comprueba requisitos y elegibilidad',
   loading:'Cargando proyectos…',empty:'No hay proyectos publicados en este momento.',footer:'Tu voz tiene valor.'
  }:{
   work:'Gigs',how:'How it works',signIn:'Sign in',create:'Create account',
@@ -66,6 +67,7 @@ export default function Home(){
    ['Record, submit & get paid','Track work, review, approval and payout from PairVoice.']
   ],
   ctaTitle:'One account. More opportunities.',ctaBody:'Create your PairVoice profile once and reuse it across gigs you qualify for.',cta:'Create free account',
+  effort:'ESTIMATED TIME',nextStep:'NEXT STEP',qualify:'Check requirements & eligibility',
   loading:'Loading gigs…',empty:'No gigs are published right now.',footer:'Your voice has value.'
  };
 
@@ -121,6 +123,8 @@ export default function Home(){
       <div className="gigFacts">
        <div><b>{es?'QUÉ HACES':'WHAT YOU DO'}</b><span>{es?'Graba conversaciones siguiendo las instrucciones del proyecto.':'Record conversations by following the gig instructions.'}</span></div>
        <div><b>{es?'CUÁNDO COBRAS':'WHEN YOU GET PAID'}</b><span>{es?'Después de que tu trabajo sea revisado y aprobado.':'After your completed work is reviewed and approved.'}</span></div>
+       {(o.sessionMinutesMin||o.sessionMinutesMax)&&<div><b>{t.effort}</b><span>{o.sessionMinutesMin&&o.sessionMinutesMax?(o.sessionMinutesMin+'–'+o.sessionMinutesMax+' min'):o.sessionMinutesMax?('Up to '+o.sessionMinutesMax+' min'):(o.sessionMinutesMin+'+ min')}{o.sessionCount&&o.sessionCount>1?(' × '+o.sessionCount):''}</span></div>}
+       <div><b>{t.nextStep}</b><span>{t.qualify}</span></div>
       </div>
       <div className="chips"><span>{o.languageCode.toUpperCase()}</span><span>{o.requiresPair?t.partner:t.solo}</span>{o.sessionCount&&<span>{o.sessionCount} {t.sessions}</span>}{o.deviceRequirement&&<span>{o.deviceRequirement}</span>}</div>
       <button onClick={()=>openGig(o.slug)}>{t.join} →</button>
