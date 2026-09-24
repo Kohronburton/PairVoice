@@ -269,7 +269,7 @@ Implemented:
 - canonical aliases for campaign view, campaign CTA and partner-invite creation while preserving legacy event compatibility;
 - partner matching choice/request/join events;
 - partner invite share-click channel events for WhatsApp, SMS, email, Facebook and copy-link;
-- expanded event vocabulary through pair, gig, submission, payment and referral milestones so later slices can emit against one stable contract;
+- expanded event vocabulary through pair, gig, submission, earning/payout-status and referral milestones so later slices can emit against one stable contract;
 - credential replacement now returns the existing assignment for a repeated idempotency key rather than rotating credentials again;
 - database invariants now cover credential replacement idempotency, preservation of replaced assignment history, single recovery evidence, and work-provider-run idempotency.
 
@@ -280,5 +280,5 @@ Next implementation:
 1. verify this slice in CI;
 2. emit partner acceptance/pair-created events from server-authoritative pair transitions rather than inferring them from UI;
 3. implement recoverable work-provider launch/submission transitions and corresponding telemetry;
-4. add approval/earning/payment telemetry at the authoritative server transition;
+4. add approval/earning/payout-status telemetry at the authoritative server transition;
 5. build the admin funnel view from stored events and campaign state.
