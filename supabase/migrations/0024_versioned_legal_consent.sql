@@ -112,3 +112,29 @@ begin
 end $$;
 revoke all on function accept_campaign_documents(uuid,text,uuid[]) from public,anon,authenticated;
 grant execute on function accept_campaign_documents(uuid,text,uuid[]) to service_role;
+
+
+create or replace function publish_legal_document(
+ p_document_id uuid,p_actor_user_id uuid,p_actor_label text,p_reason text
+) returns void language plpgsql security definer set search_path=public as $$
+declare v_doc legal_documents%rowtype;
+begin
+ if trim(coalesce(p_reason,''))='' then raise exception 'publish_reason_required'; end if;
+ select * into v_doc from legal_documents where id=p_document_id for update;
+ if not found then raise exception 'legal_document_not_found'; end if;
+ if v_doc.status='PUBLISHED' then return; end if;
+ if v_doc.status<>'DRAFT' then raise exception 'only_draft_document_can_be_published'; end if;
+ if length(trim(v_doc.body_text))<40 then raise exception 'legal_document_body_too_short'; end if;
+
+ update legal_documents set status='RETIRED'
+ where status='PUBLISHED' and scope=v_doc.scope and document_key=v_doc.document_key and locale=v_doc.locale
+   and campaign_version_id is not distinct from v_doc.campaign_version_id;
+
+ update legal_documents set status='PUBLISHED',published_at=now() where id=p_document_id;
+
+ insert into audit_events(actor_user_id,actor_label,operation,resource_type,resource_id,reason,after_data)
+ values(p_actor_user_id,p_actor_label,'LEGAL_DOCUMENT_PUBLISHED','LEGAL_DOCUMENT',p_document_id,p_reason,
+  jsonb_build_object('scope',v_doc.scope,'document_key',v_doc.document_key,'locale',v_doc.locale,'version',v_doc.version,'sha256',v_doc.content_sha256));
+end $$;
+revoke all on function publish_legal_document(uuid,uuid,text,text) from public,anon,authenticated;
+grant execute on function publish_legal_document(uuid,uuid,text,text) to service_role;
