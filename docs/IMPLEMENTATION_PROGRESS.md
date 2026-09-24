@@ -883,3 +883,26 @@ Evidence:
 4. Add `staging.pairvoice.com` as a Render custom domain and point Cloudflare CNAME `staging` to `pairvoice-staging.onrender.com`.
 5. Publish reviewed staging legal documents and configure FunCrowd launch/access values.
 6. Run the staging acceptance certification and controlled pair tests.
+
+
+## Production marketplace conversion pass — 2026-09-24
+**IMPLEMENTED**
+
+Goal: move the public staging experience from a polished marketplace to a conversion-focused 9+/10 production candidate without inventing testimonials, payout timing, capacity, approval rates, or participant counts.
+
+Changes:
+- hero now leads with the concrete outcome: **Get paid to talk** / **Cobrad por hablar**;
+- partner mechanic is part of the headline rather than buried in workflow copy;
+- current market-relevant published gig payout is surfaced above the fold when available;
+- primary hero CTA is **See if I qualify**, routed directly into the selected campaign;
+- secondary CTA remains browse-oriented so users can compare gigs before committing;
+- trust line explicitly states no experience required, free signup, no card, and requirements before recording;
+- gig cards answer what the participant does and when payment occurs;
+- campaign CTA changed from passive **View gig** to **See if I qualify**;
+- proof strip uses only verifiable product facts; no fabricated social proof;
+- no artificial urgency or fake remaining-capacity claims were added because staging does not yet expose verified public capacity;
+- mobile CTA/fact layout tightened for one-handed conversion.
+
+Next proof upgrade after real staging/production data exists:
+- expose verified campaign capacity/remaining slots if operations approves it for public display;
+- replace generic product proof with measured completed-pair, approval, payout, or participant metrics only after those figures are trustworthy.
