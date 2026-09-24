@@ -1,5 +1,5 @@
 import {redirect} from 'next/navigation';
-import {sessionClient,serviceClient} from '../../lib/supabase-server';
+import {sessionClient} from '../../lib/supabase-server';
 import PartnerPoolButton from '../../components/PartnerPoolButton';
 import WorkAccessCard from '../../components/WorkAccessCard';
 import ExistingPartnerLink from '../../components/ExistingPartnerLink';
@@ -8,7 +8,7 @@ import CampaignConsentCard from '../../components/CampaignConsentCard';
 export default async function Dashboard(){
  const auth=await sessionClient(),{data}=await auth.auth.getUser();
  if(!data.user)redirect('/?signin=1');
- const db=serviceClient();
+ const db=auth;
  const {data:p}=await db.from('participants').select('id,first_name,email,country_code,primary_language_code,phone,phone_verified_at').eq('auth_user_id',data.user.id).maybeSingle();
  if(!p)redirect('/?auth=join-first');
  const [{data:pool},{count:approvedJobs},{count:referrals}]=await Promise.all([
