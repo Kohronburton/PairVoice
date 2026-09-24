@@ -1,5 +1,6 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {requireAdmin} from '../../../../lib/admin-server';
+import {subsystemEnabled} from '../../../../lib/subsystem-controls';
 
 export async function POST(req:NextRequest){
  const admin=await requireAdmin(['SUPER_ADMIN','PAYMENTS']);
@@ -7,6 +8,7 @@ export async function POST(req:NextRequest){
  try{
   const b=await req.json(),action=String(b.action||'').toUpperCase();
   if(action==='START'){
+   if(!await subsystemEnabled(admin.db,'PAYOUT'))return NextResponse.json({error:'New payout execution is temporarily paused; reconciliation remains available.'},{status:503});
    if(!b.payoutId||!b.idempotencyKey)return NextResponse.json({error:'payoutId and idempotencyKey are required.'},{status:400});
    const {data,error}=await admin.db.rpc('create_payout_attempt',{
     p_payout_id:String(b.payoutId),p_idempotency_key:String(b.idempotencyKey),
