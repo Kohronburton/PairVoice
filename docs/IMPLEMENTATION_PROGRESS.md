@@ -477,3 +477,23 @@ Test: `supabase/tests/lifecycle_messaging_invariants.sql` proves dedupe count, m
 7. Run hostile-network/retry scenarios and kill-switch drills.
 8. Run a controlled staging pilot with real participants and reconcile every pair/payout/message.
 9. Only then merge PR #9 / production release and begin organic acquisition; paid traffic remains gated on approved-pair CAC observability.
+
+
+## Checkpoint Q — Admin operations console
+**IMPLEMENTED / VERIFY**
+
+Added `/admin/operations` as an authenticated read-only command surface for:
+- subsystem control status and incident reason;
+- QA / client-QA / rework queue;
+- payout requests, processing/failures and unresolved provider attempts;
+- messaging FAILED / DEAD_LETTER visibility.
+
+The page intentionally does not bypass the mutation APIs. State changes remain behind role-protected endpoints so audit/idempotency rules cannot be skipped.
+
+## CI note — messaging test isolation
+Intermediate runs #143–#146 showed the app job green while the database job failed because `operational_controls_messaging_invariants.sql` assumed the shared CI database outbox contained only four rows from that test. Earlier invariant tests correctly left committed test outbox rows in the same database, so `claim_message_outbox(20)` claimed 12.
+
+Correction:
+- the invariant now claims the queue normally but counts/asserts only lifecycle events belonging to its own generated pair;
+- production outbox behavior was not weakened;
+- the dedicated `lifecycle_messaging_invariants.sql` already passed in #146.
