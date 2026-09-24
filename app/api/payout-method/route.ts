@@ -1,5 +1,6 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {sessionClient,serviceClient} from '../../../lib/supabase-server';
+import {encryptSecret} from '../../../lib/credential-crypto';
 
 async function current(){
  const auth=await sessionClient(),{data}=await auth.auth.getUser();
@@ -26,7 +27,7 @@ export async function POST(req:NextRequest){
   if(reference.length>255||label.length>120)return NextResponse.json({error:'Payout method details are too long.'},{status:400});
   await ctx.db.from('participant_payout_methods').update({is_default:false}).eq('participant_id',ctx.participant.id).neq('status','DISABLED');
   const {data,error}=await ctx.db.from('participant_payout_methods').insert({
-   participant_id:ctx.participant.id,provider,provider_recipient_reference:reference,label:label||provider,status:'PENDING',is_default:true
+   participant_id:ctx.participant.id,provider,provider_recipient_reference:encryptSecret(reference),label:label||provider,status:'PENDING',is_default:true
   }).select('id,provider,label,status,is_default,created_at').single();
   if(error){console.error(error);return NextResponse.json({error:'Unable to save payout method.'},{status:500})}
   return NextResponse.json({ok:true,method:data});
