@@ -1,6 +1,7 @@
 import {redirect} from 'next/navigation';
 import {sessionClient,serviceClient} from '../../lib/supabase-server';
 import PartnerPoolButton from '../../components/PartnerPoolButton';
+import WorkAccessCard from '../../components/WorkAccessCard';
 
 export default async function Dashboard(){
  const auth=await sessionClient(),{data}=await auth.auth.getUser();
@@ -13,6 +14,11 @@ export default async function Dashboard(){
   db.from('pair_members').select('pair_id,pairs!inner(state)',{count:'exact',head:true}).eq('pairs.state','APPROVED'),
   db.from('referral_relationships').select('id',{count:'exact',head:true}).eq('referrer_participant_id',p.id)
  ]);
+ const {data:enrollments}=await db.from('campaign_enrollments').select('id').eq('participant_id',p.id);
+ const enrollmentIds=(enrollments||[]).map(e=>e.id);
+ const {data:members}=enrollmentIds.length?await db.from('pair_members').select('pair_id').in('enrollment_id',enrollmentIds).eq('active',true):{data:[] as {pair_id:string}[]};
+ const pairIds=[...new Set((members||[]).map(m=>m.pair_id))];
+ const {data:workPairs}=pairIds.length?await db.from('pairs').select('id,public_code,state,campaigns(name,slug)').in('id',pairIds).in('state',['READY','RECORDING','REWORK_REQUIRED','SUBMITTED']):{data:[] as any[]};
  const nextAction=!p.phone_verified_at?'Verify your phone':!pool?'Find a partner':'You are ready for matching';
  return <main style={{maxWidth:760,margin:'0 auto',padding:'32px 20px'}}>
   <div className="logo">PAIR<span>VOICE</span></div>
@@ -27,6 +33,7 @@ export default async function Dashboard(){
    <section className="opportunityCard"><small>PARTNER</small><h3>{pool?.status==='WAITING'?'Finding a match…':pool?.status||'Not connected'}</h3><p>Bring someone, connect an existing user, or let PairVoice find someone.</p></section>
    <section className="opportunityCard"><small>PROGRESS</small><h3>{approvedJobs||0} approved jobs</h3><p>{referrals||0} people referred · milestone rewards unlock only after qualification.</p></section>
   </div>
+  {(workPairs||[]).length>0&&<section style={{marginTop:36}}><p className="eyebrow">ACTIVE WORK</p><h2>Ready jobs</h2><div className="opportunityGrid">{(workPairs||[]).map((pair:any)=>{const campaign=Array.isArray(pair.campaigns)?pair.campaigns[0]:pair.campaigns;return <WorkAccessCard key={pair.id} pairId={pair.id} pairCode={pair.public_code} state={pair.state} campaignName={campaign?.name||'PairVoice opportunity'}/>})}</div></section>}
   <p style={{marginTop:28}}>Jobs and Wallet unlock as production opportunities become available. Your account, partner history and progress stay with you.</p>
  </main>;
 }
