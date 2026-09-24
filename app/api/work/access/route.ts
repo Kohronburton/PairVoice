@@ -1,5 +1,6 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {sessionClient,serviceClient} from '../../../../lib/supabase-server';
+import {subsystemEnabled} from '../../../../lib/subsystem-controls';
 
 async function context(pairId:string){
  const auth=await sessionClient(),{data}=await auth.auth.getUser();
@@ -19,6 +20,7 @@ export async function GET(req:NextRequest){
  const pairId=req.nextUrl.searchParams.get('pairId')||'';
  if(!pairId)return NextResponse.json({error:'pairId is required.'},{status:400});
  const ctx=await context(pairId);if(!ctx)return NextResponse.json({error:'Forbidden'},{status:403});
+ if(!await subsystemEnabled(ctx.db,'WORK'))return NextResponse.json({error:'New work starts are temporarily paused.'},{status:503});
  const {data,error}=await ctx.db.rpc('prepare_pair_work_access',{p_pair_id:pairId,p_idempotency_key:`work:prepare:${pairId}`});
  if(error){const m=String(error.message||'');return NextResponse.json({error:m.includes('not_ready')?'This pair is not ready for work yet.':m.includes('not_bound')?'Work provider is not configured for this campaign.':'Unable to prepare work access.'},{status:409})}
  return NextResponse.json(data);
@@ -31,6 +33,7 @@ export async function POST(req:NextRequest){
   const ctx=await context(pairId);if(!ctx)return NextResponse.json({error:'Forbidden'},{status:403});
   const {data:run}=await ctx.db.from('work_provider_runs').select('id,pair_id').eq('id',runId).eq('pair_id',pairId).maybeSingle();
   if(!run)return NextResponse.json({error:'Work run not found.'},{status:404});
+  if(action==='START'&&!await subsystemEnabled(ctx.db,'WORK'))return NextResponse.json({error:'New work starts are temporarily paused.'},{status:503});
   const toState=action==='START'?'IN_PROGRESS':'SUBMITTED';
   const {data,error}=await ctx.db.rpc('transition_work_provider_run',{
    p_run_id:runId,p_to_state:toState,p_external_reference:null,
