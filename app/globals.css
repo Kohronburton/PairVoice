@@ -43,3 +43,159 @@
  .lockedGigFacts{grid-template-columns:1fr}.lockedGigFacts small{grid-column:1}
  .microSteps{gap:4px}.microSteps span{font-size:8px;padding:7px 4px}
 }
+
+
+/* Premium production polish — desktop hierarchy + navigation reset */
+.pvnav{height:74px;max-width:1220px;padding:0 22px}
+.pvnav a{background:transparent;padding:0;border-radius:0}
+.pvnav .logo{
+  display:inline-flex;align-items:center;gap:0;
+  background:transparent!important;color:#f6f6f1!important;
+  padding:0!important;border-radius:0!important;
+  font-size:22px;letter-spacing:-1.1px;line-height:1;text-decoration:none
+}
+.pvnav .logo span{color:#b9ff48}
+.pvnav .navlinks{gap:30px;margin-left:auto;margin-right:34px}
+.pvnav .navlinks a{
+  background:transparent!important;color:#8e9a95!important;
+  padding:8px 0!important;border-radius:0!important;
+  font-size:12px;font-weight:800;letter-spacing:.1px;
+  transition:color .18s ease
+}
+.pvnav .navlinks a:hover{color:#f5f4ed!important}
+.pvnav .navsignin{
+  background:transparent!important;color:#e5e8e6!important;
+  padding:10px 8px!important;border-radius:0!important;font-size:12px;font-weight:850
+}
+.pvnav .navcta{
+  background:#b9ff48!important;color:#07100e!important;
+  padding:11px 17px!important;border-radius:999px!important;
+  font-size:12px;font-weight:900;box-shadow:0 0 0 1px rgba(185,255,72,.08)
+}
+.pvnav .language{padding:9px 11px;font-size:11px;border-color:#31413b}
+
+.productionHero{
+  max-width:1220px;min-height:0;
+  padding:58px 22px 62px;
+  grid-template-columns:minmax(0,1.08fr) minmax(420px,.92fr);
+  gap:72px;align-items:center
+}
+.productionHero .heroCopy{min-width:0;padding-top:4px}
+.productionHero .statusline{font-size:10px;letter-spacing:1.55px}
+.productionHero .heroCopy h1{
+  font-size:clamp(58px,5.55vw,84px);
+  line-height:.91;letter-spacing:-4.7px;
+  margin:20px 0 22px;max-width:690px
+}
+.productionHero .heroCopy h1 em{
+  display:inline-block;
+  font-size:.82em;line-height:.98;letter-spacing:-3.7px;
+  max-width:650px
+}
+.productionHero .heroCopy>p{
+  font-size:16px;line-height:1.58;
+  max-width:610px;color:#9ca8a3;margin:20px 0 0
+}
+.productionHero .heroActions{margin:25px 0 18px;gap:10px}
+.productionHero .heroActions .primary,
+.productionHero .heroActions .secondary{
+  padding:12px 17px;border-radius:999px;font-size:12px;font-weight:900
+}
+.productionHero .heroPrimary{background:#b9ff48;color:#07100e}
+.productionHero .secondary{background:transparent;border-color:#34443e}
+.productionHero .trustline{font-size:10.5px;line-height:1.45;color:#77847e;max-width:620px}
+
+.productionHero .heroOffer{
+  display:grid;grid-template-columns:auto minmax(0,1fr);
+  align-items:center;column-gap:13px;row-gap:2px;
+  width:min(100%,520px);margin:0 0 18px;padding:12px 14px;
+  border:1px solid #3a5530;border-radius:12px;
+  background:linear-gradient(100deg,rgba(185,255,72,.07),rgba(185,255,72,.018))
+}
+.productionHero .heroOffer>span{
+  grid-column:1/-1;margin-bottom:2px;
+  font-size:7.5px;letter-spacing:1.2px;color:#8c9d83
+}
+.productionHero .heroOffer strong{
+  grid-row:2/4;font-size:31px;letter-spacing:-1.6px;align-self:center
+}
+.productionHero .heroOffer b{
+  min-width:0;font-size:12px;line-height:1.25;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+.productionHero .heroOffer small{
+  grid-column:2;text-align:left;margin:0;
+  font-size:8px;color:#738079;letter-spacing:.6px
+}
+
+.productionVisual{
+  height:430px;min-height:430px;
+  border:1px solid #263c34;border-radius:26px;
+  background:
+    radial-gradient(circle at 50% 48%,rgba(185,255,72,.08),transparent 43%),
+    linear-gradient(145deg,rgba(14,29,24,.78),rgba(7,16,14,.72));
+  overflow:hidden;isolation:isolate;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.02),0 26px 70px rgba(0,0,0,.16)
+}
+.productionVisual:before{
+  width:350px;height:350px;
+  border-color:#29463a;
+  box-shadow:0 0 80px rgba(185,255,72,.045),inset 0 0 60px rgba(185,255,72,.025)
+}
+.productionVisual:after{
+  content:"";position:absolute;inset:30px;border:1px solid rgba(83,112,99,.18);
+  border-radius:22px;z-index:-1
+}
+.productionVisual .voiceOrb{
+  width:230px;height:230px;
+  box-shadow:0 0 75px rgba(185,255,72,.18)
+}
+.productionVisual .voiceOrb:after{inset:17px}
+.productionVisual .voiceOrb i:nth-child(1),
+.productionVisual .voiceOrb i:nth-child(7){height:25px}
+.productionVisual .voiceOrb i:nth-child(2),
+.productionVisual .voiceOrb i:nth-child(6){height:48px}
+.productionVisual .voiceOrb i:nth-child(3),
+.productionVisual .voiceOrb i:nth-child(5){height:72px}
+.productionVisual .voiceOrb i:nth-child(4){height:98px}
+.productionVisual .floatCard{
+  border-color:#31483f;border-radius:13px;padding:14px 16px;
+  background:rgba(8,21,17,.94);box-shadow:0 18px 44px rgba(0,0,0,.28)
+}
+.productionVisual .floatCard strong{font-size:16px;margin:6px 0}
+.productionVisual .floatCard span{font-size:10px}
+.productionVisual .fc1{left:22px;bottom:22px;width:188px}
+.productionVisual .fc2{right:20px;top:48px;width:188px}
+
+.proofStrip{max-width:1220px}
+.proofStrip div{padding:20px 22px}
+.proofStrip b{font-size:21px}
+.proofStrip span{font-size:9.5px}
+
+@media(max-width:1050px){
+ .productionHero{grid-template-columns:minmax(0,1fr) minmax(360px,.85fr);gap:42px}
+ .productionHero .heroCopy h1{font-size:clamp(54px,6vw,72px);letter-spacing:-3.8px}
+ .productionVisual{height:390px;min-height:390px}
+}
+@media(max-width:850px){
+ .pvnav .navlinks{display:none}
+ .productionHero{grid-template-columns:1fr;padding-top:52px;gap:34px}
+ .productionHero .heroCopy h1{max-width:720px}
+ .productionVisual{height:380px;min-height:380px}
+}
+@media(max-width:520px){
+ .pvnav{height:64px;padding:0 16px}
+ .pvnav .logo{font-size:19px}
+ .pvnav .language{display:none}
+ .productionHero{padding:42px 18px 46px;gap:28px}
+ .productionHero .heroCopy h1{font-size:50px;line-height:.93;letter-spacing:-3px;margin:17px 0 19px}
+ .productionHero .heroCopy h1 em{font-size:.78em;letter-spacing:-2.2px}
+ .productionHero .heroCopy>p{font-size:15px}
+ .productionHero .heroOffer{width:100%;grid-template-columns:auto 1fr}
+ .productionHero .heroOffer strong{font-size:28px}
+ .productionVisual{height:315px;min-height:315px;border-radius:20px}
+ .productionVisual:before{width:250px;height:250px}
+ .productionVisual .voiceOrb{width:175px;height:175px}
+ .productionVisual .fc1{left:10px;bottom:10px;width:165px}
+ .productionVisual .fc2{right:10px;top:18px;width:165px}
+}
