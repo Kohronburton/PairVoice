@@ -24,9 +24,11 @@ create trigger work_provider_runs_updated before update on work_provider_runs fo
 create or replace function replace_provider_credential(
  p_pair_id uuid,p_provider_key text,p_reason text,p_idempotency_key text
 ) returns uuid language plpgsql security definer set search_path=public as $$
-declare v_old provider_credential_assignments%rowtype; v_cred uuid; v_provider uuid; v_pair pairs%rowtype; v_new uuid;
+declare v_old provider_credential_assignments%rowtype; v_cred uuid; v_provider uuid; v_pair pairs%rowtype; v_new uuid; v_existing uuid;
 begin
  if trim(coalesce(p_reason,''))='' then raise exception 'replacement_reason_required'; end if;
+ select id into v_existing from provider_credential_assignments where idempotency_key=p_idempotency_key;
+ if found then return v_existing; end if;
  select * into v_pair from pairs where id=p_pair_id for update;
  if not found then raise exception 'pair_not_found'; end if;
 
