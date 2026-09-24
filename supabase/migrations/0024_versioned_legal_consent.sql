@@ -72,7 +72,7 @@ begin
  select * into v_enrollment from campaign_enrollments
   where campaign_id=v_campaign.id and participant_id=p_participant_id for update;
  if not found then raise exception 'campaign_enrollment_not_found'; end if;
- if v_enrollment.state not in('QUALIFIED','PAIRED','IN_PROGRESS') then raise exception 'campaign_enrollment_not_qualified'; end if;
+ if v_enrollment.state not in('QUALIFIED','ACTIVE') then raise exception 'campaign_enrollment_not_qualified'; end if;
 
  select array_agg(id order by document_key) into v_required
  from legal_documents
