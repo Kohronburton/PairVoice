@@ -808,3 +808,15 @@ Reason:
 - This allows the public messaging/experience to become **Get paid to talk / Hablad. Grabad. Cobrad.** immediately while the larger Phase 2 workflow remains behind staging certification.
 
 Do not let later Phase 2 merges revert the live homepage copy to the former **One account / Multiple opportunities / Early access** presentation.
+
+
+## PR #9 mainline reconciliation
+After production PR #10 replaced the live Early Access homepage on `main`, PR #9 temporarily became non-mergeable because both branches had touched `app/page.tsx`.
+
+Resolution:
+- verified `main` and `phase-2-production-workflow` contain the exact same homepage blob;
+- merged `main` commit `4311c23795cc9ce8451e21b4425277fe06d179f8` into the Phase 2 branch with a normal two-parent merge commit;
+- preserved the full Phase 2 branch tree because the live homepage cutover content was already identical;
+- post-reconciliation comparison reports Phase 2 **ahead of main and 0 commits behind**.
+
+Fresh CI after this reconciliation is required before PR #9 is considered merge-ready.
