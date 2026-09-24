@@ -729,3 +729,16 @@ proves published immutability, exact two-document acceptance, readiness evidence
 
 ### Remaining legal/operator input
 Engineering intentionally does **not** invent or approve the final legal language. Before staging certification can pass, reviewed/approved Privacy, Terms, Campaign Terms and Participant Consent text must be supplied and published through the admin console.
+
+
+## Finish-line verification note — 2026-09-24
+CI caught a TypeScript import-path defect in the newly added public legal renderer after the legal routes were introduced. Database verification for that run was green. The renderer import was corrected in commit `064d187d618b4307046d6fba5474c8ff53906906`.
+
+Do **not** treat runs #176–#180 as current-head certification if they predate that fix. Final engineering certification requires a green PairVoice Verify run whose head SHA is at or after `064d187d618b4307046d6fba5474c8ff53906906`.
+
+PR #9 remains intentionally DRAFT until:
+1. current-head CI is green;
+2. reviewed legal text is published;
+3. staging environment readiness returns no blocking failures;
+4. the manual/mobile staging certification has evidence;
+5. the controlled real-pair rollout succeeds without database repair.
