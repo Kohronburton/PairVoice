@@ -2,7 +2,7 @@ type WelcomeEmailArgs={to:string;firstName:string;language:'en'|'es';inviteUrl:s
 
 const DEFAULT_FROM='Star from PairVoice <hello@pairvoice.com>';
 
-export async function sendEarlyAccessWelcome({to,firstName,language,inviteUrl,partnerJoined}:WelcomeEmailArgs){
+export async function sendWelcomeEmail({to,firstName,language,inviteUrl,partnerJoined}:WelcomeEmailArgs){
   const apiKey=process.env.RESEND_API_KEY;
   if(!apiKey) return {sent:false,queued:true};
 
@@ -13,10 +13,7 @@ export async function sendEarlyAccessWelcome({to,firstName,language,inviteUrl,pa
     body:JSON.stringify({
       from:process.env.PAIRVOICE_EMAIL_FROM||DEFAULT_FROM,
       to,
-      template:{
-        id:templateId,
-        variables:{NAME:firstName,INVITE_URL:inviteUrl}
-      }
+      template:{id:templateId,variables:{NAME:firstName,INVITE_URL:inviteUrl}}
     })
   });
 
@@ -24,9 +21,11 @@ export async function sendEarlyAccessWelcome({to,firstName,language,inviteUrl,pa
     const detail=await response.text().catch(()=> '');
     throw new Error(`Email provider returned ${response.status}${detail?`: ${detail}`:''}`);
   }
-
   return {sent:true,queued:false,partnerJoined:!!partnerJoined};
 }
+
+// Keep legacy lead recovery compatible while production routes use the neutral name.
+export const sendEarlyAccessWelcome=sendWelcomeEmail;
 
 export async function sendPartnerJoinedEmail(to:string,firstName:string,language:'en'|'es'){
   const apiKey=process.env.RESEND_API_KEY;
@@ -34,21 +33,17 @@ export async function sendPartnerJoinedEmail(to:string,firstName:string,language
 
   const subject=language==='es'?'Tu compañero se ha unido a PairVoice':'Your partner joined PairVoice';
   const text=language==='es'
-    ?`Hola ${firstName},\n\nTu compañero se ha registrado. PairVoice ya puede revisar vuestra pareja para las próximas oportunidades pagadas.\n\n— Star, PairVoice`
-    :`Hi ${firstName},\n\nYour partner has signed up. PairVoice can now review your pair for upcoming paid opportunities.\n\n— Star, PairVoice`;
+    ?`Hola ${firstName},\n\nTu compañero se ha registrado. Abre tu panel de PairVoice para completar los siguientes pasos del proyecto.\n\n— Star, PairVoice`
+    :`Hi ${firstName},\n\nYour partner has signed up. Open your PairVoice dashboard to complete the next steps for the gig.\n\n— Star, PairVoice`;
 
   const response=await fetch('https://api.resend.com/emails',{
     method:'POST',
     headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},
     body:JSON.stringify({
       from:process.env.PAIRVOICE_EMAIL_FROM||DEFAULT_FROM,
-      to,
-      subject,
-      text,
-      html:text.replaceAll('\n','<br>')
+      to,subject,text,html:text.replaceAll('\n','<br>')
     })
   });
-
   if(!response.ok)throw new Error(`Email provider returned ${response.status}`);
   return {sent:true,queued:false};
 }
