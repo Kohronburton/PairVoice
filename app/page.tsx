@@ -32,15 +32,17 @@ export default function Home(){
  },[]);
 
  const sorted=useMemo(()=>[...ops].sort((a,b)=>(a.countryCode===market?0:1)-(b.countryCode===market?0:1)||a.name.localeCompare(b.name)),[ops,market]);
+ const featured=sorted.find(o=>o.countryCode===market)||sorted[0]||null;
+ const featuredPayout=featured?.participantPayoutCents!=null?money(featured.participantPayoutCents,featured.payoutCurrency):null;
  const es=lang==='es';
  const t=es?{
   work:'Proyectos',how:'Cómo funciona',signIn:'Entrar',create:'Crear cuenta',
-  eyebrow:'PROYECTOS DE VOZ REMUNERADOS',title:'Tu voz tiene valor.',accent:'Convierte conversaciones en trabajo pagado.',
-  lead:'Explora proyectos reales, revisa el pago y los requisitos antes de empezar, conecta a tu compañero cuando sea necesario y sigue cada paso hasta el pago.',
-  browse:'Ver proyectos',account:'Crear mi cuenta',open:'PROYECTOS DISPONIBLES',pick:'Elige tu próximo proyecto.',
-  fit:'Tu país, idioma y requisitos determinan qué proyectos están disponibles para ti.',
-  partner:'Compañero requerido',solo:'Individual',sessions:'conversaciones',join:'Ver proyecto',
-  payout:'Pago',proof1:'cuenta reutilizable',proof2:'proyectos publicados',proof3:'requisitos visibles primero',proof4:'estado de pago rastreable',
+  eyebrow:'PROYECTOS DE VOZ REMUNERADOS',title:'Cobrad por hablar.',accent:'Con alguien que ya conoces.',
+  lead:'Elige un proyecto, revisa el pago y los requisitos antes de empezar, conecta a tu compañero y sigue el trabajo hasta la aprobación y el pago.',
+  browse:'Ver si califico',account:'Ver todos los proyectos',open:'PROYECTOS DISPONIBLES',pick:'Elige el proyecto. Mira el pago primero.',
+  fit:'Sin experiencia requerida. Verás el mercado, idioma, requisitos y pago antes de empezar.',
+  partner:'Compañero requerido',solo:'Individual',sessions:'conversaciones',join:'Ver si califico',
+  payout:'Pago',proof1:'gratis para registrarte',proof2:'proyectos publicados',proof3:'requisitos antes de grabar',proof4:'pago tras aprobación',
   howTitle:'Así funciona PairVoice',steps:[
    ['Elige un proyecto','Consulta el pago, mercado, idioma y requisitos antes de registrarte.'],
    ['Comprueba si calificas','Responde solo lo necesario para ese proyecto.'],
@@ -51,12 +53,12 @@ export default function Home(){
   loading:'Cargando proyectos…',empty:'No hay proyectos publicados en este momento.',footer:'Tu voz tiene valor.'
  }:{
   work:'Gigs',how:'How it works',signIn:'Sign in',create:'Create account',
-  eyebrow:'PAID VOICE GIGS',title:'Your voice has value.',accent:'Turn conversations into paid work.',
-  lead:'Browse real projects, see payout and requirements before you start, connect your partner when needed, and track every step through payment.',
-  browse:'Browse gigs',account:'Create my account',open:'AVAILABLE GIGS',pick:'Pick your next gig.',
-  fit:'Your country, language, and campaign requirements determine which work is available to you.',
-  partner:'Partner required',solo:'Individual',sessions:'conversations',join:'View gig',
-  payout:'Payout',proof1:'reusable account',proof2:'published gigs',proof3:'requirements shown first',proof4:'trackable payout status',
+  eyebrow:'PAID VOICE GIGS',title:'Get paid to talk.',accent:'With someone you already know.',
+  lead:'Choose a real voice gig, see the payout and requirements before you start, connect your partner, and track the work through approval and payment.',
+  browse:'See if I qualify',account:'See all gigs',open:'AVAILABLE GIGS',pick:'Choose the gig. See the money first.',
+  fit:'No experience required. See the market, language, requirements and payout before you start.',
+  partner:'Partner required',solo:'Individual',sessions:'conversations',join:'See if I qualify',
+  payout:'Payout',proof1:'free to join',proof2:'published gigs',proof3:'requirements before recording',proof4:'paid after approval',
   howTitle:'How PairVoice works',steps:[
    ['Choose a gig','See payout, market, language and requirements before you register.'],
    ['Check your fit','Answer only what that campaign actually needs.'],
@@ -87,9 +89,10 @@ export default function Home(){
    <div className="heroCopy">
     <div className="statusline"><span></span>{t.eyebrow}</div>
     <h1>{t.title}<br/><em>{t.accent}</em></h1>
+    {featured&&featuredPayout&&<div className="heroOffer"><span>{es?'PROYECTO DISPONIBLE AHORA':'AVAILABLE NOW'}</span><strong>{featuredPayout}</strong><b>{featured.name}</b><small>{featured.requiresPair?(es?'por pareja aprobada':'per approved pair'):(es?'por participante aprobado':'per approved participant')}</small></div>}
     <p>{t.lead}</p>
-    <div className="heroActions"><a className="primary" href="#work">{t.browse} →</a><a className="secondary" href="/join">{t.account}</a></div>
-    <div className="trustline">✓ {es?'Gratis para crear cuenta · Pago y requisitos visibles antes de empezar · Sin tarjeta para registrarte':'Free to create an account · Payout and requirements shown before you start · No card required to join'}</div>
+    <div className="heroActions">{featured?<button className="primary heroPrimary" onClick={()=>openGig(featured.slug)}>{t.browse} →</button>:<a className="primary" href="#work">{t.account} →</a>}<a className="secondary" href="#work">{t.account}</a></div>
+    <div className="trustline">✓ {es?'Sin experiencia requerida · Gratis para registrarte · Sin tarjeta · Requisitos antes de grabar':'No experience required · Free to join · No card required · Requirements shown before recording'}</div>
    </div>
    <div className="heroVisual productionVisual">
     <div className="voiceOrb"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
@@ -115,6 +118,10 @@ export default function Home(){
       <div className="missionTop"><span className="missionNo">{String(n+1).padStart(2,'0')}</span><div>{o.countryCode===market&&<b>{es?'TU MERCADO':'YOUR MARKET'}</b>}<span>{marketName(o.countryCode)}</span></div></div>
       <h3>{o.name}</h3><p>{o.jobFamily||'Voice recording'}</p>
       <div className="bigPayout">{payout}</div><small>{o.payoutUnit==='PAIR'?(es?'por pareja aprobada':'per approved pair'):(es?'por participante aprobado':'per approved participant')}</small>
+      <div className="gigFacts">
+       <div><b>{es?'QUÉ HACES':'WHAT YOU DO'}</b><span>{es?'Graba conversaciones siguiendo las instrucciones del proyecto.':'Record conversations by following the gig instructions.'}</span></div>
+       <div><b>{es?'CUÁNDO COBRAS':'WHEN YOU GET PAID'}</b><span>{es?'Después de que tu trabajo sea revisado y aprobado.':'After your completed work is reviewed and approved.'}</span></div>
+      </div>
       <div className="chips"><span>{o.languageCode.toUpperCase()}</span><span>{o.requiresPair?t.partner:t.solo}</span>{o.sessionCount&&<span>{o.sessionCount} {t.sessions}</span>}{o.deviceRequirement&&<span>{o.deviceRequirement}</span>}</div>
       <button onClick={()=>openGig(o.slug)}>{t.join} →</button>
      </article>
@@ -129,7 +136,7 @@ export default function Home(){
 
   <section className="joinV2 productionCta">
    <div className="joinCopy"><div className="eyebrow">{es?'TU CUENTA PAIRVOICE':'YOUR PAIRVOICE ACCOUNT'}</div><h2>{t.ctaTitle}</h2><p>{t.ctaBody}</p></div>
-   <div className="accountCtaCard"><span>{es?'SIN TARIFA DE REGISTRO':'NO SIGNUP FEE'}</span><strong>{es?'Empieza con una cuenta PairVoice.':'Start with one PairVoice account.'}</strong><p>{es?'Después eliges proyectos, verificas requisitos y conectas a tu compañero cuando haga falta.':'Then choose gigs, verify requirements, and connect a partner when needed.'}</p><a href="/join">{t.cta} →</a><a className="accountSignin" href="/signin">{t.signIn}</a></div>
+   <div className="accountCtaCard"><span>{es?'SIN TARIFA DE REGISTRO':'NO SIGNUP FEE'}</span><strong>{es?'Mira el pago. Comprueba si calificas. Luego empieza.':'See the payout. Check your fit. Then start.'}</strong><p>{es?'Después eliges proyectos, verificas requisitos y conectas a tu compañero cuando haga falta.':'Then choose gigs, verify requirements, and connect a partner when needed.'}</p><a href="/join">{t.cta} →</a><a className="accountSignin" href="/signin">{t.signIn}</a></div>
   </section>
 
   <footer><div className="logo">PAIR<span>VOICE</span></div><p>{t.footer}</p><div className="footerLinks"><a href="/privacy">Privacy</a><a href="/terms">Terms</a></div><span>© 2026 PairVoice</span></footer>
