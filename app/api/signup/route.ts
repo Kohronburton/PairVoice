@@ -1,2 +1,49 @@
-import{NextRequest,NextResponse}from'next/server';import{createClient}from'@supabase/supabase-js';import{isValidEmail,normalizeEmail}from'../../../lib/validation';
-export async function POST(req:NextRequest){try{const b=await req.json(),email=normalizeEmail(b.email);if(!b.campaign||!b.firstName||!isValidEmail(email)||!b.countryCode||!b.languageCode||b.is18Plus!==true||b.consent!==true)return NextResponse.json({error:'Campaign, identity, eligibility and consent are required.'},{status:400});const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;if(!url||!key)return NextResponse.json({error:'Signup service is not configured.'},{status:503});const db=createClient(url,key,{auth:{persistSession:false}});const{data,error}=await db.rpc('register_campaign_participant',{p_campaign_slug:String(b.campaign),p_first_name:String(b.firstName).trim(),p_email:email,p_phone:b.phone?String(b.phone):null,p_country_code:String(b.countryCode).toUpperCase(),p_language_code:String(b.languageCode).toLowerCase(),p_is_18_plus:true,p_consent:true,p_referral_code:b.ref?String(b.ref).toUpperCase():null});if(error){const msg=String(error.message||''),status=msg.includes('already_enrolled')?409:msg.includes('eligibility')||msg.includes('campaign_')?400:500;return NextResponse.json({error:status===409?'You are already enrolled in this campaign.':status===400?'You are not eligible for this campaign as submitted.':'Unable to complete signup.'},{status})}return NextResponse.json(data)}catch(e){console.error(e);return NextResponse.json({error:'Unable to complete signup.'},{status:500})}}
+import{NextRequest,NextResponse}from'next/server';
+import{createClient}from'@supabase/supabase-js';
+import{isValidEmail,normalizeEmail}from'../../../lib/validation';
+import{sendWelcomeEmail}from'../../../lib/email';
+import{buildPartnerInviteUrl}from'../../../lib/partner-invite';
+
+export async function POST(req:NextRequest){
+ try{
+  const b=await req.json(),email=normalizeEmail(b.email);
+  if(!b.campaign||!b.firstName||!isValidEmail(email)||!b.countryCode||!b.languageCode||b.is18Plus!==true||b.consent!==true)
+   return NextResponse.json({error:'Campaign, identity, eligibility and consent are required.'},{status:400});
+
+  const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if(!url||!key)return NextResponse.json({error:'Signup service is not configured.'},{status:503});
+
+  const db=createClient(url,key,{auth:{persistSession:false}});
+  const{data,error}=await db.rpc('register_campaign_participant',{
+   p_campaign_slug:String(b.campaign),
+   p_first_name:String(b.firstName).trim(),
+   p_email:email,
+   p_phone:b.phone?String(b.phone):null,
+   p_country_code:String(b.countryCode).toUpperCase(),
+   p_language_code:String(b.languageCode).toLowerCase(),
+   p_is_18_plus:true,
+   p_consent:true,
+   p_referral_code:b.ref?String(b.ref).toUpperCase():null
+  });
+
+  if(error){
+   const msg=String(error.message||''),status=msg.includes('already_enrolled')?409:msg.includes('eligibility')||msg.includes('campaign_')?400:500;
+   return NextResponse.json({error:status===409?'You are already enrolled in this campaign.':status===400?'You are not eligible for this campaign as submitted.':'Unable to complete signup.'},{status});
+  }
+
+  const result=(data||{})as{participantCode?:string;pairCode?:string;inviteCode?:string};
+  const site=process.env.NEXT_PUBLIC_SITE_URL||new URL(req.url).origin;
+  const inviteUrl=result.inviteCode?buildPartnerInviteUrl(site,result.inviteCode):'';
+  let emailStatus={sent:false,queued:true};
+  if(inviteUrl){
+   try{
+    emailStatus=await sendWelcomeEmail({to:email,firstName:String(b.firstName).trim(),language:String(b.languageCode).toLowerCase()==='es'?'es':'en',inviteUrl});
+   }catch(e){console.error('production welcome email failed',e)}
+  }
+
+  return NextResponse.json({...result,inviteUrl,emailStatus});
+ }catch(e){
+  console.error(e);
+  return NextResponse.json({error:'Unable to complete signup.'},{status:500});
+ }
+}
