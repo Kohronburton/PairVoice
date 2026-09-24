@@ -101,12 +101,12 @@ export default function Home(){
   joinTitle:'Encuentra proyectos de voz remunerados.',
   startCopy:'Comienza con tu nombre y correo. No pedimos datos de pago ahora; los solicitamos después de que una oportunidad sea aprobada.',
   potential:'Pago potencial',
-  firstName:'Nombre', email:'Correo electrónico', invite:'Invita a tu compañero', inviteHelp:'La mayoría de las oportunidades pagadas requieren dos personas. Envía este enlace a tu compañero.',
+  firstName:'Nombre', email:'Correo electrónico', invite:'Invita a tu compañero', inviteHelp:'Necesitas un compañero para acceder a la mayoría de los proyectos remunerados. Comparte tu enlace personal ahora. Cuando ambos estéis registrados, podremos consideraros para proyectos que requieren dos personas.',
   consent:'Quiero recibir oportunidades de PairVoice y actualizaciones por correo.',
   button:'Únete a PairVoice →',
   loading:'Guardando…',
   done:'Ya estás en PairVoice.',
-   next:'Te avisaremos cuando haya una oportunidad compatible.',
+   next:'Paso 1 completado. Para acceder a la mayoría de los proyectos remunerados, completa ahora el Paso 2: invita a tu compañero.',
   selected:'Oportunidad seleccionada',
   steps:[['01','Encuentra un proyecto','Revisa el pago, el país, el idioma y los requisitos.'],['02','Comprueba si calificas','Responde solo a lo que necesita ese proyecto.'],['03','Invita a tu compañero','Si el proyecto requiere dos personas, conecta a la persona correcta.'],['04','Graba, envía y cobra','Sigue las instrucciones y cobra después de la aprobación.']],
   free:'Gratis. No necesitas pagar ni grabar tu voz para registrarte.',
@@ -131,12 +131,12 @@ export default function Home(){
   joinTitle:'Get matched with paid voice gigs.',
   startCopy:'Start with your name and email. We do not ask for payment details now; we request them after an opportunity is approved.',
   potential:'Potential payout',
-  firstName:'First name', email:'Email address', invite:'Invite your partner', inviteHelp:'Most paid conversation opportunities require two people. Send this link to your partner.',
+  firstName:'First name', email:'Email address', invite:'Invite your partner', inviteHelp:'You need a partner to qualify for most paid conversation gigs. Share your personal link now. Once both of you are signed up, we can consider your pair for gigs that require two people.',
   consent:'Send me PairVoice opportunities and launch updates by email.',
   button:'Join PairVoice →',
   loading:'Saving…',
   done:"You're on PairVoice.",
-  next:"We'll email you when a matching opportunity is ready.",
+  next:"Step 1 is complete. To qualify for most paid gigs, complete Step 2 now: invite your partner.",
   selected:'Selected opportunity',
   steps:[['01','Find a gig','See the payout, market, language and requirements.'],['02','Check your fit','Answer only what that campaign needs.'],['03','Bring or invite a partner','When a gig requires two people, connect the right person.'],['04','Record, submit & get paid','Follow the instructions and get paid after approval.']],
   free:'Free to join. No payment details or voice recording required at signup.',
@@ -244,7 +244,7 @@ export default function Home(){
     <p>{t.startCopy}</p>
    </div>
    <div className="card">
-    {done?<div className="success"><div>✓</div><h3>{partnerJoined?(lang==='es'?'¡Tu pareja está conectada!':'Your pair is connected!'):t.done}</h3><p>{partnerJoined?(lang==='es'?'Te enviaremos los próximos pasos.':'We’ll email you the next steps.'):t.next}</p>{!partnerJoined&&<><p className="inviteHelp">{t.inviteHelp}</p><InviteShareButtons inviteUrl={inviteUrl} language={lang}/></>}</div>:
+    {done?<div className="success">{partnerJoined?<><div className="successCheck">✓</div><h3>{lang==='es'?'¡Tu pareja está conectada!':'Your pair is connected!'}</h3><p>{lang==='es'?'Te enviaremos los próximos pasos.':'We’ll email you the next steps.'}</p></>:<><div className="pairProgress" aria-label={lang==='es'?'Progreso para formar pareja':'Pair formation progress'}><div className="progressStep complete"><span>✓</span><div><small>{lang==='es'?'PASO 1':'STEP 1'}</small><strong>{lang==='es'?'Te uniste a PairVoice':'You joined PairVoice'}</strong><p>{lang==='es'?'Tu cuenta está lista.':'Your account is ready.'}</p></div><b>{lang==='es'?'Completo':'Complete'}</b></div><div className="progressStep required"><span>2</span><div><small>{lang==='es'?'PASO 2':'STEP 2'}</small><strong>{lang==='es'?'Invita a tu compañero':'Invite your partner'}</strong><p>{lang==='es'?'Necesario para la mayoría de los proyectos remunerados.':'Required for most paid gigs.'}</p></div><b>{lang==='es'?'Necesario':'Required'}</b></div></div><div className="partnerRequired"><strong>{lang==='es'?'Necesitas un compañero para acceder a la mayoría de los proyectos remunerados.':'You need a partner to get matched for most paid gigs.'}</strong><p>{t.inviteHelp}</p></div><div className="shareNext"><h3>{lang==='es'?'Invita a tu compañero ahora':'Invite your partner now'}</h3><small>{lang==='es'?'COMPARTE TU ENLACE PERSONAL':'SHARE YOUR PERSONAL LINK'}</small><InviteShareButtons inviteUrl={inviteUrl} language={lang}/></div></>}</div>:
     <form onSubmit={submit}>
      <h3>{selected?selected.name:t.joinTitle}</h3>
      <label htmlFor="early-access-first-name">{t.firstName}</label><input id="early-access-first-name" required name="first_name" autoComplete="given-name" autoCapitalize="words" enterKeyHint="next"/><label htmlFor="early-access-email">{t.email}</label><input id="early-access-email" required type="email" name="email" autoComplete="email" inputMode="email" autoCapitalize="none" spellCheck={false} enterKeyHint="done"/>
