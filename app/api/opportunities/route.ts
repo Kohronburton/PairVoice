@@ -1,2 +1,18 @@
 import{NextResponse}from'next/server';import{createClient}from'@supabase/supabase-js';
-export async function GET(){const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.SUPABASE_SERVICE_ROLE_KEY;if(!url||!key)return NextResponse.json({error:'Not configured'},{status:503});const db=createClient(url,key,{auth:{persistSession:false}});const{data,error}=await db.from('campaigns').select('slug,name,locale,accent_target,participant_count,device_requirement,job_families(name,recording_mode,requires_pair),campaign_versions!inner(status,country_code,language_code,sessions_required,target_seconds_min,target_seconds_max,pair_compensation_cents,currency,rules)').eq('active',true).eq('campaign_versions.status','PUBLISHED').order('name');if(error){console.error(error);return NextResponse.json({error:'Unable to load opportunities.'},{status:500})}const opportunities=(data||[]).map((r:any)=>{const v=Array.isArray(r.campaign_versions)?r.campaign_versions[0]:r.campaign_versions,f=Array.isArray(r.job_families)?r.job_families[0]:r.job_families;return{slug:r.slug,name:r.name,countryCode:v?.country_code,languageCode:v?.language_code,locale:r.locale,accentTarget:r.accent_target,participantCount:r.participant_count,sessionCount:v?.sessions_required,sessionMinutesMin:v?Math.round(v.target_seconds_min/60):null,sessionMinutesMax:v?Math.round(v.target_seconds_max/60):null,deviceRequirement:r.device_requirement,participantPayoutCents:v?.pair_compensation_cents??null,payoutCurrency:v?.currency||'USD',payoutUnit:'PAIR',jobFamily:f?.name??null,recordingMode:f?.recording_mode??null,requiresPair:Boolean(f?.requires_pair),requirements:v?.rules||{}}});return NextResponse.json({opportunities})}
+export async function GET(){
+ const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+ if(!url||!key)return NextResponse.json({error:'Catalog is not configured.'},{status:503});
+ const db=createClient(url,key,{auth:{persistSession:false}});
+ const{data,error}=await db.rpc('public_opportunities');
+ if(error){console.error(error);return NextResponse.json({error:'Unable to load opportunities.'},{status:500})}
+ const opportunities=(data||[]).map((r:any)=>({
+  slug:r.slug,name:r.name,countryCode:r.country_code,languageCode:r.language_code,locale:r.locale,
+  accentTarget:r.accent_target,participantCount:r.participant_count,sessionCount:r.sessions_required,
+  sessionMinutesMin:r.target_seconds_min?Math.round(r.target_seconds_min/60):null,
+  sessionMinutesMax:r.target_seconds_max?Math.round(r.target_seconds_max/60):null,
+  deviceRequirement:r.device_requirement,participantPayoutCents:r.pair_compensation_cents??null,
+  payoutCurrency:r.currency||'USD',payoutUnit:'PAIR',jobFamily:r.job_family??null,
+  recordingMode:r.recording_mode??null,requiresPair:Boolean(r.requires_pair),requirements:r.rules||{}
+ }));
+ return NextResponse.json({opportunities});
+}
