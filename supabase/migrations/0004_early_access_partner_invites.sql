@@ -55,7 +55,7 @@ begin
   end if;
 
   insert into leads(email,first_name,market_code,detected_locale,detected_languages,preferred_language_code,
-    marketing_consent,source,marketing_campaign_key,landing_path,referrer,fbclid,gclid,utm_source,utm_medium,
+    marketing_consent,source,campaign_key,landing_path,referrer,fbclid,gclid,utm_source,utm_medium,
     utm_campaign,utm_content,utm_term,campaign_id,source_posting_id,status,updated_at)
   values(v_email,left(trim(p_first_name),80),coalesce(nullif(v_market,''),'UNKNOWN'),left(p_detected_locale,40),
     coalesce(p_detected_languages,'{}'),v_language,true,left(p_source,200),left(coalesce(p_campaign_key,'organic'),120),
@@ -64,7 +64,7 @@ begin
   on conflict(email) do update set first_name=excluded.first_name,market_code=excluded.market_code,
     detected_locale=excluded.detected_locale,detected_languages=excluded.detected_languages,
     preferred_language_code=excluded.preferred_language_code,marketing_consent=true,source=excluded.source,
-    marketing_campaign_key=excluded.marketing_campaign_key,landing_path=excluded.landing_path,referrer=excluded.referrer,
+    campaign_key=excluded.campaign_key,landing_path=excluded.landing_path,referrer=excluded.referrer,
     fbclid=excluded.fbclid,gclid=excluded.gclid,utm_source=excluded.utm_source,utm_medium=excluded.utm_medium,
     utm_campaign=excluded.utm_campaign,utm_content=excluded.utm_content,utm_term=excluded.utm_term,
     campaign_id=coalesce(excluded.campaign_id,leads.campaign_id),source_posting_id=coalesce(excluded.source_posting_id,leads.source_posting_id),
