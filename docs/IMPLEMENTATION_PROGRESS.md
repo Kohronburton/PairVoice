@@ -207,11 +207,11 @@ Commit:
 | Approval → earnings | VERIFIED #116 |
 | Payout status telemetry | VERIFIED #116 |
 | Admin funnel view | VERIFIED #116 |
-| Real FunCrowd launch adapter | PLANNED |
-| Internal/client QA operating UI | PLANNED |
-| Real payout-provider execution + reconciliation | PLANNED |
-| Referral reward execution | PLANNED |
-| Messaging/recovery automations | PARTIAL |
+| FunCrowd manual external adapter | VERIFIED #134 |
+| Internal/client QA workflow/API | VERIFIED #134; queue UI remains |
+| Provider-neutral payout reconciliation | VERIFIED #134; live provider adapter remains |
+| Referral qualification/reward execution | IMPLEMENTED / VERIFY |
+| Durable lifecycle messaging/retry | IMPLEMENTED / VERIFY |
 | Full mobile production E2E | PLANNED |
 | Staging acceptance | PLANNED |
 | Paid traffic | BLOCKED until end-to-end launch gates pass |
@@ -402,3 +402,78 @@ requires `PAIRVOICE_INTERNAL_SECRET` or `CRON_SECRET`.
 Test:
 `supabase/tests/operational_controls_messaging_invariants.sql`
 covers message deduplication, claim behavior, retry status, messaging pause/resume and default subsystem state.
+
+
+## Checkpoint N — Referral qualification
+**IMPLEMENTED / VERIFY**
+
+Approved work is now the qualification event for referrals.
+- campaign referral commission is paid only when the approved campaign version explicitly configures a non-zero `referral_commission_cents`;
+- current zero-valued campaigns therefore create no accidental cash commission;
+- active referral milestone programs are evaluated from approved work;
+- milestone bonus is paid only when the active program explicitly configures a non-zero bonus;
+- campaign commissions, milestone ledger entries and `referral_pair_completed` telemetry are idempotent.
+
+Test: `supabase/tests/referral_qualification_invariants.sql`.
+
+## Checkpoint O — Production subsystem controls
+**IMPLEMENTED / VERIFY**
+
+Added audited kill switches for:
+- MATCHING
+- WORK
+- PAYOUT
+- MESSAGING
+- REFERRAL
+
+Failure-isolation rules:
+- MATCHING off blocks new partner-pool actions;
+- WORK off blocks new work access/start, but existing participants can still submit completed work;
+- PAYOUT off blocks new requests and new execution attempts, but reconciliation remains available for in-flight money;
+- MESSAGING off stops outbox claims without deleting messages;
+- REFERRAL off skips new referral reward processing without blocking pair approval.
+
+Only SUPER_ADMIN can change controls through `/api/admin/controls`; every change requires a reason and writes audit evidence.
+
+Test: `supabase/tests/subsystem_controls_invariants.sql`.
+
+## Checkpoint P — Durable lifecycle messaging
+**IMPLEMENTED / VERIFY**
+
+Pair/payout state changes now enqueue deduplicated lifecycle messages into the durable `outbox_events` table.
+Templates:
+- PAIR_FORMED
+- WORK_READY
+- SUBMISSION_RECEIVED
+- REWORK_REQUIRED
+- APPROVED
+- REJECTED
+- PAYOUT_PAID
+
+Worker:
+- `POST /api/internal/message-worker`
+- requires `PAIRVOICE_WORKER_SECRET`;
+- claims up to 20 messages with `FOR UPDATE SKIP LOCKED`;
+- sends through the existing Resend integration;
+- success → DELIVERED;
+- failure → exponential retry;
+- after 5 failed attempts → DEAD_LETTER;
+- missing email provider configuration is treated as a retryable delivery failure, not a false success.
+
+Test: `supabase/tests/lifecycle_messaging_invariants.sql` proves dedupe count, messaging pause, resume, retry and delivery completion.
+
+## Latest verified CI
+- PairVoice Verify #134: **PASSED**.
+- Includes app typecheck/unit tests/build/audit plus database migrations and invariants through the payout reconciliation slice.
+- Referral, controls and lifecycle messaging commits are newer and remain **IMPLEMENTED / VERIFY** until their current-head run passes.
+
+## Remaining finish-critical work
+1. Verify current head and repair only evidence-based failures.
+2. Build admin operating queues/UI for QA, payout reconciliation, controls and dead-letter messages.
+3. Add production scheduler/cron invocation for the message worker and health evidence.
+4. Configure real campaign launch URL/invitation code in admin data; never commit secrets/codes to source.
+5. Integrate a real payout provider only after provider/API contract and credentials are verified; controlled manual reconciliation remains the safe fallback.
+6. Run mobile E2E on iPhone + Android across signup → pairing → work → submission → QA → payout request.
+7. Run hostile-network/retry scenarios and kill-switch drills.
+8. Run a controlled staging pilot with real participants and reconcile every pair/payout/message.
+9. Only then merge PR #9 / production release and begin organic acquisition; paid traffic remains gated on approved-pair CAC observability.
