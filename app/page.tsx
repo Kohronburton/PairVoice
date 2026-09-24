@@ -179,7 +179,7 @@ export default function Home(){
     {!loading&&sorted.map((o,n)=>{
      const payout=o.participantPayoutCents!=null?money(o.participantPayoutCents,o.payoutCurrency):(es?'Pago por confirmar':'Payout being finalized');
      const time=o.sessionMinutesMin&&o.sessionMinutesMax?o.sessionMinutesMin+'–'+o.sessionMinutesMax+' min':o.sessionMinutesMax?'≤ '+o.sessionMinutesMax+' min':o.sessionMinutesMin?o.sessionMinutesMin+'+ min':null;
-     return <article className={'missionCardPublic hormoneOfferCard '+(o.countryCode===market?'featured':'')} key={o.slug}>
+     return <article className={'missionCardPublic hormoziOfferCard '+(o.countryCode===market?'featured':'')} key={o.slug}>
       <div className="missionTop"><span className="missionNo">{String(n+1).padStart(2,'0')}</span><div>{o.countryCode===market&&<b>{es?'TU MERCADO':'YOUR MARKET'}</b>}<span>{marketName(o.countryCode)}</span></div></div>
       <div className="offerCardHeadline"><div><h3>{o.name}</h3><p>{o.jobFamily||'Voice recording'}</p></div><div><strong>{payout}</strong><small>{o.payoutUnit==='PAIR'?t.pairApproved:t.participantApproved}</small></div></div>
       <div className="offerQuickFacts">
