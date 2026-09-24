@@ -9,7 +9,7 @@ export async function sendEarlyAccessWelcome({to,firstName,language,inviteUrl,pa
   const templateId=language==='es'?'pairvoice-welcome-es':'pairvoice-welcome-en';
   const response=await fetch('https://api.resend.com/emails',{
     method:'POST',
-    headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},
+    headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json','Idempotency-Key':`pairvoice-welcome/${language}/${inviteUrl.split('/').pop()||'unknown'}`},
     body:JSON.stringify({
       from:process.env.PAIRVOICE_EMAIL_FROM||DEFAULT_FROM,
       to,
