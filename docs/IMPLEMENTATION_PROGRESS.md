@@ -742,3 +742,51 @@ PR #9 remains intentionally DRAFT until:
 3. staging environment readiness returns no blocking failures;
 4. the manual/mobile staging certification has evidence;
 5. the controlled real-pair rollout succeeds without database repair.
+
+
+## FINAL ENGINEERING CERTIFICATION — PairVoice Verify #183
+**VERIFIED — 2026-09-24**
+
+Certified branch head:
+`cd4782c3528d38dada4f4384e44e316ecd84c34f`
+
+PairVoice Verify run #183:
+- app job: PASS
+- database job: PASS
+- TypeScript typecheck: PASS
+- unit tests: PASS
+- production Next.js build: PASS
+- database migrations: PASS
+- all database invariant suites: PASS
+- versioned legal/consent invariants: PASS
+- backup/restore drill: PASS
+
+The two defects found by run #181 were corrected before this certification:
+1. public legal routes are request-time dynamic so production build does not require runtime Supabase secrets during prerender;
+2. campaign consent now uses actual `enrollment_status` enum values (`QUALIFIED` / `ACTIVE`).
+
+### Engineering freeze point
+PR #9 remains DRAFT and mergeable. Engineering implementation is now frozen at this verified checkpoint unless staging evidence finds a real defect.
+
+### What remains before production launch
+These are configuration/evidence gates, not unimplemented core workflow:
+1. Deploy the certified branch to a staging environment.
+2. Configure required staging secrets shown by `/api/admin/release-readiness`.
+3. Configure real campaign WORK provider binding, FunCrowd/external launch URL and invitation code policy.
+4. Load any required credential inventory/capacity.
+5. Supply reviewed/approved Privacy, Terms, Campaign Terms and Participant Consent text; publish via `/admin/legal`.
+6. Confirm `/admin/readiness` and `/api/admin/release-readiness` have zero blocking failures.
+7. Execute `docs/STAGING_ACCEPTANCE_AND_LAUNCH_CERTIFICATION.md` on iPhone Safari, Android Chrome, narrow mobile viewport and desktop.
+8. Complete the controlled 2-real-pair smoke, then 10-approved-pair proof batch.
+9. Inspect source → signup → pair → work → submission → approval → payout and support/rejection metrics.
+10. Only after that evidence: remove PR #9 from draft, merge/deploy, then begin organic acquisition before small paid acquisition.
+
+### Explicitly not certified yet
+- production hosting/deployment itself;
+- real FunCrowd provider behavior;
+- final legal language;
+- live payout-provider transfer behavior;
+- mobile/browser behavior on real devices;
+- real-pair operational throughput.
+
+Those require external environment/provider/human evidence and must not be inferred from CI.
