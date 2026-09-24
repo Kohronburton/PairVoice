@@ -255,3 +255,30 @@ For every consequential slice:
 7. state the exact next implementation step.
 
 This document is a context ledger, not proof by itself. Repository code, migrations, tests, CI results and production/staging evidence remain the authoritative implementation evidence.
+
+
+## Instrumentation + launch telemetry slice
+Status: **IMPLEMENTED / UNVERIFIED** pending PairVoice Verify CI on the current PR head.
+
+Implemented:
+- persistent first-touch attribution captured client-side and attached to every funnel event;
+- last-touch attribution captured on every event;
+- UTM/source/referral/invite/click identifiers retained in telemetry metadata;
+- device class attached to client funnel events;
+- server-side request/country/user-agent context attached to telemetry without making those values canonical participant identity;
+- canonical aliases for campaign view, campaign CTA and partner-invite creation while preserving legacy event compatibility;
+- partner matching choice/request/join events;
+- partner invite share-click channel events for WhatsApp, SMS, email, Facebook and copy-link;
+- expanded event vocabulary through pair, gig, submission, payment and referral milestones so later slices can emit against one stable contract;
+- credential replacement now returns the existing assignment for a repeated idempotency key rather than rotating credentials again;
+- database invariants now cover credential replacement idempotency, preservation of replaced assignment history, single recovery evidence, and work-provider-run idempotency.
+
+Launch rule:
+Do not optimize paid acquisition against raw signups. The primary acquisition metric remains approved-pair CAC. Funnel telemetry must trace source/creative → signup → partner/pair → submission → approval before paid scale.
+
+Next implementation:
+1. verify this slice in CI;
+2. emit partner acceptance/pair-created events from server-authoritative pair transitions rather than inferring them from UI;
+3. implement recoverable work-provider launch/submission transitions and corresponding telemetry;
+4. add approval/earning/payment telemetry at the authoritative server transition;
+5. build the admin funnel view from stored events and campaign state.
