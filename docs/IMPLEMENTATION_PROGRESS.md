@@ -820,3 +820,66 @@ Resolution:
 - post-reconciliation comparison reports Phase 2 **ahead of main and 0 commits behind**.
 
 Fresh CI after this reconciliation is required before PR #9 is considered merge-ready.
+
+
+## Staging infrastructure checkpoint — 2026-09-24
+**IMPLEMENTED / PARTIALLY CONFIGURED**
+
+Render:
+- workspace: Kohron's workspace
+- service: `pairvoice-staging`
+- service ID: `srv-daqin049v7es73darq4g`
+- branch: `phase-2-production-workflow`
+- region: Virginia
+- origin: `https://pairvoice-staging.onrender.com`
+- auto-deploy: enabled
+- public target hostname for Cloudflare: `pairvoice-staging.onrender.com`
+- `NEXT_PUBLIC_SITE_URL=https://staging.pairvoice.com`
+
+Supabase:
+- isolated project: `PairVoice Staging`
+- project ref: `dnhxgnzhcxyjwblhacuj`
+- region: us-east-1
+- production data was NOT copied
+- all repository migrations 0001–0025 applied successfully
+- canonical published U.S. English ($60/pair) and Spain Spanish ($50/pair) campaigns exist in staging
+
+Staging-only secrets already generated/configured in Render:
+- credential encryption key
+- internal worker secret
+- public Supabase URL/publishable key
+
+Secrets intentionally NOT committed or recorded here:
+- Supabase service-role/secret key
+- Resend API key
+- admin Basic Auth credentials
+
+### Security hardening discovered during staging
+Supabase advisors exposed real issues not caught by CI:
+- eight PostgREST-visible tables lacked RLS;
+- campaign signup and partner-join RPCs were callable by anonymous clients because server routes still used the public key;
+- trigger-only SECURITY DEFINER functions were publicly executable;
+- multiple helper functions had mutable search_path.
+
+Corrective work:
+- `app/api/signup` now uses `serviceClient()`;
+- `app/api/pair` now uses `serviceClient()`;
+- migration `0025_security_hardening.sql` enables RLS on remaining exposed tables;
+- signup/partner RPCs are service-role only;
+- legacy lead RPCs are service-role only;
+- trigger-only SECURITY DEFINER functions are no longer executable via anon/authenticated RPC;
+- flagged helper search paths are pinned;
+- `supabase/tests/security_surface_invariants.sql` prevents regression.
+
+Evidence:
+- PairVoice Verify #194: PASS on head `5cd8212b45f9eae7c0bf0e6e17244f9ba00d8d7b`;
+- Supabase staging advisor: no remaining PairVoice RLS-disabled errors, mutable-search-path warnings, or anonymous SECURITY DEFINER exposure warnings.
+- remaining advisor items are informational server-only RLS/no-policy notices plus the generic citext-extension warning.
+
+### Remaining staging configuration blockers
+1. Set `SUPABASE_SERVICE_ROLE_KEY` on Render from the **PairVoice Staging** Supabase project. The Supabase connector intentionally does not expose this credential.
+2. Set staging admin Basic Auth credentials (`PAIRVOICE_ADMIN_USER`, `PAIRVOICE_ADMIN_PASSWORD`).
+3. Set `RESEND_API_KEY` before lifecycle/welcome-email acceptance.
+4. Add `staging.pairvoice.com` as a Render custom domain and point Cloudflare CNAME `staging` to `pairvoice-staging.onrender.com`.
+5. Publish reviewed staging legal documents and configure FunCrowd launch/access values.
+6. Run the staging acceptance certification and controlled pair tests.
