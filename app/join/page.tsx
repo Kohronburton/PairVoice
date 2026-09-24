@@ -19,14 +19,14 @@ export default function JoinPage(){
  const selected=useMemo(()=>ops.find(o=>o.slug===campaign)||null,[ops,campaign]);
  const es=lang==='es';
  const t=es?{
-  title:campaign?'Únete a este proyecto':'Crea tu cuenta PairVoice',lead:campaign?'Crea tu cuenta y confirma los datos necesarios para este proyecto.':'Crea una cuenta reutilizable para ver y participar en proyectos compatibles.',
+  title:campaign?'Únete a este proyecto':'Crea tu cuenta PairVoice',lead:campaign?'Tu proyecto ya está seleccionado. Crea tu cuenta, confirma los datos básicos y comprueba si calificas antes de grabar.':'Crea una cuenta reutilizable para ver y participar en proyectos compatibles.',
   first:'Nombre',email:'Correo electrónico',country:'País',language:'Idioma',age:'Confirmo que tengo 18 años o más.',consent:'Acepto crear una cuenta PairVoice y recibir comunicaciones necesarias sobre mis proyectos.',fixed:'Ya configurado por este proyecto',
-  button:campaign?'Continuar con este proyecto':'Crear cuenta PairVoice',saving:'Creando cuenta…',done:'Revisa tu correo.',next:'Te enviamos un enlace seguro para entrar a PairVoice.',
+  button:campaign?'Crear cuenta y comprobar elegibilidad':'Crear cuenta PairVoice',saving:'Creando cuenta…',done:'Revisa tu correo.',next:'Te enviamos un enlace seguro para entrar a PairVoice.',
   back:'Volver a proyectos',signin:'¿Ya tienes cuenta? Entrar',partner:'Compañero requerido',payout:'Pago por pareja aprobada'
  }:{
-  title:campaign?'Join this gig':'Create your PairVoice account',lead:campaign?'Create your account and confirm the information required for this gig.':'Create one reusable account to discover and join compatible paid voice gigs.',
+  title:campaign?'Join this gig':'Create your PairVoice account',lead:campaign?'Your gig is already selected. Create your account, confirm the basics, and check your eligibility before you record.':'Create one reusable account to discover and join compatible paid voice gigs.',
   first:'First name',email:'Email address',country:'Country',language:'Language',age:'I confirm I am 18 or older.',consent:'I agree to create a PairVoice account and receive communications required for my gigs.',fixed:'Already set by this gig',
-  button:campaign?'Continue with this gig':'Create PairVoice account',saving:'Creating account…',done:'Check your email.',next:'We sent you a secure link to enter PairVoice.',
+  button:campaign?'Create account & check eligibility':'Create PairVoice account',saving:'Creating account…',done:'Check your email.',next:'We sent you a secure link to enter PairVoice.',
   back:'Back to gigs',signin:'Already have an account? Sign in',partner:'Partner required',payout:'Payout per approved pair'
  };
  async function submit(e:FormEvent<HTMLFormElement>){
@@ -60,7 +60,7 @@ export default function JoinPage(){
   <section className="joinShell">
    <div className="joinContext"><div className="eyebrow">{campaign?(es?'PROYECTO SELECCIONADO':'SELECTED GIG'):(es?'CUENTA PAIRVOICE':'PAIRVOICE ACCOUNT')}</div>
     <h1>{t.title}</h1><p>{t.lead}</p>
-    {selected&&<article className="selectedGigCard"><small>{countryName(selected.countryCode)}</small><h2>{selected.name}</h2><p>{selected.jobFamily||'Voice recording'}</p>{selected.participantPayoutCents!=null&&<strong>{money(selected.participantPayoutCents,selected.payoutCurrency)} <span>{t.payout}</span></strong>}<div className="chips"><span>{selected.languageCode.toUpperCase()}</span>{selected.requiresPair&&<span>{t.partner}</span>}</div></article>}
+    {selected&&<article className="selectedGigCard"><small>{countryName(selected.countryCode)}</small><h2>{selected.name}</h2><p>{selected.jobFamily||'Voice recording'}</p>{selected.participantPayoutCents!=null&&<strong>{money(selected.participantPayoutCents,selected.payoutCurrency)} <span>{t.payout}</span></strong>}<div className="chips"><span>{selected.languageCode.toUpperCase()}</span>{selected.requiresPair&&<span>{t.partner}</span>}</div><div className="joinPromise"><b>{es?'ANTES DE GRABAR':'BEFORE YOU RECORD'}</b><span>✓ {es?'Compruebas elegibilidad':'Check eligibility'}</span><span>✓ {es?'Ves requisitos del proyecto':'See gig requirements'}</span><span>✓ {es?'Conectas a tu compañero si hace falta':'Connect a partner if required'}</span></div></article>}
    </div>
    <div className="joinAccountCard">{done?<div className="success"><div>✓</div><h2>{t.done}</h2><p>{t.next}</p>{magicSent&&<a className="primary" href="/signin">{es?'Volver a enviar enlace':'Send another sign-in link'}</a>}</div>:
     <form onSubmit={submit}><div className="formTop"><span>PAIRVOICE</span><b>{es?'CUENTA':'ACCOUNT'}</b></div>{campaign&&<div className="microSteps"><span className="active">1 {es?'Cuenta':'Account'}</span><span>2 {es?'Compañero':'Partner'}</span><span>3 {es?'Trabajo':'Work'}</span></div>}
