@@ -5,7 +5,7 @@ declare
  c uuid; v uuid; a uuid; b uuid; ea uuid; eb uuid; p uuid;
  credential_provider uuid; work_provider uuid;
  cred1 uuid; cred2 uuid; first_assignment uuid; replacement uuid; replacement_retry uuid;
- work_run uuid; work_run_retry uuid;
+ work_run uuid; work_run_retry uuid; first_credential uuid;
 begin
  insert into campaigns(slug,name,active) values('credential-recovery-test','Credential Recovery Test',true) returning id into c;
  insert into campaign_versions(campaign_id,version,status,market_code,country_code,language_code,sessions_required,target_seconds_min,target_seconds_max,hard_seconds_min,hard_seconds_max,pair_compensation_cents)
@@ -28,13 +28,14 @@ begin
  values(credential_provider,c,'credential-2','encrypted-test-only') returning id into cred2;
 
  first_assignment:=reserve_provider_credential(p,'credential-recovery-test','reserve:recovery-pair');
+ select credential_id into first_credential from provider_credential_assignments where id=first_assignment;
  replacement:=replace_provider_credential(p,'credential-recovery-test','credential exposed','replace:recovery-pair');
  replacement_retry:=replace_provider_credential(p,'credential-recovery-test','credential exposed','replace:recovery-pair');
 
  if replacement<>replacement_retry then raise exception 'credential_replacement_not_idempotent'; end if;
  if replacement=first_assignment then raise exception 'credential_replacement_did_not_create_new_assignment'; end if;
  if (select status from provider_credential_assignments where id=first_assignment)<>'REPLACED' then raise exception 'old_assignment_history_not_preserved'; end if;
- if (select status from provider_credentials where id=cred1)<>'REVOKED' then raise exception 'old_credential_not_revoked'; end if;
+ if (select status from provider_credentials where id=first_credential)<>'REVOKED' then raise exception 'old_credential_not_revoked'; end if;
  if (select count(*) from provider_credential_assignments where pair_id=p)<>2 then raise exception 'replacement_history_count_wrong'; end if;
  if (select count(*) from recovery_actions where entity_type='PAIR' and entity_id=p and action='REPLACE_CREDENTIAL')<>1 then raise exception 'replacement_recovery_not_idempotent'; end if;
 
