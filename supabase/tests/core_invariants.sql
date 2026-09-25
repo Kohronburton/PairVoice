@@ -26,6 +26,19 @@ begin
  if v_pair is null then raise exception 'pair_not_created'; end if;
 
  update pairs set state='READINESS_PENDING' where id=v_pair;
+
+ insert into pair_readiness_gates(pair_id,gate_key,status,evidence,checked_at) values
+  (v_pair,'PARTNER_ACCEPTED','PASSED','{}'::jsonb,now()),
+  (v_pair,'ELIGIBILITY_A','PASSED','{}'::jsonb,now()),
+  (v_pair,'ELIGIBILITY_B','PASSED','{}'::jsonb,now()),
+  (v_pair,'SAMPLE_A','PASSED','{}'::jsonb,now()),
+  (v_pair,'SAMPLE_B','PASSED','{}'::jsonb,now()),
+  (v_pair,'CONSENT_A','PASSED','{}'::jsonb,now()),
+  (v_pair,'CONSENT_B','PASSED','{}'::jsonb,now()),
+  (v_pair,'PARTICIPATION_HISTORY','PASSED','{}'::jsonb,now()),
+  (v_pair,'CAPACITY','PASSED','{}'::jsonb,now()),
+  (v_pair,'CREDENTIAL','PASSED','{}'::jsonb,now())
+ on conflict (pair_id,gate_key) do update set status='PASSED',checked_at=now();
  update pairs set state='READY' where id=v_pair;
 
  select count(*) into v_count from conversation_sessions where pair_id=v_pair;
