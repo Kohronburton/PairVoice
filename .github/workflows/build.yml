@@ -69,3 +69,5 @@ jobs:
             echo "Running $testfile"
             psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 -f "$testfile"
           done
+      - name: Backup and restore drill
+        run: bash scripts/verify-backup-restore.sh
