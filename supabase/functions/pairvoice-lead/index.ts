@@ -3,12 +3,28 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{
  status,headers:{"content-type":"application/json","cache-control":"no-store"}
 });
+const validEmail=(value:string)=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+const validPhone=(value:string)=>/^\+[1-9]\d{7,14}$/.test(value);
+function authorized(req:Request){
+ const expected=Deno.env.get("PAIRVOICE_EDGE_SHARED_SECRET")||"";
+ return !!expected&&req.headers.get("x-pairvoice-edge-secret")===expected;
+}
 
 Deno.serve(async(req)=>{
  if(req.method==="GET")return json({ok:true,service:"pairvoice-lead"});
  if(req.method!=="POST")return json({error:"Method not allowed."},405);
+ if(!authorized(req))return json({error:"Forbidden."},403);
  try{
   const b=await req.json();
+  const email=String(b.email||"").trim().toLowerCase();
+  const firstName=String(b.first_name||"").trim();
+  const phone=String(b.phone||"").trim();
+  const market=String(b.market_code||"").trim().toUpperCase();
+  const language=String(b.language_code||"").trim().toLowerCase();
+  if(!validEmail(email)||!firstName||!validPhone(phone)||!market||!language||b.consent!==true){
+   return json({error:"Identity, valid phone and consent are required."},400);
+  }
+
   const url=Deno.env.get("SUPABASE_URL");
   const secretSet=Deno.env.get("SUPABASE_SECRET_KEYS");
   const legacySecret=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -18,10 +34,10 @@ Deno.serve(async(req)=>{
 
   const rpc=await fetch(url+"/rest/v1/rpc/upsert_public_lead_v4",{
    method:"POST",
-   headers:{"apikey":secret,"content-type":"application/json"},
+   headers:{"apikey":secret,"authorization":"Bearer "+secret,"content-type":"application/json"},
    body:JSON.stringify({
-    p_email:b.email,p_first_name:b.first_name,p_phone:b.phone,
-    p_market_code:b.market_code,p_language_code:b.language_code,p_consent:b.consent,
+    p_email:email,p_first_name:firstName,p_phone:phone,
+    p_market_code:market,p_language_code:language,p_consent:true,p_marketing_consent:b.marketing_consent===true,
     p_detected_locale:b.detected_locale,p_detected_languages:b.detected_languages||[],
     p_source:b.source,p_campaign_key:b.campaign_key,p_campaign_slug:b.campaign_slug,
     p_source_external_id:b.source_external_id,p_landing_path:b.landing_path,p_referrer:b.referrer,
