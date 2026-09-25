@@ -5,9 +5,9 @@ import {sendEarlyAccessWelcome,sendPartnerJoinedEmail} from '../../../lib/email'
 function publicOrigin(req:NextRequest){
  const configured=(process.env.NEXT_PUBLIC_SITE_URL||'').replace(/\/$/,'');
  if(configured&&!/localhost/i.test(configured))return configured;
- const host=(req.headers.get('x-forwarded-host')||req.headers.get('host')||'').split(',')[0].trim();
- const proto=(req.headers.get('x-forwarded-proto')||'https').split(',')[0].trim();
- if(host&&!/^(localhost|127\.0\.0\.1)(:|$)/i.test(host))return `${proto}://${host}`;
+ // Do not build outbound links from arbitrary forwarded-host headers. A missing
+ // production site URL must fail closed to the request origin instead of
+ // allowing a proxy-supplied host to poison email links.
  return req.nextUrl.origin;
 }
 
