@@ -2,6 +2,15 @@ import {NextRequest,NextResponse} from 'next/server';
 import {clampText,isValidEmail,normalizeEmail,normalizeMarket,normalizePhone} from '../../../lib/validation';
 import {sendEarlyAccessWelcome,sendPartnerJoinedEmail} from '../../../lib/email';
 
+function publicOrigin(req:NextRequest){
+ const configured=(process.env.NEXT_PUBLIC_SITE_URL||'').replace(/\/$/,'');
+ if(configured&&!/localhost/i.test(configured))return configured;
+ const host=(req.headers.get('x-forwarded-host')||req.headers.get('host')||'').split(',')[0].trim();
+ const proto=(req.headers.get('x-forwarded-proto')||'https').split(',')[0].trim();
+ if(host&&!/^(localhost|127\.0\.0\.1)(:|$)/i.test(host))return `${proto}://${host}`;
+ return req.nextUrl.origin;
+}
+
 export async function POST(req:NextRequest){
  try{
   const b=await req.json(),email=normalizeEmail(b.email),market=normalizeMarket(b.market_code);
@@ -11,16 +20,16 @@ export async function POST(req:NextRequest){
   if(!phone)return NextResponse.json({error:'Enter a valid phone number.'},{status:400});
   if(b.consent!==true)return NextResponse.json({error:'Consent is required to create your PairVoice account.'},{status:400});
 
-  const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-  if(!url||!key)return NextResponse.json({error:'Account signup is not configured.'},{status:503});
+  const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,edgeSecret=process.env.PAIRVOICE_EDGE_SHARED_SECRET;
+  if(!url||!key||!edgeSecret)return NextResponse.json({error:'Account signup is not configured.'},{status:503});
 
   const langs=Array.isArray(b.detected_languages)?b.detected_languages.map((x:unknown)=>String(x).slice(0,40)).slice(0,10):[];
   const edge=await fetch(url+'/functions/v1/pairvoice-lead',{
    method:'POST',
-   headers:{'content-type':'application/json','apikey':key},
+   headers:{'content-type':'application/json','apikey':key,'x-pairvoice-edge-secret':edgeSecret},
    body:JSON.stringify({
     email,first_name:String(b.first_name).trim().slice(0,80),phone,
-    market_code:market,language_code:b.language==='es'?'es':'en',consent:true,
+    market_code:market,language_code:b.language==='es'?'es':'en',consent:true,marketing_consent:b.marketingConsent===true,
     detected_locale:clampText(b.detected_locale,40),detected_languages:langs,
     source:clampText(b.source,200),
     campaign_key:clampText(b.marketing_campaign_key||b.campaign_key||b.utm_campaign||'organic',120),
@@ -37,7 +46,7 @@ export async function POST(req:NextRequest){
   if(!edge.ok)return NextResponse.json({error:data.error||'Unable to create account.'},{status:edge.status});
 
   const result=(data||{}) as {inviteCode?:string;languageCode?:'en'|'es';partnerJoined?:boolean;referrerEmail?:string;referrerFirstName?:string;referrerLanguage?:'en'|'es'};
-  const site=req.nextUrl.origin,inviteUrl=`${site}/invite/${encodeURIComponent(result.inviteCode||'')}`;
+  const site=publicOrigin(req),inviteUrl=`${site}/invite/${encodeURIComponent(result.inviteCode||'')}`;
 
   let emailStatus={sent:false,queued:true};
   try{emailStatus=await sendEarlyAccessWelcome({to:email,firstName:String(b.first_name).trim(),language:result.languageCode==='es'?'es':'en',inviteUrl,partnerJoined:result.partnerJoined})}
