@@ -39,6 +39,10 @@ begin
  if (select count(*) from provider_credential_assignments where pair_id=p)<>2 then raise exception 'replacement_history_count_wrong'; end if;
  if (select count(*) from recovery_actions where entity_type='PAIR' and entity_id=p and action='REPLACE_CREDENTIAL')<>1 then raise exception 'replacement_recovery_not_idempotent'; end if;
 
+ insert into pair_readiness_gates(pair_id,gate_key,status,evidence,checked_at) values
+  (p,'PARTNER_ACCEPTED','PASSED','{}'::jsonb,now()),(p,'ELIGIBILITY_A','PASSED','{}'::jsonb,now()),(p,'ELIGIBILITY_B','PASSED','{}'::jsonb,now()),
+  (p,'SAMPLE_A','PASSED','{}'::jsonb,now()),(p,'SAMPLE_B','PASSED','{}'::jsonb,now()),(p,'CONSENT_A','PASSED','{}'::jsonb,now()),
+  (p,'CONSENT_B','PASSED','{}'::jsonb,now()),(p,'PARTICIPATION_HISTORY','PASSED','{}'::jsonb,now()),(p,'CAPACITY','PASSED','{}'::jsonb,now()),(p,'CREDENTIAL','PASSED','{}'::jsonb,now());
  update pairs set state='READY' where id=p;
  work_run:=create_work_provider_run(p,'work-recovery-test','work:recovery-pair');
  work_run_retry:=create_work_provider_run(p,'work-recovery-test','work:recovery-pair');
