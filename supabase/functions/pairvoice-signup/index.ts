@@ -4,10 +4,17 @@ const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{
  status,
  headers:{"content-type":"application/json","cache-control":"no-store"}
 });
+const validEmail=(value:string)=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+const validPhone=(value:string|null)=>!!value&&/^\+[1-9]\d{7,14}$/.test(value);
+function authorized(req:Request){
+ const expected=Deno.env.get("PAIRVOICE_EDGE_SHARED_SECRET")||"";
+ return !!expected&&req.headers.get("x-pairvoice-edge-secret")===expected;
+}
 
 Deno.serve(async(req)=>{
  if(req.method==="GET")return json({ok:true,service:"pairvoice-signup"});
  if(req.method!=="POST")return json({error:"Method not allowed."},405);
+ if(!authorized(req))return json({error:"Forbidden."},403);
  try{
   const body=await req.json();
   const campaign=String(body.campaign||"").trim();
@@ -16,10 +23,11 @@ Deno.serve(async(req)=>{
   const countryCode=String(body.countryCode||"").trim().toUpperCase();
   const languageCode=String(body.languageCode||"").trim().toLowerCase();
   const phone=body.phone?String(body.phone).trim():null;
+  const marketingConsent=body.marketingConsent===true;
   const ref=body.ref?String(body.ref).trim().toUpperCase():null;
 
-  if(!campaign||!firstName||!email.includes("@")||!countryCode||!languageCode||body.is18Plus!==true||body.consent!==true){
-   return json({error:"Campaign, identity, eligibility and consent are required."},400);
+  if(!campaign||!firstName||!validEmail(email)||!validPhone(phone)||!countryCode||!languageCode||body.is18Plus!==true||body.consent!==true){
+   return json({error:"Campaign, identity, valid phone, eligibility and consent are required."},400);
   }
 
   const url=Deno.env.get("SUPABASE_URL");
@@ -33,7 +41,7 @@ Deno.serve(async(req)=>{
 
   const rpc=await fetch(url+"/rest/v1/rpc/register_campaign_participant",{
    method:"POST",
-   headers:{"apikey":secret,"content-type":"application/json"},
+   headers:{"apikey":secret,"authorization":"Bearer "+secret,"content-type":"application/json"},
    body:JSON.stringify({
     p_campaign_slug:campaign,
     p_first_name:firstName,
@@ -43,7 +51,8 @@ Deno.serve(async(req)=>{
     p_language_code:languageCode,
     p_is_18_plus:true,
     p_consent:true,
-    p_referral_code:ref
+    p_referral_code:ref,
+    p_marketing_consent:marketingConsent
    })
   });
 
