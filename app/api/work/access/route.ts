@@ -21,9 +21,10 @@ export async function GET(req:NextRequest){
  if(!pairId)return NextResponse.json({error:'pairId is required.'},{status:400});
  const ctx=await context(pairId);if(!ctx)return NextResponse.json({error:'Forbidden'},{status:403});
  if(!await subsystemEnabled(ctx.db,'WORK'))return NextResponse.json({error:'New work starts are temporarily paused.'},{status:503});
- const {data,error}=await ctx.db.rpc('prepare_pair_work_access',{p_pair_id:pairId,p_idempotency_key:`work:prepare:${pairId}`});
- if(error){const m=String(error.message||'');return NextResponse.json({error:m.includes('not_ready')?'This pair is not ready for work yet.':m.includes('not_bound')?'Work provider is not configured for this campaign.':'Unable to prepare work access.'},{status:409})}
- return NextResponse.json(data);
+ const {data,error}=await ctx.db.from('work_provider_runs').select('id,state').eq('pair_id',pairId).in('state',['READY','LAUNCHING','IN_PROGRESS','SUBMITTED','REWORK_REQUIRED','MANUAL_REVIEW']).order('created_at',{ascending:false}).limit(1).maybeSingle();
+ if(error)return NextResponse.json({error:'Unable to load work access.'},{status:500});
+ if(!data)return NextResponse.json({error:'Work access has not been prepared yet.'},{status:409});
+ return NextResponse.json({runId:data.id,state:data.state,pairState:'READY'});
 }
 
 export async function POST(req:NextRequest){
