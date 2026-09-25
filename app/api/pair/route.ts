@@ -1,16 +1,18 @@
 import{NextRequest,NextResponse}from'next/server';
-import{isValidEmail,normalizeEmail}from'../../../lib/validation';
+import{isValidEmail,normalizeEmail,normalizePhone}from'../../../lib/validation';
 import{serviceClient}from'../../../lib/supabase-server';
 
 export async function POST(req:NextRequest){
  try{
   const b=await req.json(),email=normalizeEmail(b.email);
-  if(!b.inviteCode||!b.firstName||!isValidEmail(email)||!b.countryCode||!b.languageCode||b.is18Plus!==true||b.consent!==true)
+  const countryCode=String(b.countryCode||'').toUpperCase();
+  const phone=normalizePhone(b.phone,countryCode);
+  if(!b.inviteCode||!String(b.firstName||'').trim()||!isValidEmail(email)||!countryCode||!b.languageCode||!phone||b.is18Plus!==true||b.consent!==true)
    return NextResponse.json({error:'Invite, identity, eligibility and consent are required.'},{status:400});
   const db=serviceClient();
   const{data,error}=await db.rpc('join_pair_invite',{
    p_invite_code:String(b.inviteCode).toUpperCase(),p_first_name:String(b.firstName).trim(),p_email:email,
-   p_phone:b.phone?String(b.phone):null,p_country_code:String(b.countryCode).toUpperCase(),
+   p_phone:phone,p_country_code:countryCode,
    p_language_code:String(b.languageCode).toLowerCase(),p_is_18_plus:true,p_consent:true
   });
   if(error){
