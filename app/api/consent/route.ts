@@ -9,19 +9,25 @@ async function current(){
  return participant?{db,participant}:null;
 }
 
+async function requiredDocuments(ctx:NonNullable<Awaited<ReturnType<typeof current>>>,campaignSlug:string){
+ const {data:campaign}=await ctx.db.from('campaigns').select('id,slug,name').eq('slug',campaignSlug).maybeSingle();
+ if(!campaign)return {error:'Campaign not found.',status:404 as const};
+ const {data:enrollment}=await ctx.db.from('campaign_enrollments').select('id,campaign_version_id,accepted_terms_at').eq('campaign_id',campaign.id).eq('participant_id',ctx.participant.id).maybeSingle();
+ if(!enrollment)return {error:'Join this campaign first.',status:404 as const};
+ const {data:docs,error}=await ctx.db.from('legal_documents').select('id,document_key,title,body_text,version,content_sha256').eq('scope','CAMPAIGN').eq('campaign_version_id',enrollment.campaign_version_id).eq('locale',ctx.participant.primary_language_code).eq('status','PUBLISHED').in('document_key',['CAMPAIGN_TERMS','PARTICIPANT_CONSENT']).order('document_key');
+ if(error)return {error:'Unable to load campaign documents.',status:500 as const};
+ return {campaign,enrollment,docs:docs||[]};
+}
+
 export async function GET(req:NextRequest){
  const ctx=await current();if(!ctx)return NextResponse.json({error:'Sign in required.'},{status:401});
  const campaignSlug=req.nextUrl.searchParams.get('campaign')||'';
  if(!campaignSlug)return NextResponse.json({error:'campaign is required.'},{status:400});
- const {data:campaign}=await ctx.db.from('campaigns').select('id,slug,name').eq('slug',campaignSlug).maybeSingle();
- if(!campaign)return NextResponse.json({error:'Campaign not found.'},{status:404});
- const {data:enrollment}=await ctx.db.from('campaign_enrollments').select('id,campaign_version_id,accepted_terms_at').eq('campaign_id',campaign.id).eq('participant_id',ctx.participant.id).maybeSingle();
- if(!enrollment)return NextResponse.json({error:'Join this campaign first.'},{status:404});
- const {data:docs,error}=await ctx.db.from('legal_documents').select('id,document_key,title,body_text,version,content_sha256').eq('scope','CAMPAIGN').eq('campaign_version_id',enrollment.campaign_version_id).eq('locale',ctx.participant.primary_language_code).eq('status','PUBLISHED').in('document_key',['CAMPAIGN_TERMS','PARTICIPANT_CONSENT']).order('document_key');
- if(error)return NextResponse.json({error:'Unable to load campaign documents.'},{status:500});
- const {data:accepted}=await ctx.db.from('legal_document_acceptances').select('document_id,accepted_at').eq('participant_id',ctx.participant.id).eq('enrollment_id',enrollment.id);
+ const loaded=await requiredDocuments(ctx,campaignSlug);
+ if('error'in loaded)return NextResponse.json({error:loaded.error},{status:loaded.status});
+ const {data:accepted}=await ctx.db.from('legal_document_acceptances').select('document_id,accepted_at').eq('participant_id',ctx.participant.id).eq('enrollment_id',loaded.enrollment.id);
  const acceptedIds=new Set((accepted||[]).map(x=>x.document_id));
- return NextResponse.json({campaign,documents:docs||[],acceptedDocumentIds:[...acceptedIds],complete:(docs||[]).length===2&&(docs||[]).every(d=>acceptedIds.has(d.id))});
+ return NextResponse.json({campaign:loaded.campaign,documents:loaded.docs,acceptedDocumentIds:[...acceptedIds],complete:loaded.docs.length===2&&loaded.docs.every(d=>acceptedIds.has(d.id))});
 }
 
 export async function POST(req:NextRequest){
@@ -29,7 +35,13 @@ export async function POST(req:NextRequest){
  try{
   const b=await req.json(),campaignSlug=String(b.campaignSlug||''),documentIds=Array.isArray(b.documentIds)?b.documentIds.map(String):[];
   if(!campaignSlug||documentIds.length<2)return NextResponse.json({error:'Campaign and both required document acceptances are required.'},{status:400});
-  const {data,error}=await ctx.db.rpc('accept_campaign_documents',{p_participant_id:ctx.participant.id,p_campaign_slug:campaignSlug,p_document_ids:documentIds});
+  const loaded=await requiredDocuments(ctx,campaignSlug);
+  if('error'in loaded)return NextResponse.json({error:loaded.error},{status:loaded.status});
+  const requiredIds=[...loaded.docs.map(d=>d.id)].sort(),submitted=[...new Set(documentIds)].sort();
+  if(requiredIds.length!==2||submitted.length!==2||requiredIds.some((id,i)=>id!==submitted[i])){
+   return NextResponse.json({error:'Accept every required published campaign document.'},{status:400});
+  }
+  const {data,error}=await ctx.db.rpc('accept_campaign_documents',{p_participant_id:ctx.participant.id,p_campaign_slug:campaignSlug,p_document_ids:requiredIds});
   if(error){
    const m=String(error.message||''),message=m.includes('not_published')?'Required campaign documents have not been published yet.':m.includes('not_accepted')?'Accept every required campaign document.':'Unable to record campaign acceptance.';
    return NextResponse.json({error:message},{status:409});
