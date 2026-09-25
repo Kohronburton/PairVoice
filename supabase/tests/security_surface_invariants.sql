@@ -24,7 +24,7 @@ begin
 
  if has_function_privilege('anon','public.register_campaign_participant(text,text,text,text,text,text,boolean,boolean,text,boolean)','EXECUTE')
    then raise exception 'anon_can_execute_campaign_signup_rpc'; end if;
- if not has_function_privilege('service_role','public.register_campaign_participant(text,text,text,text,text,text,boolean,boolean,text)','EXECUTE')
+ if not has_function_privilege('service_role','public.register_campaign_participant(text,text,text,text,text,text,boolean,boolean,text,boolean)','EXECUTE')
    then raise exception 'service_role_cannot_execute_campaign_signup_rpc'; end if;
 
  if has_function_privilege('anon','public.capture_pair_business_funnel_event()','EXECUTE')
