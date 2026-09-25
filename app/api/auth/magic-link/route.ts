@@ -5,9 +5,8 @@ import {isValidEmail,normalizeEmail} from '../../../../lib/validation';
 function publicOrigin(req:NextRequest){
  const configured=(process.env.NEXT_PUBLIC_SITE_URL||'').replace(/\/$/,'');
  if(configured&&!/localhost/i.test(configured))return configured;
- const host=(req.headers.get('x-forwarded-host')||req.headers.get('host')||'').split(',')[0].trim();
- const proto=(req.headers.get('x-forwarded-proto')||'https').split(',')[0].trim();
- if(host&&!/^(localhost|127\.0\.0\.1)(:|$)/i.test(host))return `${proto}://${host}`;
+ // Keep callback URLs on the configured/actual request origin. Never trust an
+ // arbitrary forwarded host when the canonical site URL is missing.
  return req.nextUrl.origin;
 }
 

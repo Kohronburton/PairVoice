@@ -51,7 +51,20 @@ export async function POST(req:NextRequest){
    const {data,error}=await ctx.db.rpc('respond_existing_partner_request',{
     p_request_id:String(b.requestId),p_target_participant_id:ctx.participant.id,p_accept:b.accept
    });
-   if(error){console.error(error);return NextResponse.json({error:error.message},{status:409})}
+   if(error){
+    console.error(error);
+    const m=String(error.message||'');
+    const map:Record<string,string>={
+     partner_request_forbidden:'That partner request is not available to this account.',
+     partner_request_not_found:'That partner request no longer exists.',
+     requester_pair_no_longer_available:'The requesting participant is no longer available for this connection.',
+     target_pair_no_longer_available:'The target participant is no longer available for this connection.',
+     requester_membership_changed:'The requesting participant changed campaign status. Start a new request.',
+     target_membership_changed:'The target participant changed campaign status. Start a new request.',
+     matching_paused:'Partner connections are temporarily paused.'
+    };
+    return NextResponse.json({error:map[m]||'Unable to update that partner request.'},{status:409});
+   }
    return NextResponse.json(data);
   }
   return NextResponse.json({error:'REQUEST or RESPOND action is required.'},{status:400});
