@@ -42,7 +42,7 @@ begin
  insert into pair_readiness_gates(pair_id,gate_key,status,evidence,checked_at) values
   (p,'PARTNER_ACCEPTED','PASSED','{}'::jsonb,now()),(p,'ELIGIBILITY_A','PASSED','{}'::jsonb,now()),(p,'ELIGIBILITY_B','PASSED','{}'::jsonb,now()),
   (p,'SAMPLE_A','PASSED','{}'::jsonb,now()),(p,'SAMPLE_B','PASSED','{}'::jsonb,now()),(p,'CONSENT_A','PASSED','{}'::jsonb,now()),
-  (p,'CONSENT_B','PASSED','{}'::jsonb,now()),(p,'PARTICIPATION_HISTORY','PASSED','{}'::jsonb,now()),(p,'CAPACITY','PASSED','{}'::jsonb,now()),(p,'CREDENTIAL','PASSED','{}'::jsonb,now());
+  (p,'CONSENT_B','PASSED','{}'::jsonb,now()),(p,'PARTICIPATION_HISTORY','PASSED','{}'::jsonb,now()),(p,'CAPACITY','PASSED','{}'::jsonb,now()),(p,'CREDENTIAL','PASSED','{}'::jsonb,now()) on conflict (pair_id,gate_key) do update set status='PASSED',checked_at=now();
  update pairs set state='READY' where id=p;
  work_run:=create_work_provider_run(p,'work-recovery-test','work:recovery-pair');
  work_run_retry:=create_work_provider_run(p,'work-recovery-test','work:recovery-pair');
