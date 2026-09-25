@@ -12,8 +12,13 @@ begin
  insert into participants(first_name,email,country_code,primary_language_code) values('B','manual-b@example.test','US','en') returning id into b;
  insert into campaign_enrollments(campaign_id,campaign_version_id,participant_id,state) values(c,v,a,'QUALIFIED') returning id into ea;
  insert into campaign_enrollments(campaign_id,campaign_version_id,participant_id,state) values(c,v,b,'QUALIFIED') returning id into eb;
- insert into pairs(campaign_id,campaign_version_id,state) values(c,v,'READY') returning id into p;
+ insert into pairs(campaign_id,campaign_version_id,state) values(c,v,'READINESS_PENDING') returning id into p;
  insert into pair_members(pair_id,enrollment_id,role,share_basis_points) values(p,ea,'A',5000),(p,eb,'B',5000);
+ insert into pair_readiness_gates(pair_id,gate_key,status,evidence,checked_at) values
+  (p,'PARTNER_ACCEPTED','PASSED','{}'::jsonb,now()),(p,'ELIGIBILITY_A','PASSED','{}'::jsonb,now()),(p,'ELIGIBILITY_B','PASSED','{}'::jsonb,now()),
+  (p,'SAMPLE_A','PASSED','{}'::jsonb,now()),(p,'SAMPLE_B','PASSED','{}'::jsonb,now()),(p,'CONSENT_A','PASSED','{}'::jsonb,now()),
+  (p,'CONSENT_B','PASSED','{}'::jsonb,now()),(p,'PARTICIPATION_HISTORY','PASSED','{}'::jsonb,now()),(p,'CAPACITY','PASSED','{}'::jsonb,now()),(p,'CREDENTIAL','PASSED','{}'::jsonb,now());
+ update pairs set state='READY' where id=p;
 
  select id into provider from provider_integrations where provider_key='funcrowd';
  if provider is null then raise exception 'funcrowd_provider_missing'; end if;
