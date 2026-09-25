@@ -21,6 +21,13 @@ begin
 
  update pairs set state='PAIRED',paired_at=now() where id=p;
  update pairs set state='READINESS_PENDING' where id=p;
+ insert into pair_readiness_gates(pair_id,gate_key,status,evidence,checked_at) values
+  (p,'PARTNER_ACCEPTED','PASSED','{}'::jsonb,now()),(p,'ELIGIBILITY_A','PASSED','{}'::jsonb,now()),
+  (p,'ELIGIBILITY_B','PASSED','{}'::jsonb,now()),(p,'SAMPLE_A','PASSED','{}'::jsonb,now()),
+  (p,'SAMPLE_B','PASSED','{}'::jsonb,now()),(p,'CONSENT_A','PASSED','{}'::jsonb,now()),
+  (p,'CONSENT_B','PASSED','{}'::jsonb,now()),(p,'PARTICIPATION_HISTORY','PASSED','{}'::jsonb,now()),
+  (p,'CAPACITY','PASSED','{}'::jsonb,now()),(p,'CREDENTIAL','PASSED','{}'::jsonb,now())
+ on conflict (pair_id,gate_key) do update set status='PASSED',checked_at=now();
  update pairs set state='READY' where id=p;
  if not exists(select 1 from business_funnel_events where pair_id=p and event_name='pair_created') then raise exception 'pair_created_missing'; end if;
  if not exists(select 1 from business_funnel_events where pair_id=p and event_name='pair_qualified') then raise exception 'pair_qualified_missing'; end if;
