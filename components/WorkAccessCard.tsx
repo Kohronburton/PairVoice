@@ -7,7 +7,7 @@ export default function WorkAccessCard({pairId,pairCode,campaignName,state}:{pai
  const[access,setAccess]=useState<Access|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[submitted,setSubmitted]=useState(state==='SUBMITTED');
  async function load(){
   setBusy(true);setError('');
-  const r=await fetch('/api/work/access?pairId='+encodeURIComponent(pairId));
+  const r=await fetch('/api/work/access',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({pairId,prepare:true,idempotencyKey:`work:prepare:${pairId}`})});
   const d=await r.json();setBusy(false);
   if(!r.ok){setError(d.error||'Unable to load work access.');return}
   setAccess(d);
