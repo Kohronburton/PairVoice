@@ -48,7 +48,12 @@ export async function POST(req:NextRequest){
    p_result_metadata:{reported_by:'participant'},p_last_error:null,
    p_idempotency_key:`participant:${ctx.participant.id}:run:${runId}:${toState}`
   });
-  if(error){console.error(error);return NextResponse.json({error:error.message},{status:409})}
+  if(error){
+   console.error(error);
+   const m=String(error.message||'');
+   const message=m.includes('not_ready')?'This work run is not ready for that action.':m.includes('invalid_work_transition')?'That work transition is not allowed from the current state.':'Unable to update work status.';
+   return NextResponse.json({error:message},{status:409});
+  }
   return NextResponse.json(data);
  }catch(e){console.error(e);return NextResponse.json({error:'Unable to update work status.'},{status:500})}
 }
