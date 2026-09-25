@@ -50,7 +50,7 @@ export default function JoinPage(){
     })});
     const d=await r.json();if(!r.ok)throw new Error(d.error||'Unable to create account.');
    }
-   const m=await fetch('/api/auth/magic-link',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email,next:'/dashboard'})});
+   const m=await fetch('/api/auth/magic-link',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email,next:'/dashboard',intent:'signup'})});
    const md=await m.json();if(!m.ok)throw new Error(md.error||'Account created, but sign-in email could not be sent.');
    setSubmittedEmail(email);setMagicSent(true);setDone(true);setResendCooldown(30);trackFunnelEvent('signup_completed',{campaign_slug:campaign||'general',surface:'production_join'});
   }catch(err){setError(err instanceof Error?err.message:'Unable to create account.')}
