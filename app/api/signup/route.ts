@@ -9,12 +9,12 @@ export async function POST(req:NextRequest){
   if(!b.campaign||!b.firstName||!isValidEmail(email)||!countryCode||!b.languageCode||!phone||b.is18Plus!==true||b.consent!==true)
    return NextResponse.json({error:'Campaign, identity, valid phone, eligibility and consent are required.'},{status:400});
 
-  const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-  if(!url||!key)return NextResponse.json({error:'Signup service is not configured.'},{status:503});
+  const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,edgeSecret=process.env.PAIRVOICE_EDGE_SHARED_SECRET;
+  if(!url||!key||!edgeSecret)return NextResponse.json({error:'Signup service is not configured.'},{status:503});
 
   const response=await fetch(url+'/functions/v1/pairvoice-signup',{
    method:'POST',
-   headers:{'content-type':'application/json','apikey':key},
+   headers:{'content-type':'application/json','apikey':key,'x-pairvoice-edge-secret':edgeSecret},
    body:JSON.stringify({
     campaign:String(b.campaign),
     firstName:String(b.firstName).trim(),
@@ -24,6 +24,7 @@ export async function POST(req:NextRequest){
     languageCode:String(b.languageCode).toLowerCase(),
     is18Plus:true,
     consent:true,
+    marketingConsent:b.marketingConsent===true,
     ref:b.ref?String(b.ref).toUpperCase():null
    }),
    cache:'no-store'
