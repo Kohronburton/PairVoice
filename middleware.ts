@@ -19,7 +19,7 @@ export async function middleware(req:NextRequest){
  let response=NextResponse.next({request:req});
  const supabase=createServerClient(url,key,{cookies:{
   getAll:()=>req.cookies.getAll(),
-  setAll(items){items.forEach(({name,value,options})=>{req.cookies.set(name,value);response.cookies.set(name,value,options);});}
+  setAll(items: Array<{name:string;value:string;options?:Record<string, unknown>}>){items.forEach(({name,value,options})=>{req.cookies.set(name,value);response.cookies.set(name,value,options as never);});}
  }});
  await supabase.auth.getUser();
  response.headers.set('Cache-Control','private, no-store');
