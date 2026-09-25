@@ -180,7 +180,7 @@ export default function Home(){
   const r=await fetch('/api/lead',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});
   const d=await r.json();setLoading(false);
   if(!r.ok){setError(d.error||'Signup failed');return}
-  setInviteUrl(d.inviteUrl||'');setPartnerJoined(!!d.partnerJoined);setDone(true);trackFunnelEvent('signup_completed',{campaign_slug:selectedCampaign||'general'});trackFunnelEvent('email_queued');trackFunnelEvent('invite_created',{has_invite:Boolean(d.inviteUrl)});
+  setInviteUrl(d.inviteUrl||'');setPartnerJoined(!!d.partnerJoined);setDone(true);trackFunnelEvent('signup_completed',{campaign_slug:selectedCampaign||'general',email_sent:Boolean(d.emailStatus?.sent)});if(d.emailStatus?.sent)trackFunnelEvent('email_queued');trackFunnelEvent('invite_created',{has_invite:Boolean(d.inviteUrl)});
  }
  return <main>
   <nav>
