@@ -64,8 +64,8 @@ begin
  insert into pair_members(pair_id,enrollment_id,role,share_basis_points) values(v_pair.id,v_enrollment.id,'A',5000);
  insert into pair_readiness_gates(pair_id,gate_key,status,evidence,checked_at) values
   (v_pair.id,'ELIGIBILITY_A','PASSED',jsonb_build_object('countryCode',upper(p_country_code),'languageCode',lower(p_language_code),'age18Plus',true),now()),
-  (v_pair.id,'PARTICIPATION_HISTORY','PASSED',jsonb_build_object('repeatParticipationAllowed',v_version.repeat_participation_allowed,'source','signup'),now()),
-  (v_pair.id,'CAPACITY','PASSED',jsonb_build_object('source','signup_no_capacity_limit_enforced'),now())
+  (v_pair.id,'PARTICIPATION_HISTORY','PENDING',jsonb_build_object('repeatParticipationAllowed',v_version.repeat_participation_allowed,'source','signup'),now()),
+  (v_pair.id,'CAPACITY','PENDING',jsonb_build_object('source','signup_no_capacity_limit_enforced'),now())
  on conflict(pair_id,gate_key) do update set status=excluded.status,evidence=excluded.evidence,checked_at=excluded.checked_at,updated_at=now();
  if nullif(trim(coalesce(p_referral_code,'')),'') is not null then
   select id into v_referrer from participants where public_code=upper(trim(p_referral_code));
