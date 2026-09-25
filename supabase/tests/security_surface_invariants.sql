@@ -22,7 +22,7 @@ begin
  if not has_function_privilege('service_role','public.join_pair_invite(text,text,text,text,text,text,boolean,boolean)','EXECUTE')
    then raise exception 'service_role_cannot_execute_join_pair_invite'; end if;
 
- if has_function_privilege('anon','public.register_campaign_participant(text,text,text,text,text,text,boolean,boolean,text)','EXECUTE')
+ if has_function_privilege('anon','public.register_campaign_participant(text,text,text,text,text,text,boolean,boolean,text,boolean)','EXECUTE')
    then raise exception 'anon_can_execute_campaign_signup_rpc'; end if;
  if not has_function_privilege('service_role','public.register_campaign_participant(text,text,text,text,text,text,boolean,boolean,text)','EXECUTE')
    then raise exception 'service_role_cannot_execute_campaign_signup_rpc'; end if;
