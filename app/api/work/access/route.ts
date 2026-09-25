@@ -30,8 +30,15 @@ export async function GET(req:NextRequest){
 export async function POST(req:NextRequest){
  try{
   const b=await req.json(),pairId=String(b.pairId||''),runId=String(b.runId||''),action=String(b.action||'').toUpperCase();
-  if(!pairId||!runId||!['START','SUBMIT'].includes(action))return NextResponse.json({error:'pairId, runId and START/SUBMIT action are required.'},{status:400});
+  if(!pairId)return NextResponse.json({error:'pairId is required.'},{status:400});
   const ctx=await context(pairId);if(!ctx)return NextResponse.json({error:'Forbidden'},{status:403});
+  if(b.prepare===true){
+   if(!await subsystemEnabled(ctx.db,'WORK'))return NextResponse.json({error:'New work starts are temporarily paused.'},{status:503});
+   const {data,error}=await ctx.db.rpc('prepare_pair_work_access',{p_pair_id:pairId,p_idempotency_key:String(b.idempotencyKey||`work:prepare:${pairId}`)});
+   if(error)return NextResponse.json({error:'Unable to prepare work access.'},{status:409});
+   return NextResponse.json(data);
+  }
+  if(!runId||!['START','SUBMIT'].includes(action))return NextResponse.json({error:'pairId, runId and START/SUBMIT action are required.'},{status:400});
   const {data:run}=await ctx.db.from('work_provider_runs').select('id,pair_id').eq('id',runId).eq('pair_id',pairId).maybeSingle();
   if(!run)return NextResponse.json({error:'Work run not found.'},{status:404});
   if(action==='START'&&!await subsystemEnabled(ctx.db,'WORK'))return NextResponse.json({error:'New work starts are temporarily paused.'},{status:503});
