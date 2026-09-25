@@ -3,7 +3,7 @@ import {sessionClient} from '../../../lib/supabase-server';
 
 export async function GET(req:NextRequest){
  const u=new URL(req.url),code=u.searchParams.get('code'),requested=u.searchParams.get('next')||'/dashboard';
- const next=requested.startsWith('/')&&!requested.startsWith('//')?requested:'/dashboard';
+ const next=requested.startsWith('/')&&!requested.startsWith('//')&&!/[\\\u0000-\u001f\u007f]/.test(requested)?requested:'/dashboard';
  if(!code)return NextResponse.redirect(new URL('/?auth=invalid',u.origin));
  try{
   const auth=await sessionClient();
