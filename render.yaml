@@ -2,7 +2,7 @@ services:
   - type: web
     name: pairvoice
     runtime: node
-    branch: main
+    branch: phase-2-production-workflow
     buildCommand: npm install && npm run build
     startCommand: npm start
     healthCheckPath: /api/health
