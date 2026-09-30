@@ -1,4 +1,5 @@
 import {redirect} from 'next/navigation';
+import Link from 'next/link';
 import {sessionClient} from '../../lib/supabase-server';
 import PartnerPoolButton from '../../components/PartnerPoolButton';
 import WorkAccessCard from '../../components/WorkAccessCard';
@@ -23,12 +24,13 @@ export default async function Dashboard(){
  const {data:allActivePairs}=pairIds.length?await db.from('pairs').select('id,public_code,state,campaigns(name,slug)').in('id',pairIds):{data:[] as any[]};
  const workPairs=(allActivePairs||[]).filter((pair:any)=>['READY','RECORDING','REWORK_REQUIRED','SUBMITTED'].includes(pair.state));
  const pendingPairs=(allActivePairs||[]).filter((pair:any)=>pair.state==='PARTNER_PENDING');
+ const partnerPairs=(allActivePairs||[]).filter((pair:any)=>['PARTNER_PENDING','PAIRED'].includes(pair.state));
  const nextAction=pendingPairs.length?'Connect your partner':workPairs.length?'Continue your active gig':!pool?'Find a partner':'Matching is active';
  const nextCopy=pendingPairs.length?'One connection unlocks the next step. If your partner already has PairVoice, connect them below.':workPairs.length?'Your gig is ready. Continue where you left off.':!pool?'PairVoice can look for a compatible partner for you. One tap starts matching.':'You’re in the Partner Pool. We’ll keep looking while you do other things.';
  const hasConnectedPair=(allActivePairs||[]).some((pair:any)=>['PAIRED','READY','RECORDING','REWORK_REQUIRED','SUBMITTED','APPROVED'].includes(pair.state));
  const step2Done=hasConnectedPair;
  return <main className="appDashboard">
-  <header className="appTopbar"><div className="logo">PAIR<span>VOICE</span></div><a className="walletPill" href="/wallet">Wallet →</a></header>
+  <header className="appTopbar"><div className="logo">PAIR<span>VOICE</span></div><Link className="walletPill" href="/wallet" prefetch>Wallet →</Link></header>
   <section className="appHero">
    <p className="eyebrow">YOUR PAIRVOICE</p>
    <h1>Hi {p.first_name}.</h1>
@@ -39,9 +41,11 @@ export default async function Dashboard(){
    <small>NEXT STEP</small><h2>{nextAction}</h2><p>{nextCopy}</p>
    {!pool&&<PartnerPoolButton/>}
    {pool?.status==='WAITING'&&<div className="matchActive">✓ Matching is on</div>}
-   {pendingPairs.length>0&&<a className="primaryActionLink" href="#existing-partner">Connect or invite my partner →</a>}
+   {partnerPairs.length>0&&<a className="primaryActionLink" href="#existing-partner">Connect or invite my partner →</a>}
    {workPairs.length>0&&<a className="primaryActionLink" href="#active-work">Continue my gig →</a>}
   </section>
+  {partnerPairs.length>0&&<section id="existing-partner" className="taskSection taskSectionPriority"><div className="opportunityGrid">{partnerPairs.map((pair:any)=>{const campaign=Array.isArray(pair.campaigns)?pair.campaigns[0]:pair.campaigns;return campaign?.slug?<ExistingPartnerLink key={pair.id} campaignSlug={campaign.slug} campaignName={campaign.name||'PairVoice opportunity'}/>:null})}</div></section>}
+  {workPairs.length>0&&<section id="active-work" className="taskSection taskSectionPriority"><div className="opportunityGrid">{workPairs.map((pair:any)=>{const campaign=Array.isArray(pair.campaigns)?pair.campaigns[0]:pair.campaigns;return <WorkAccessCard key={pair.id} pairId={pair.id} pairCode={pair.public_code} state={pair.state} campaignName={campaign?.name||'PairVoice opportunity'}/>})}</div></section>}
   <p className="appFinePrint">Your PairVoice account, partner history and progress stay with you across gigs.</p>
  </main>;
 }
