@@ -398,3 +398,12 @@
  .nextActionCard p{font-size:13px}
  .appQuickStats{grid-template-columns:1fr 1fr}
 }
+
+.myPairCode{margin:16px 0;padding:16px;border-radius:14px;background:#f5f4ed;color:#07100e;border:1px solid #d9ddd7}
+.myPairCode small{display:block;text-align:left;margin:0 0 6px;color:#69736e;font-size:9px;letter-spacing:1px}
+.myPairCode strong{display:block;font-size:25px;letter-spacing:2px;word-break:break-all}
+.myPairCode button{margin-top:10px;width:auto;padding:10px 14px;border-radius:10px;background:#07100e;color:#b9ff48}
+.myPairCode p{margin:9px 0 0;color:#68726d;font-size:11px}
+.partnerLookupTabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:16px 0 12px;padding:4px;background:#111d19;border-radius:12px}
+.partnerLookupTabs button{border:0;border-radius:9px;padding:11px 8px;background:transparent;color:#a9b3ae;font-size:11px;font-weight:900}
+.partnerLookupTabs button.active{background:#b9ff48;color:#07100e}
