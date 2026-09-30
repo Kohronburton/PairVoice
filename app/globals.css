@@ -417,3 +417,8 @@
 .walletOptional{margin-top:6px}.walletOptional summary{font-size:10px;color:#59645f;cursor:pointer}
 .walletDetails{border:1px solid #25322e;border-radius:13px;background:#0b1512}.walletDetails summary{display:flex;justify-content:space-between;padding:12px 14px;list-style:none;font-size:11px;font-weight:900;cursor:pointer}.walletDetails summary::-webkit-details-marker{display:none}.walletDetails summary span{color:#b9ff48}.walletActivity{padding:0 14px 8px}.walletActivity div{display:flex;justify-content:space-between;border-top:1px solid #25322e;padding:8px 0;font-size:10px}.walletActivity span{text-transform:capitalize;color:#9aa6a1}.walletLatestPayout{padding:0 14px 10px;margin:0;color:#84918b;font-size:9px}
 @media(max-height:720px) and (max-width:600px){.walletApp{gap:7px;padding-top:7px}.walletTop{height:35px}.walletBalance{padding:12px 15px}.walletBalance strong{font-size:36px}.walletAction{padding:13px}.walletAction h2{font-size:21px}.walletAction input,.walletAction select{padding:8px}.walletAction>button{padding:10px}.walletDetails summary{padding:9px 12px}}
+
+/* Staging acceptance polish: keep the next real task immediately reachable */
+.primaryActionLink{display:block;width:100%;box-sizing:border-box;margin-top:10px;padding:13px 14px;border-radius:11px;background:#07100e;color:#b9ff48;text-align:center;text-decoration:none;font-size:12px;font-weight:900}
+.taskSectionPriority{margin-top:10px;scroll-margin-top:64px}
+.taskSectionPriority .opportunityGrid{margin-top:0}
