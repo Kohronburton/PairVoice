@@ -1,6 +1,7 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {sessionClient,serviceClient} from '../../../lib/supabase-server';
 import {rankMatches,type MatchCandidate} from '../../../lib/matching';
+import {subsystemEnabled} from '../../../lib/subsystem-controls';
 
 async function currentParticipant(){
  const auth=await sessionClient(),{data}=await auth.auth.getUser();
@@ -11,6 +12,7 @@ async function currentParticipant(){
 export async function POST(req:NextRequest){
  const me=await currentParticipant();if(!me)return NextResponse.json({error:'Sign in required.'},{status:401});
  const b=await req.json().catch(()=>({})),db=serviceClient();
+ if(!await subsystemEnabled(db,'MATCHING'))return NextResponse.json({error:'Partner matching is temporarily paused.'},{status:503});
  const availability=b.availability&&typeof b.availability==='object'?b.availability:{};
  const {error}=await db.from('partner_pool').upsert({participant_id:me.id,country_code:me.country_code,language_code:me.primary_language_code,availability,status:'WAITING',updated_at:new Date().toISOString()});
  if(error){console.error(error);return NextResponse.json({error:'Unable to join partner pool.'},{status:500})}
