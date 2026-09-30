@@ -23,24 +23,34 @@ export default async function Dashboard(){
  const {data:allActivePairs}=pairIds.length?await db.from('pairs').select('id,public_code,state,campaigns(name,slug)').in('id',pairIds):{data:[] as any[]};
  const workPairs=(allActivePairs||[]).filter((pair:any)=>['READY','RECORDING','REWORK_REQUIRED','SUBMITTED'].includes(pair.state));
  const pendingPairs=(allActivePairs||[]).filter((pair:any)=>pair.state==='PARTNER_PENDING');
- const nextAction=pendingPairs.length?'Connect your partner':workPairs.length?'Continue your active job':!pool?'Find a partner':'You are ready for matching';
- return <main style={{maxWidth:760,margin:'0 auto',padding:'32px 20px'}}>
-  <div className="logo">PAIR<span>VOICE</span></div>
-  <p className="eyebrow">YOUR PAIRVOICE</p>
-  <h1>Hi {p.first_name}. <em>Here’s what’s next.</em></h1>
-  <section className="card"><small>NEXT STEP</small><h2>{nextAction}</h2>
-   {!pool&&<PartnerPoolButton/>}
-   {pool?.status==='WAITING'&&<p>✓ You’re in the Partner Pool. We’ll match you with a compatible participant.</p>}
+ const nextAction=pendingPairs.length?'Connect your partner':workPairs.length?'Continue your active gig':!pool?'Find a partner':'Matching is active';
+ const nextCopy=pendingPairs.length?'One connection unlocks the next step. If your partner already has PairVoice, connect them below.':workPairs.length?'Your gig is ready. Continue where you left off.':!pool?'PairVoice can look for a compatible partner for you. One tap starts matching.':'You’re in the Partner Pool. We’ll keep looking while you do other things.';
+ const step2Done=!pendingPairs.length&&(Boolean(pool)||workPairs.length>0);
+ return <main className="appDashboard">
+  <header className="appTopbar"><div className="logo">PAIR<span>VOICE</span></div><a className="walletPill" href="/wallet">Wallet →</a></header>
+  <section className="appHero">
+   <p className="eyebrow">YOUR NEXT MOVE</p>
+   <h1>Hi {p.first_name}.</h1>
+   <div className="appSteps" aria-label="PairVoice progress"><span className="done">1 Account ✓</span><span className={step2Done?'done':'active'}>2 Partner{step2Done?' ✓':''}</span><span className={workPairs.length?'active':''}>3 Work</span></div>
   </section>
-  <p style={{margin:'18px 0 28px'}}><a className="primary" href="/wallet">Open Wallet →</a></p>
-  <div className="opportunityGrid">
-   <section className="opportunityCard"><small>PROFILE</small><h3>{p.primary_language_code.toUpperCase()} · {p.country_code}</h3><p>{p.phone_verified_at?'Phone verified ✓':'Phone verification is requested only when a campaign requires it.'}</p></section>
-   <section className="opportunityCard"><small>PARTNER</small><h3>{pool?.status==='WAITING'?'Finding a match…':pool?.status||'Not connected'}</h3><p>Bring someone, connect an existing user, or let PairVoice find someone.</p></section>
-   <section className="opportunityCard"><small>PROGRESS</small><h3>{approvedJobs||0} approved jobs</h3><p>{referrals||0} people referred · milestone rewards unlock only after qualification.</p></section>
-  </div>
+  <section className="nextActionCard">
+   <small>DO THIS NOW</small><h2>{nextAction}</h2><p>{nextCopy}</p>
+   {!pool&&<PartnerPoolButton/>}
+   {pool?.status==='WAITING'&&<div className="matchActive">✓ Matching is on</div>}
+   {pendingPairs.length>0&&<a className="secondaryAction" href="#existing-partner">My partner already has PairVoice ↓</a>}
+  </section>
+  <section className="appQuickStats">
+   <a href="/wallet"><small>WALLET</small><strong>Open earnings</strong></a>
+   <div><small>JOBS</small><strong>{approvedJobs||0} approved</strong></div>
+   <div><small>REFERRALS</small><strong>{referrals||0}</strong></div>
+  </section>
+  <details className="appDetails">
+   <summary>Account details</summary>
+   <div className="compactDetails"><span>{p.primary_language_code.toUpperCase()} · {p.country_code}</span><span>{p.phone_verified_at?'Phone verified ✓':'Phone verified only when required'}</span><span>{pool?.status==='WAITING'?'Partner matching active':pool?.status||'Partner not connected'}</span></div>
+  </details>
   {(allActivePairs||[]).length>0&&<section style={{marginTop:36}}><p className="eyebrow">CAMPAIGN CONSENT</p><h2>Review before recording</h2><div className="opportunityGrid">{(allActivePairs||[]).map((pair:any)=>{const campaign=Array.isArray(pair.campaigns)?pair.campaigns[0]:pair.campaigns;return campaign?.slug?<CampaignConsentCard key={'consent-'+pair.id} campaignSlug={campaign.slug} campaignName={campaign.name||'PairVoice opportunity'}/>:null})}</div></section>}
-  {pendingPairs.length>0&&<section style={{marginTop:36}}><p className="eyebrow">YOUR PARTNER</p><h2>Already registered?</h2><div className="opportunityGrid">{pendingPairs.map((pair:any)=>{const campaign=Array.isArray(pair.campaigns)?pair.campaigns[0]:pair.campaigns;return campaign?.slug?<ExistingPartnerLink key={pair.id} campaignSlug={campaign.slug} campaignName={campaign.name||'PairVoice opportunity'}/>:null})}</div></section>}
+  {pendingPairs.length>0&&<section id="existing-partner" className="taskSection"><p className="eyebrow">ALREADY HAVE A PARTNER?</p><h2>Connect in seconds.</h2><div className="opportunityGrid">{pendingPairs.map((pair:any)=>{const campaign=Array.isArray(pair.campaigns)?pair.campaigns[0]:pair.campaigns;return campaign?.slug?<ExistingPartnerLink key={pair.id} campaignSlug={campaign.slug} campaignName={campaign.name||'PairVoice opportunity'}/>:null})}</div></section>}
   {workPairs.length>0&&<section style={{marginTop:36}}><p className="eyebrow">ACTIVE WORK</p><h2>Ready jobs</h2><div className="opportunityGrid">{workPairs.map((pair:any)=>{const campaign=Array.isArray(pair.campaigns)?pair.campaigns[0]:pair.campaigns;return <WorkAccessCard key={pair.id} pairId={pair.id} pairCode={pair.public_code} state={pair.state} campaignName={campaign?.name||'PairVoice opportunity'}/>})}</div></section>}
-  <p style={{marginTop:28}}>Jobs and Wallet unlock as production opportunities become available. Your account, partner history and progress stay with you.</p>
+  <p className="appFinePrint">Your PairVoice account, partner history and progress stay with you across gigs.</p>
  </main>;
 }
