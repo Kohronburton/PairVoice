@@ -348,3 +348,43 @@
 .joinAccountCard .identityRecovery button{background:#fff;color:#07100e;border:1px solid #cfcfc8;padding:10px;cursor:pointer}
 .joinAccountCard .identityRecovery a{background:#07100e;color:#b9ff48;padding:10px}
 @media(max-width:520px){.joinAccountCard .identityRecovery{grid-template-columns:1fr}}
+
+
+/* App-like authenticated experience: one visible action, minimal scroll, mobile-first. */
+.appDashboard{max-width:760px;margin:0 auto;padding:18px 18px calc(40px + env(safe-area-inset-bottom));min-height:100dvh}
+.appTopbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;padding:10px 0 14px;background:linear-gradient(#07100e 72%,rgba(7,16,14,0));backdrop-filter:blur(8px)}
+.walletPill{color:#07100e;background:#b9ff48;border-radius:999px;padding:10px 14px;text-decoration:none;font-size:12px;font-weight:900}
+.appHero{padding:10px 0 14px}
+.appHero h1{font-size:clamp(40px,9vw,64px);line-height:.95;letter-spacing:-3px;margin:10px 0 14px}
+.appSteps{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.appSteps span{border:1px solid #30403a;border-radius:999px;padding:9px 8px;text-align:center;color:#7f8c86;font-size:10px;font-weight:900}
+.appSteps span.done{background:#132019;color:#b9ff48;border-color:#3b5c2f}.appSteps span.active{background:#b9ff48;color:#07100e;border-color:#b9ff48}
+.nextActionCard{background:#f5f4ed;color:#07100e;border-radius:20px;padding:24px;margin-top:4px;box-shadow:0 18px 55px rgba(0,0,0,.2)}
+.nextActionCard small{display:block;text-align:left;margin:0;color:#65706b;font-size:9px;font-weight:900;letter-spacing:1.3px}
+.nextActionCard h2{font-size:32px;line-height:1;letter-spacing:-1.4px;margin:10px 0}
+.nextActionCard p{color:#59645f;line-height:1.45;margin:0 0 16px}
+.nextActionCard button{width:100%;border:0;border-radius:12px;padding:17px;background:#07100e;color:#b9ff48;font-weight:900;font-size:16px;cursor:pointer}
+.secondaryAction{display:block;margin-top:10px;text-align:center;border:1px solid #cfd3cd;border-radius:12px;padding:13px;color:#07100e;text-decoration:none;font-size:12px;font-weight:900}
+.matchActive{border-radius:12px;padding:14px;background:#e3f7d1;color:#24400d;font-weight:900;text-align:center}
+.appQuickStats{display:grid;grid-template-columns:1.2fr 1fr .75fr;gap:8px;margin-top:10px}
+.appQuickStats>*{min-width:0;background:#0d1815;border:1px solid #25322e;border-radius:14px;padding:12px;text-decoration:none}
+.appQuickStats small{display:block;text-align:left;margin:0 0 5px;color:#79857f;font-size:8px;letter-spacing:1px}
+.appQuickStats strong{display:block;color:#eef2ef;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.appQuickStats a strong{color:#b9ff48}
+.appDetails{margin-top:10px;border:1px solid #25322e;border-radius:14px;background:#0b1512}
+.appDetails summary{cursor:pointer;padding:14px 16px;font-size:12px;font-weight:900;color:#cfd7d3;list-style:none}.appDetails summary::-webkit-details-marker{display:none}
+.compactDetails{display:grid;gap:8px;padding:0 16px 15px}.compactDetails span{color:#87948e;font-size:11px}
+.taskSection{margin-top:24px}.taskSection>h2{font-size:30px;letter-spacing:-1.3px;margin:8px 0 14px}
+.appFinePrint{margin:22px 0 0;color:#76837d;font-size:11px;line-height:1.5}
+@media(max-width:600px){
+ .appDashboard{padding:10px 12px calc(24px + env(safe-area-inset-bottom))}
+ .appTopbar{padding-top:6px}
+ .appHero{padding-top:2px}
+ .appHero h1{font-size:40px;margin-bottom:10px}
+ .nextActionCard{padding:19px;border-radius:18px}
+ .nextActionCard h2{font-size:28px}
+ .appQuickStats{grid-template-columns:1.15fr 1fr .65fr}
+ .taskSection{scroll-margin-top:70px}
+ .taskSection .opportunityGrid{grid-template-columns:1fr}
+ .taskSection .opportunityCard{min-height:0}
+}
