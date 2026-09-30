@@ -25,7 +25,8 @@ export async function POST(req:NextRequest){
     is18Plus:true,
     consent:true,
     marketingConsent:b.marketingConsent===true,
-    ref:b.ref?String(b.ref).toUpperCase():null
+    ref:b.ref?String(b.ref).toUpperCase():null,
+    partnerCode:b.partnerCode?String(b.partnerCode).trim().toUpperCase():null
    }),
    cache:'no-store'
   });
