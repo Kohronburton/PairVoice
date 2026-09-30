@@ -5,7 +5,7 @@ async function currentParticipant(){
  const auth=await sessionClient(),{data}=await auth.auth.getUser();
  if(!data.user)return null;
  const db=serviceClient();
- const {data:participant}=await db.from('participants').select('id,public_code').eq('auth_user_id',data.user.id).maybeSingle();
+ const {data:participant}=await db.from('participants').select('id,public_code,email').eq('auth_user_id',data.user.id).maybeSingle();
  if(!participant)return null;
  return {db,participant};
 }
@@ -27,9 +27,18 @@ export async function POST(req:NextRequest){
  try{
   const b=await req.json(),action=String(b.action||'').toUpperCase();
   if(action==='REQUEST'){
-   if(!b.campaignSlug||!b.partnerCode)return NextResponse.json({error:'campaignSlug and partnerCode are required.'},{status:400});
+   if(!b.campaignSlug||(!b.partnerCode&&!b.partnerEmail))return NextResponse.json({error:'Enter your partner’s PairVoice code or email.'},{status:400});
+   let targetCode=String(b.partnerCode||'').trim().toUpperCase();
+   if(!targetCode&&b.partnerEmail){
+    const email=String(b.partnerEmail).trim().toLowerCase();
+    if(email===String(ctx.participant.email||'').toLowerCase())return NextResponse.json({error:'You cannot connect your own account as a partner.'},{status:409});
+    const {data:target,error:lookupError}=await ctx.db.from('participants').select('public_code').ilike('email',email).maybeSingle();
+    if(lookupError){console.error(lookupError);return NextResponse.json({error:'Unable to search for that email right now.'},{status:500})}
+    if(!target?.public_code)return NextResponse.json({error:'No PairVoice account was found with that email. Ask your partner to join first.'},{status:404});
+    targetCode=target.public_code;
+   }
    const {data,error}=await ctx.db.rpc('request_existing_partner',{
-    p_requester_id:ctx.participant.id,p_target_public_code:String(b.partnerCode),p_campaign_slug:String(b.campaignSlug)
+    p_requester_id:ctx.participant.id,p_target_public_code:targetCode,p_campaign_slug:String(b.campaignSlug)
    });
    if(error){
     const m=String(error.message||'');
