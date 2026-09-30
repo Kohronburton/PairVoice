@@ -29,24 +29,24 @@ export default async function Dashboard(){
  return <main className="appDashboard">
   <header className="appTopbar"><div className="logo">PAIR<span>VOICE</span></div><a className="walletPill" href="/wallet">Wallet →</a></header>
   <section className="appHero">
-   <p className="eyebrow">YOUR NEXT MOVE</p>
+   <p className="eyebrow">YOUR PAIRVOICE</p>
    <h1>Hi {p.first_name}.</h1>
-   <div className="appSteps" aria-label="PairVoice progress"><span className="done">1 Account ✓</span><span className={step2Done?'done':'active'}>2 Partner{step2Done?' ✓':''}</span><span className={workPairs.length?'active':''}>3 Work</span></div>
+   <p className="appPromise">Get paired. Complete the gig. Get paid.</p>
+   <div className="appSteps" aria-label="PairVoice progress"><span className="done">1 Joined ✓</span><span className={step2Done?'done':'active'}>2 Partner{step2Done?' ✓':''}</span><span className={workPairs.length?'active':''}>3 Get paid</span></div>
   </section>
   <section className="nextActionCard">
-   <small>DO THIS NOW</small><h2>{nextAction}</h2><p>{nextCopy}</p>
+   <small>NEXT STEP</small><h2>{nextAction}</h2><p>{nextCopy}</p>
    {!pool&&<PartnerPoolButton/>}
    {pool?.status==='WAITING'&&<div className="matchActive">✓ Matching is on</div>}
    {pendingPairs.length>0&&<a className="secondaryAction" href="#existing-partner">My partner already has PairVoice ↓</a>}
   </section>
   <section className="appQuickStats">
-   <a href="/wallet"><small>WALLET</small><strong>Open earnings</strong></a>
-   <div><small>JOBS</small><strong>{approvedJobs||0} approved</strong></div>
-   <div><small>REFERRALS</small><strong>{referrals||0}</strong></div>
+   <a href="/wallet"><small>EARNINGS</small><strong>Open wallet →</strong></a>
+   <div><small>COMPLETED</small><strong>{approvedJobs||0} gigs</strong></div>
   </section>
   <details className="appDetails">
-   <summary>Account details</summary>
-   <div className="compactDetails"><span>{p.primary_language_code.toUpperCase()} · {p.country_code}</span><span>{p.phone_verified_at?'Phone verified ✓':'Phone verified only when required'}</span><span>{pool?.status==='WAITING'?'Partner matching active':pool?.status||'Partner not connected'}</span></div>
+   <summary>More</summary>
+   <div className="compactDetails"><span>{p.primary_language_code.toUpperCase()} · {p.country_code}</span><span>{p.phone_verified_at?'Phone verified ✓':'Phone verification only when a gig requires it'}</span><span>{referrals||0} referrals</span></div>
   </details>
   {(allActivePairs||[]).length>0&&<section style={{marginTop:36}}><p className="eyebrow">CAMPAIGN CONSENT</p><h2>Review before recording</h2><div className="opportunityGrid">{(allActivePairs||[]).map((pair:any)=>{const campaign=Array.isArray(pair.campaigns)?pair.campaigns[0]:pair.campaigns;return campaign?.slug?<CampaignConsentCard key={'consent-'+pair.id} campaignSlug={campaign.slug} campaignName={campaign.name||'PairVoice opportunity'}/>:null})}</div></section>}
   {pendingPairs.length>0&&<section id="existing-partner" className="taskSection"><p className="eyebrow">ALREADY HAVE A PARTNER?</p><h2>Connect in seconds.</h2><div className="opportunityGrid">{pendingPairs.map((pair:any)=>{const campaign=Array.isArray(pair.campaigns)?pair.campaigns[0]:pair.campaigns;return campaign?.slug?<ExistingPartnerLink key={pair.id} campaignSlug={campaign.slug} campaignName={campaign.name||'PairVoice opportunity'}/>:null})}</div></section>}
