@@ -9,7 +9,7 @@ const money=(c:number,x:string)=>{try{return new Intl.NumberFormat(undefined,{st
 
 export default function JoinPage(){
  const[campaign,setCampaign]=useState(''),[ops,setOps]=useState<Opportunity[]>([]),[lang,setLang]=useState<'en'|'es'>('en');
- const[busy,setBusy]=useState(false),[error,setError]=useState(''),[done,setDone]=useState(false),[magicSent,setMagicSent]=useState(false),[submittedEmail,setSubmittedEmail]=useState(''),[resendBusy,setResendBusy]=useState(false),[resendMessage,setResendMessage]=useState(''),[resendCooldown,setResendCooldown]=useState(0);
+ const[busy,setBusy]=useState(false),[error,setError]=useState(''),[errorCode,setErrorCode]=useState(''),[done,setDone]=useState(false),[magicSent,setMagicSent]=useState(false),[submittedEmail,setSubmittedEmail]=useState(''),[resendBusy,setResendBusy]=useState(false),[resendMessage,setResendMessage]=useState(''),[resendCooldown,setResendCooldown]=useState(0);
  useEffect(()=>{
   const q=new URLSearchParams(location.search),slug=q.get('campaign')||'',locale=navigator.language||'en-US';
   setCampaign(slug);setLang(locale.toLowerCase().startsWith('es')?'es':'en');
@@ -31,7 +31,7 @@ export default function JoinPage(){
   back:'Back to gigs',signin:'Already have an account? Sign in',partner:'Partner required',payout:'Payout per approved pair'
  };
  async function submit(e:FormEvent<HTMLFormElement>){
-  e.preventDefault();setBusy(true);setError('');setMagicSent(false);
+  e.preventDefault();setBusy(true);setError('');setErrorCode('');setMagicSent(false);
   const f=new FormData(e.currentTarget),email=String(f.get('email')||''),firstName=String(f.get('first_name')||''),phone=String(f.get('phone')||'');
   try{
    if(campaign){
@@ -40,7 +40,7 @@ export default function JoinPage(){
      languageCode:String(f.get('language')||selected?.languageCode||'en'),is18Plus:f.get('age')==='on',consent:f.get('consent')==='on',
      ref:new URLSearchParams(location.search).get('ref')
     })});
-    const d=await r.json();if(!r.ok)throw new Error(d.error||'Unable to create account.');
+    const d=await r.json();if(!r.ok){setErrorCode(String(d.code||''));throw new Error(d.error||'Unable to create account.');}
    }else{
     const locale=navigator.language||'en-US',parts=locale.replace('_','-').split('-');
     const r=await fetch('/api/lead',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({
@@ -86,7 +86,7 @@ export default function JoinPage(){
       <label className="check"><input name="age" type="checkbox" required/><span>{t.age}</span></label>
      </>}
      <label className="check consentCheck"><input name="consent" type="checkbox" required/><span>{t.consent}<small className="consentFinePrint">{t.consentFine} <a href="/terms" target="_blank" rel="noreferrer">{t.terms}</a> · <a href="/privacy" target="_blank" rel="noreferrer">{t.privacy}</a></small></span></label>
-     {error&&<p className="error">{error}</p>}<button disabled={busy}>{busy?t.saving:t.button+' →'}</button>
+     {error&&<div className="error"><p>{error}</p>{errorCode==='PHONE_ALREADY_REGISTERED'&&<div className="identityRecovery"><button type="button" onClick={()=>{setError('');setErrorCode('');document.getElementById('join-phone')?.focus()}}>{es?'Usar otro número':'Use a different number'}</button><a href="/signin">{es?'Entrar a mi cuenta':'Sign in to my account'}</a></div>}</div>}<button disabled={busy}>{busy?t.saving:t.button+' →'}</button>
      <small>{es?'No necesitas tarjeta para crear una cuenta.':'No card required to create an account.'}</small>
     </form>}
     <a className="joinSigninLink" href="/signin">{t.signin}</a>
