@@ -1,5 +1,5 @@
 import {redirect} from 'next/navigation';
-import {sessionClient,serviceClient} from '../../lib/supabase-server';
+import {sessionClient} from '../../lib/supabase-server';
 import WalletActions from '../../components/WalletActions';
 
 const money=(cents:number,currency:string)=>new Intl.NumberFormat('en-US',{style:'currency',currency}).format(cents/100);
@@ -7,12 +7,12 @@ const money=(cents:number,currency:string)=>new Intl.NumberFormat('en-US',{style
 export default async function WalletPage(){
  const auth=await sessionClient(),{data}=await auth.auth.getUser();
  if(!data.user)redirect('/?signin=1');
- const db=serviceClient();
+ const db=auth;
  const {data:p}=await db.from('participants').select('id,first_name').eq('auth_user_id',data.user.id).maybeSingle();
  if(!p)redirect('/?auth=join-first');
  const [{data:ledger},{data:payouts},{data:methods}]=await Promise.all([
-  db.from('ledger_entries').select('id,entry_type,amount_cents,currency,created_at,metadata').eq('participant_id',p.id).order('created_at',{ascending:false}).limit(100),
-  db.from('payouts').select('id,amount_cents,currency,state,provider,created_at,updated_at').eq('participant_id',p.id).order('created_at',{ascending:false}).limit(50),
+  db.from('ledger_entries').select('id,entry_type,amount_cents,currency,created_at').eq('participant_id',p.id).order('created_at',{ascending:false}).limit(20),
+  db.from('payouts').select('id,amount_cents,currency,state,provider,created_at').eq('participant_id',p.id).order('created_at',{ascending:false}).limit(10),
   db.from('participant_payout_methods').select('id,provider,label,status,is_default').eq('participant_id',p.id).neq('status','DISABLED').order('created_at',{ascending:false})
  ]);
  const currencies=[...new Set((ledger||[]).map(x=>x.currency))],currency=currencies[0]||'USD';
