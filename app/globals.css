@@ -341,3 +341,10 @@
 .consentCheck>input{margin-top:3px}
 .consentFinePrint{display:block;margin-top:7px;color:#6f7974;font-size:9px;line-height:1.45;font-weight:500}
 .consentFinePrint a{color:#34433d;text-decoration:underline;text-underline-offset:2px}
+
+
+.joinAccountCard .identityRecovery{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.joinAccountCard .identityRecovery button,.joinAccountCard .identityRecovery a{display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:9px;font-size:12px;font-weight:900;text-decoration:none;text-align:center}
+.joinAccountCard .identityRecovery button{background:#fff;color:#07100e;border:1px solid #cfcfc8;padding:10px;cursor:pointer}
+.joinAccountCard .identityRecovery a{background:#07100e;color:#b9ff48;padding:10px}
+@media(max-width:520px){.joinAccountCard .identityRecovery{grid-template-columns:1fr}}
