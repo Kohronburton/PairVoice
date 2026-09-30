@@ -31,7 +31,10 @@ export async function POST(req:NextRequest){
   });
 
   const data=await response.json().catch(()=>({error:'Unable to complete signup.'}));
-  if(!response.ok)return NextResponse.json({error:data.error||'Unable to complete signup.'},{status:response.status});
+  if(!response.ok)return NextResponse.json({
+   error:data.error||'Unable to complete signup.',
+   ...(data.code?{code:data.code}:{})
+  },{status:response.status});
   return NextResponse.json(data);
  }catch(e){
   console.error(e);
