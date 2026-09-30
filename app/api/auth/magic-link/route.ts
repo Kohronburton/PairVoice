@@ -1,5 +1,5 @@
 import {NextRequest,NextResponse} from 'next/server';
-import {createClient} from '@supabase/supabase-js';
+import {sessionClient} from '../../../../lib/supabase-server';
 import {isValidEmail,normalizeEmail} from '../../../../lib/validation';
 
 function publicOrigin(req:NextRequest){
@@ -21,7 +21,10 @@ export async function POST(req:NextRequest){
   const redirectTo=`${origin}/auth/callback?next=${encodeURIComponent(safeNext)}`;
   const shouldCreateUser=b.intent==='signup'||b.flow==='signup'||b.shouldCreateUser===true;
 
-  const db=createClient(url,key,{auth:{persistSession:false,flowType:'pkce'}});
+  // Use the SSR client so the PKCE code verifier is persisted in an
+  // HttpOnly cookie returned to the browser that initiated the email flow.
+  // The callback reads the same cookie before exchanging the authorization code.
+  const db=await sessionClient();
   const {error}=await db.auth.signInWithOtp({email,options:{emailRedirectTo:redirectTo,shouldCreateUser}});
   if(error){
    console.error('magic-link error',error);
