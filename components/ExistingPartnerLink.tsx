@@ -33,12 +33,12 @@ export default function ExistingPartnerLink({campaignSlug,campaignName}:{campaig
  }
  const related=requests.filter(r=>one(r.campaigns)?.slug===campaignSlug);
  const inviteUrl=typeof window!=='undefined'&&mine?`${window.location.origin}/join?campaign=${encodeURIComponent(campaignSlug)}&partnerCode=${encodeURIComponent(mine)}`:'';
- const inviteMessage=inviteUrl?`Join me on PairVoice for ${campaignName}. Your partner code is already filled in — just open this link and continue: ${inviteUrl}`:'';
+ const inviteMessage=inviteUrl?`I found us a paid voice gig on PairVoice: ${campaignName}. We can complete it together if we qualify and our work is approved. I already connected my partner code, so you don’t have to type it in. Tap this link, join me, and PairVoice will show us the next step: ${inviteUrl}`:'';
  function shareBy(kind:'sms'|'email'|'native'){
   if(!inviteUrl)return;
   if(kind==='sms'){window.location.href=`sms:?&body=${encodeURIComponent(inviteMessage)}`;return}
   if(kind==='email'){window.location.href=`mailto:?subject=${encodeURIComponent('Join me on PairVoice')}&body=${encodeURIComponent(inviteMessage)}`;return}
-  if(navigator.share){void navigator.share({title:'Join me on PairVoice',text:`Join me on PairVoice for ${campaignName}. Your partner code is already filled in.`,url:inviteUrl});return}
+  if(navigator.share){void navigator.share({title:'Join me on PairVoice',text:`I found us a paid voice gig on PairVoice: ${campaignName}. I already connected my partner code, so you don’t have to type it in. Tap the link and join me.`,url:inviteUrl});return}
   void navigator.clipboard.writeText(inviteMessage);setCopied(true);setTimeout(()=>setCopied(false),1600);
  }
  return <article className="opportunityCard">
