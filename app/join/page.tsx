@@ -8,11 +8,11 @@ const countryName=(c:string)=>({US:'United States',ES:'Spain',CA:'Canada',GB:'Un
 const money=(c:number,x:string)=>{try{return new Intl.NumberFormat(undefined,{style:'currency',currency:x,maximumFractionDigits:0}).format(c/100)}catch{return'$'+Math.round(c/100)}};
 
 export default function JoinPage(){
- const[campaign,setCampaign]=useState(''),[ops,setOps]=useState<Opportunity[]>([]),[lang,setLang]=useState<'en'|'es'>('en');
+ const[campaign,setCampaign]=useState(''),[partnerCode,setPartnerCode]=useState(''),[ops,setOps]=useState<Opportunity[]>([]),[lang,setLang]=useState<'en'|'es'>('en');
  const[busy,setBusy]=useState(false),[error,setError]=useState(''),[errorCode,setErrorCode]=useState(''),[done,setDone]=useState(false),[magicSent,setMagicSent]=useState(false),[submittedEmail,setSubmittedEmail]=useState(''),[resendBusy,setResendBusy]=useState(false),[resendMessage,setResendMessage]=useState(''),[resendCooldown,setResendCooldown]=useState(0);
  useEffect(()=>{
   const q=new URLSearchParams(location.search),slug=q.get('campaign')||'',locale=navigator.language||'en-US';
-  setCampaign(slug);setLang(locale.toLowerCase().startsWith('es')?'es':'en');
+  setCampaign(slug);setPartnerCode((q.get('partnerCode')||'').trim().toUpperCase());setLang(locale.toLowerCase().startsWith('es')?'es':'en');
   fetch('/api/opportunities').then(r=>r.ok?r.json():Promise.reject()).then(d=>setOps(Array.isArray(d.opportunities)?d.opportunities:[])).catch(()=>{});
   trackFunnelEvent('signup_started',{campaign_slug:slug||'general',surface:'production_join'});
  },[]);
@@ -38,7 +38,7 @@ export default function JoinPage(){
     const r=await fetch('/api/signup',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({
      campaign,firstName,email,phone,countryCode:String(f.get('country')||selected?.countryCode||'US'),
      languageCode:String(f.get('language')||selected?.languageCode||'en'),is18Plus:f.get('age')==='on',consent:f.get('consent')==='on',
-     ref:new URLSearchParams(location.search).get('ref')
+     ref:new URLSearchParams(location.search).get('ref'),partnerCode:partnerCode||undefined
     })});
     const d=await r.json();if(!r.ok){setErrorCode(String(d.code||''));throw new Error(d.error||'Unable to create account.');}
    }else{
@@ -75,7 +75,7 @@ export default function JoinPage(){
     {selected&&<article className="selectedGigCard"><small>{countryName(selected.countryCode)}</small><h2>{selected.name}</h2><p>{selected.jobFamily||'Voice recording'}</p>{selected.participantPayoutCents!=null&&<strong>{money(selected.participantPayoutCents,selected.payoutCurrency)} <span>{t.payout}</span></strong>}<div className="chips"><span>{selected.languageCode.toUpperCase()}</span>{selected.requiresPair&&<span>{t.partner}</span>}</div><div className="joinPromise"><b>{es?'ANTES DE GRABAR':'BEFORE YOU RECORD'}</b><span>✓ {es?'Compruebas elegibilidad':'Check eligibility'}</span><span>✓ {es?'Ves requisitos del proyecto':'See gig requirements'}</span><span>✓ {es?'Conectas a tu compañero si hace falta':'Connect a partner if required'}</span></div></article>}
    </div>
    <div className="joinAccountCard">{done?<div className="success"><div>✓</div><h2>{t.done}</h2><p>{t.next}</p>{submittedEmail&&<p className="sentTo">{es?'Enviado a':'Sent to'} <strong>{submittedEmail}</strong></p>}{magicSent&&<button type="button" onClick={resendMagicLink} disabled={resendBusy||resendCooldown>0}>{resendBusy?t.sending:resendCooldown>0?t.resend+' ('+resendCooldown+'s)':t.resend+' →'}</button>}{resendMessage&&<p role="status" className="resendStatus">{resendMessage}</p>}</div>:
-    <form onSubmit={submit}><div className="formTop"><span>PAIRVOICE</span><b>{es?'CUENTA':'ACCOUNT'}</b></div>{campaign&&<div className="microSteps"><span className="active">1 {es?'Cuenta':'Account'}</span><span>2 {es?'Compañero':'Partner'}</span><span>3 {es?'Trabajo':'Work'}</span></div>}
+    <form onSubmit={submit}>{partnerCode&&<div className="partnerInviteBanner"><small>{es?'TU COMPAÑERO YA ESTÁ CONECTADO':'PARTNER INVITE READY'}</small><strong>{partnerCode}</strong><span>{es?'El código de tu compañero ya está aplicado. Solo continúa.':'Your partner’s code is already applied. Just continue.'}</span></div>}<div className="formTop"><span>PAIRVOICE</span><b>{es?'CUENTA':'ACCOUNT'}</b></div>{campaign&&<div className="microSteps"><span className="active">1 {es?'Cuenta':'Account'}</span><span>2 {es?'Compañero':'Partner'}</span><span>3 {es?'Trabajo':'Work'}</span></div>}
      <label htmlFor="join-first-name">{t.first}<input id="join-first-name" name="first_name" required autoComplete="given-name" enterKeyHint="next"/></label>
      <label htmlFor="join-email">{t.email}<input id="join-email" name="email" required type="email" autoComplete="email" inputMode="email" autoCapitalize="none" spellCheck={false} enterKeyHint="next"/></label>
      <label htmlFor="join-phone">{t.phone}<input id="join-phone" name="phone" required type="tel" autoComplete="tel" inputMode="tel" enterKeyHint="next" placeholder={selected?.countryCode==='ES'?'+34 612 345 678':'+1 305 555 0123'}/><small className="fieldHelp">{t.phoneHelp}</small></label>
