@@ -62,7 +62,13 @@ Deno.serve(async(req)=>{
 
   if(!rpc.ok){
    const msg=String(payload?.message||payload?.error||"");
-   if(msg.includes("already_enrolled"))return json({error:"You are already enrolled in this campaign."},409);
+   if(msg.includes("already_enrolled"))return json({error:"You are already enrolled in this campaign.",code:"ALREADY_ENROLLED"},409);
+   if(msg.includes("phone_already_registered")||msg.includes("identity_phone_conflict")){
+    return json({
+     error:"That phone number is already linked to another PairVoice account. Sign in with the existing account or use a different phone number.",
+     code:"PHONE_ALREADY_REGISTERED"
+    },409);
+   }
    if(msg.includes("eligibility")||msg.includes("campaign_"))return json({error:"You are not eligible for this campaign as submitted."},400);
    console.error("register_campaign_participant failed",rpc.status,msg);
    return json({error:"Unable to complete signup."},500);
