@@ -52,9 +52,9 @@ end $$;
 begin;
 insert into public.funnel_events(event_name,session_id,page_path,language_code,metadata)
 values
- ('onboarding_view','sql-production-funnel','/join','en','{}'::jsonb),
- ('dashboard_view','sql-production-funnel','/dashboard','en','{}'::jsonb),
- ('readiness_completed','sql-production-funnel','/dashboard','en','{}'::jsonb);
+ ('landing_view','sql-production-funnel','/','en','{}'::jsonb),
+ ('campaign_view','sql-production-funnel','/join','en','{}'::jsonb),
+ ('signup_completed','sql-production-funnel','/join','en','{}'::jsonb);
 rollback;
 
 select 'production onboarding invariants passed' as result;
