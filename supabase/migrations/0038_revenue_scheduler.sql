@@ -15,7 +15,7 @@ begin
 end $;
 
 
-do $$
+do $
 declare r record;
 begin
  for r in select jobid from cron.job where jobname in ('pairvoice-outbox-worker','pairvoice-payout-worker')
