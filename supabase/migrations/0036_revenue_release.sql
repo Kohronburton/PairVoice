@@ -5,12 +5,17 @@ alter table public.campaign_access
  add column if not exists android_launch_url text,
  add column if not exists ios_launch_url text;
 
--- Verified public app-store fallbacks. Campaign-specific deep links remain null until the provider supplies them.
-update public.campaign_access ca
-set android_launch_url=coalesce(ca.android_launch_url,'https://play.google.com/store/apps/details?id=com.magicdata.magiccollection'),
-    ios_launch_url=coalesce(ca.ios_launch_url,'https://apps.apple.com/us/app/funcrowd/id1574837524')
+-- Verified public app-store fallbacks. Create missing access rows; preserve any existing codes/deep links.
+insert into public.campaign_access(campaign_id,provider,reveal_state,android_launch_url,ios_launch_url)
+select c.id,'FUNCROWD','READY',
+       'https://play.google.com/store/apps/details?id=com.magicdata.magiccollection',
+       'https://apps.apple.com/us/app/funcrowd/id1574837524'
 from public.campaigns c
-where c.id=ca.campaign_id and upper(coalesce(c.provider,''))='FUNCROWD';
+where c.active=true and upper(coalesce(c.provider,''))='FUNCROWD'
+on conflict(campaign_id) do update
+set android_launch_url=coalesce(campaign_access.android_launch_url,excluded.android_launch_url),
+    ios_launch_url=coalesce(campaign_access.ios_launch_url,excluded.ios_launch_url),
+    updated_at=now();
 
 -- Return generic and platform-specific provider destinations to authenticated pair members.
 create or replace function public.prepare_pair_work_access(
