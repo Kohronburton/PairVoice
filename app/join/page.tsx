@@ -1,107 +1,96 @@
 'use client';
 import {FormEvent,useEffect,useMemo,useState} from 'react';
-import {getBrowserSupabase} from '../../lib/supabase-browser';
 import {trackFunnelEvent} from '../../lib/funnel';
-import InviteShareButtons from '../../components/InviteShareButtons';
 
-type Opportunity={
- slug:string;name:string;countryCode:string;languageCode:string;participantCount:number;
- participantPayoutCents:number|null;payoutCurrency:string;payoutUnit:'PAIR'|'PARTICIPANT'|'HOURLY'|'FIXED';
- requiresPair:boolean;sessionCount:number|null;sessionMinutesMin:number|null;sessionMinutesMax:number|null;
- deviceRequirement:string|null;
-};
+type Opportunity={slug:string;name:string;countryCode:string;languageCode:string;participantPayoutCents:number|null;payoutCurrency:string;requiresPair:boolean;jobFamily:string|null};
 
-const marketName=(code:string)=>({US:'United States',ES:'Spain',CA:'Canada',AU:'Australia',GB:'United Kingdom'} as Record<string,string>)[code]||code;
-const money=(cents:number|null,currency:string)=>cents==null?'Payout shown before enrollment':new Intl.NumberFormat(undefined,{style:'currency',currency,maximumFractionDigits:0}).format(cents/100);
+const countryName=(c:string)=>({US:'United States',ES:'Spain',CA:'Canada',GB:'United Kingdom',AU:'Australia'} as Record<string,string>)[c]||c;
+const money=(c:number,x:string)=>{try{return new Intl.NumberFormat(undefined,{style:'currency',currency:x,maximumFractionDigits:0}).format(c/100)}catch{return'$'+Math.round(c/100)}};
 
 export default function JoinPage(){
- const[opps,setOpps]=useState<Opportunity[]>([]),[selectedSlug,setSelectedSlug]=useState(''),[lang,setLang]=useState<'en'|'es'>('en');
- const[loading,setLoading]=useState(false),[catalogLoading,setCatalogLoading]=useState(true),[error,setError]=useState(''),[alreadyEnrolled,setAlreadyEnrolled]=useState(false);
- const[result,setResult]=useState<{inviteUrl:string;pairCode:string;participantCode:string;magicLinkSent:boolean}|null>(null);
-
+ const[campaign,setCampaign]=useState(''),[ops,setOps]=useState<Opportunity[]>([]),[lang,setLang]=useState<'en'|'es'>('en');
+ const[busy,setBusy]=useState(false),[error,setError]=useState(''),[done,setDone]=useState(false),[magicSent,setMagicSent]=useState(false),[submittedEmail,setSubmittedEmail]=useState(''),[resendBusy,setResendBusy]=useState(false),[resendMessage,setResendMessage]=useState(''),[resendCooldown,setResendCooldown]=useState(0);
  useEffect(()=>{
-  const q=new URLSearchParams(location.search);
-  const requested=q.get('lang');
-  const l=requested==='es'||(!requested&&navigator.language.toLowerCase().startsWith('es'))?'es':'en';
-  setLang(l);document.documentElement.lang=l;
-  setSelectedSlug(q.get('campaign')||'');
-  trackFunnelEvent('onboarding_view',{campaign_slug:q.get('campaign')||'none'});
-  fetch('/api/opportunities').then(r=>r.ok?r.json():Promise.reject()).then(d=>setOpps(Array.isArray(d.opportunities)?d.opportunities:[])).catch(()=>setError(l==='es'?'No pudimos cargar los proyectos.':'We could not load the available gigs.')).finally(()=>setCatalogLoading(false));
+  const q=new URLSearchParams(location.search),slug=q.get('campaign')||'',locale=navigator.language||'en-US';
+  setCampaign(slug);setLang(locale.toLowerCase().startsWith('es')?'es':'en');
+  fetch('/api/opportunities').then(r=>r.ok?r.json():Promise.reject()).then(d=>setOps(Array.isArray(d.opportunities)?d.opportunities:[])).catch(()=>{});
+  trackFunnelEvent('signup_started',{campaign_slug:slug||'general',surface:'production_join'});
  },[]);
-
- const selected=useMemo(()=>opps.find(o=>o.slug===selectedSlug)||null,[opps,selectedSlug]);
+ useEffect(()=>{if(resendCooldown<=0)return;const t=window.setInterval(()=>setResendCooldown(v=>v<=1?0:v-1),1000);return()=>window.clearInterval(t)},[resendCooldown]);
+ const selected=useMemo(()=>ops.find(o=>o.slug===campaign)||null,[ops,campaign]);
  const es=lang==='es';
-
+ const t=es?{
+  title:campaign?'Únete a este proyecto':'Crea tu cuenta PairVoice',lead:campaign?'Tu proyecto ya está seleccionado. Crea tu cuenta, confirma los datos básicos y comprueba si calificas antes de grabar.':'Crea una cuenta reutilizable para ver y participar en proyectos compatibles.',
+  first:'Nombre',email:'Correo electrónico',phone:'Número de teléfono',phoneHelp:'Lo usaremos para coordinación del proyecto, recordatorios y opciones como WhatsApp/SMS.',country:'País',language:'Idioma',age:'Confirmo que tengo 18 años o más.',consent:'Acepto recibir comunicaciones relacionadas con mi cuenta PairVoice y mis proyectos por correo electrónico, SMS y WhatsApp usando los datos que proporciono.',consentFine:'Pueden aplicarse tarifas de mensajes y datos. La frecuencia de los mensajes varía. Responde STOP a un SMS para dejar de recibir SMS. Los mensajes promocionales, si se ofrecen, requerirán consentimiento por separado y no son necesarios para crear una cuenta ni calificar para un proyecto.',terms:'Términos',privacy:'Privacidad',fixed:'Ya configurado por este proyecto',resend:'Reenviar enlace',resent:'Nuevo enlace enviado.',sending:'Enviando…',
+  button:campaign?'Crear cuenta y comprobar elegibilidad':'Crear cuenta PairVoice',saving:'Creando cuenta…',done:'Revisa tu correo.',next:'Te enviamos un enlace seguro para entrar a PairVoice.',
+  back:'Volver a proyectos',signin:'¿Ya tienes cuenta? Entrar',partner:'Compañero requerido',payout:'Pago por pareja aprobada'
+ }:{
+  title:campaign?'Join this gig':'Create your PairVoice account',lead:campaign?'Your gig is already selected. Create your account, confirm the basics, and check your eligibility before you record.':'Create one reusable account to discover and join compatible paid voice gigs.',
+  first:'First name',email:'Email address',phone:'Phone number',phoneHelp:'We use this for gig coordination, reminders, and options like WhatsApp/SMS.',country:'Country',language:'Language',age:'I confirm I am 18 or older.',consent:'I agree to receive PairVoice account- and gig-related communications by email, SMS, and WhatsApp using the contact information I provide.',consentFine:'Message and data rates may apply. Message frequency varies. Reply STOP to an SMS to opt out of SMS. Promotional marketing, if offered, requires separate consent and is not required to create an account or qualify for a gig.',terms:'Terms',privacy:'Privacy',fixed:'Already set by this gig',resend:'Resend link',resent:'New link sent.',sending:'Sending…',
+  button:campaign?'Create account & check eligibility':'Create PairVoice account',saving:'Creating account…',done:'Check your email.',next:'We sent you a secure link to enter PairVoice.',
+  back:'Back to gigs',signin:'Already have an account? Sign in',partner:'Partner required',payout:'Payout per approved pair'
+ };
  async function submit(e:FormEvent<HTMLFormElement>){
-  e.preventDefault();if(!selected)return;setLoading(true);setError('');setAlreadyEnrolled(false);
-  const f=new FormData(e.currentTarget),q=new URLSearchParams(location.search);
-  trackFunnelEvent('signup_submitted',{campaign_slug:selected.slug,surface:'production_onboarding'});
+  e.preventDefault();setBusy(true);setError('');setMagicSent(false);
+  const f=new FormData(e.currentTarget),email=String(f.get('email')||''),firstName=String(f.get('first_name')||''),phone=String(f.get('phone')||'');
   try{
-   const email=String(f.get('email')||'').trim();
-   const response=await fetch('/api/signup',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({
-    campaign:selected.slug,firstName:f.get('first_name'),email,phone:f.get('phone')||null,
-    countryCode:selected.countryCode,languageCode:selected.languageCode,is18Plus:f.get('age')==='on',
-    consent:f.get('consent')==='on',ref:q.get('ref')||null
-   })});
-   const data=await response.json();
-   if(!response.ok){if(response.status===409&&data.code==='ALREADY_ENROLLED'){setAlreadyEnrolled(true);return}throw new Error(data.error||(es?'No se pudo completar el registro.':'Unable to complete enrollment.'));}
-   let magicLinkSent=false;
-   try{
-    const supabase=getBrowserSupabase();
-    const{error:authError}=await supabase.auth.signInWithOtp({email,options:{emailRedirectTo:`${location.origin}/dashboard`,shouldCreateUser:true}});
-    if(!authError){magicLinkSent=true;trackFunnelEvent('magic_link_sent',{surface:'onboarding'});}
-   }catch{}
-   setResult({inviteUrl:data.inviteUrl||'',pairCode:data.pairCode||'',participantCode:data.participantCode||'',magicLinkSent});
-   trackFunnelEvent('signup_completed',{campaign_slug:selected.slug,surface:'production_onboarding'});
-   trackFunnelEvent('onboarding_completed',{campaign_slug:selected.slug});
-   if(data.inviteUrl)trackFunnelEvent('invite_created',{campaign_slug:selected.slug});
-  }catch(err){setError(err instanceof Error?err.message:'Unable to complete enrollment.')}
-  finally{setLoading(false)}
+   if(campaign){
+    const r=await fetch('/api/signup',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({
+     campaign,firstName,email,phone,countryCode:String(f.get('country')||selected?.countryCode||'US'),
+     languageCode:String(f.get('language')||selected?.languageCode||'en'),is18Plus:f.get('age')==='on',consent:f.get('consent')==='on',
+     ref:new URLSearchParams(location.search).get('ref')
+    })});
+    const d=await r.json();if(!r.ok)throw new Error(d.error||'Unable to create account.');
+   }else{
+    const locale=navigator.language||'en-US',parts=locale.replace('_','-').split('-');
+    const r=await fetch('/api/lead',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({
+     first_name:firstName,email,phone,consent:f.get('consent')==='on',market_code:(parts[1]||'US').toUpperCase(),language:lang,
+     detected_locale:locale,detected_languages:Array.from(navigator.languages||[]),source:'production_join',
+     marketing_campaign_key:'account_creation',landing_path:location.pathname,referrer:document.referrer||null
+    })});
+    const d=await r.json();if(!r.ok)throw new Error(d.error||'Unable to create account.');
+   }
+   const m=await fetch('/api/auth/magic-link',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email,next:'/dashboard',intent:'signup'})});
+   const md=await m.json();if(!m.ok)throw new Error(md.error||'Account created, but sign-in email could not be sent.');
+   setSubmittedEmail(email);setMagicSent(true);setDone(true);setResendCooldown(30);trackFunnelEvent('signup_completed',{campaign_slug:campaign||'general',surface:'production_join'});
+  }catch(err){setError(err instanceof Error?err.message:'Unable to create account.')}
+  finally{setBusy(false)}
  }
 
- return <main className="flowPage">
-  <nav><a className="logo logoLink" href="/">PAIR<span>VOICE</span></a><div className="navright"><button className="language" onClick={()=>setLang(es?'en':'es')}>{es?'EN':'ES'}</button><a href="/login">{es?'Entrar':'Sign in'}</a></div></nav>
-  <section className="flowShell">
-   <div className="flowIntro">
-    <div className="eyebrow">{es?'REGISTRO DE PRODUCCIÓN':'PRODUCTION SIGNUP'}</div>
-    <h1>{es?'Elige el trabajo. Forma tu pareja. Cobra.':'Choose the gig. Form your pair. Get paid.'}</h1>
-    <p className="lead">{es?'Crea tu cuenta una vez y usa PairVoice para seguir cada trabajo desde el registro hasta el pago.':'Create your account once, then use PairVoice to track each gig from signup through payout.'}</p>
+ async function resendMagicLink(){
+  if(!submittedEmail||resendBusy||resendCooldown>0)return;
+  setResendBusy(true);setResendMessage('');
+  try{
+   const r=await fetch('/api/auth/magic-link',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:submittedEmail,next:'/dashboard'})});
+   const d=await r.json();if(!r.ok)throw new Error(d.error||'Unable to resend link.');
+   setResendMessage(t.resent);setResendCooldown(30);setMagicSent(true);
+  }catch(err){setResendMessage(err instanceof Error?err.message:'Unable to resend link.')}
+  finally{setResendBusy(false)}
+ }
+ return <main className="prodJoin">
+  <nav className="pvnav"><a className="logo" href="/">PAIR<span>VOICE</span></a><div className="navright"><a className="navsignin" href="/">{t.back}</a><a className="navcta" href="/signin">{es?'Entrar':'Sign in'}</a></div></nav>
+  <section className="joinShell">
+   <div className="joinContext"><div className="eyebrow">{campaign?(es?'PROYECTO SELECCIONADO':'SELECTED GIG'):(es?'CUENTA PAIRVOICE':'PAIRVOICE ACCOUNT')}</div>
+    <h1>{t.title}</h1><p>{t.lead}</p>
+    {selected&&<article className="selectedGigCard"><small>{countryName(selected.countryCode)}</small><h2>{selected.name}</h2><p>{selected.jobFamily||'Voice recording'}</p>{selected.participantPayoutCents!=null&&<strong>{money(selected.participantPayoutCents,selected.payoutCurrency)} <span>{t.payout}</span></strong>}<div className="chips"><span>{selected.languageCode.toUpperCase()}</span>{selected.requiresPair&&<span>{t.partner}</span>}</div><div className="joinPromise"><b>{es?'ANTES DE GRABAR':'BEFORE YOU RECORD'}</b><span>✓ {es?'Compruebas elegibilidad':'Check eligibility'}</span><span>✓ {es?'Ves requisitos del proyecto':'See gig requirements'}</span><span>✓ {es?'Conectas a tu compañero si hace falta':'Connect a partner if required'}</span></div></article>}
    </div>
-
-   {result?<div className="card productionSuccess">
-    <div className="success"><div>✓</div><h3>{es?'Tu plaza está registrada.':'Your spot is registered.'}</h3>
-    <p>{result.magicLinkSent?(es?'Te enviamos un enlace seguro para abrir tu panel de PairVoice.':'We sent a secure link to open your PairVoice dashboard.'):(es?'Tu registro está completo. Puedes entrar con el mismo correo.':'Your enrollment is complete. Sign in with the same email to open your dashboard.')}</p>
-    <a className="darkCta" href="/login">{es?'Abrir mi cuenta →':'Open my account →'}</a></div>
-    {selected?.requiresPair&&result.inviteUrl&&<div className="partnerNext"><span className="stepBadge">NEXT</span><h3>{es?'Ahora invita a tu compañero/a.':'Now invite your partner.'}</h3><p>{es?'La pareja se confirma cuando la segunda persona termina su registro.':'Your pair becomes active when the second person completes signup.'}</p><InviteShareButtons inviteUrl={result.inviteUrl} language={lang}/></div>}
-   </div>:
-   <div className="flowGrid">
-    <section className="flowPanel">
-     <span className="stepBadge">1</span><h2>{es?'Elige un proyecto':'Choose a gig'}</h2>
-     {catalogLoading?<p>{es?'Cargando…':'Loading…'}</p>:<div className="selectableJobs">
-      {opps.map(o=><button key={o.slug} type="button" className={selectedSlug===o.slug?'jobChoice selectedChoice':'jobChoice'} onClick={()=>{setSelectedSlug(o.slug);trackFunnelEvent('opportunity_view',{campaign_slug:o.slug,surface:'onboarding'})}}>
-       <strong>{o.name}</strong><span>{marketName(o.countryCode)} · {o.languageCode.toUpperCase()}</span><b>{money(o.participantPayoutCents,o.payoutCurrency)} / pair</b>
-      </button>)}
-     </div>}
-    </section>
-
-    <section className="card flowFormCard">
-     <span className="stepBadge">2</span>
-     <form onSubmit={submit}>
-      <h3>{selected?(es?'Completa tu registro':'Complete your signup'):(es?'Selecciona un proyecto primero':'Select a gig first')}</h3>
-      {selected&&<div className="selectedJob"><small>{es?'PROYECTO SELECCIONADO':'SELECTED GIG'}</small><strong>{selected.name}</strong><span>{marketName(selected.countryCode)} · {selected.languageCode.toUpperCase()} · {money(selected.participantPayoutCents,selected.payoutCurrency)} / pair</span></div>}
-      <label htmlFor="join-first">{es?'Nombre':'First name'}</label><input id="join-first" name="first_name" required disabled={!selected} autoComplete="given-name"/>
-      <label htmlFor="join-email">{es?'Correo electrónico':'Email address'}</label><input id="join-email" name="email" type="email" required disabled={!selected} autoComplete="email" inputMode="email"/>
-      <label htmlFor="join-phone">{es?'Teléfono (opcional)':'Phone (optional)'}</label><input id="join-phone" name="phone" type="tel" disabled={!selected} autoComplete="tel" inputMode="tel"/>
-      <label className="check"><input name="age" type="checkbox" required disabled={!selected}/><span>{es?'Confirmo que tengo 18 años o más.':'I confirm I am 18 or older.'}</span></label>
-      {selected&&<label className="check"><input name="eligibility" type="checkbox" required/><span>{es?`Confirmo que cumplo los requisitos de ${marketName(selected.countryCode)} y puedo grabar en ${selected.languageCode.toUpperCase()}.`:`I confirm I meet the ${marketName(selected.countryCode)} requirements and can record in ${selected.languageCode.toUpperCase()}.`}</span></label>}
-      <label className="check"><input name="consent" type="checkbox" required disabled={!selected}/><span>{es?'Acepto recibir instrucciones del proyecto y actualizaciones de PairVoice.':'Send me PairVoice gig instructions and account updates.'}</span></label>
-      {alreadyEnrolled&&<div className="recoveryNotice"><strong>{es?'Ya estás inscrito/a en este proyecto.':'You’re already enrolled in this gig.'}</strong><p>{es?'No vuelvas a registrarte. Entra con el mismo correo para continuar donde lo dejaste.':'Do not sign up again. Use the same email to continue where you left off.'}</p><a className="darkCta" href={`/login?lang=${lang}`}>{es?'Abrir mi cuenta →':'Open my account →'}</a></div>}
-      {error&&<p className="error">{error}</p>}
-      <button disabled={!selected||loading||alreadyEnrolled}>{loading?(es?'Creando tu cuenta…':'Creating your account…'):(es?'Reservar mi plaza →':'Claim my spot →')}</button>
-      <small>{es?'No pedimos datos de pago ahora. Los pagos se configuran después de la aprobación.':'No payout details are requested now. Payout setup comes after approved work.'}</small>
-     </form>
-    </section>
-   </div>}
+   <div className="joinAccountCard">{done?<div className="success"><div>✓</div><h2>{t.done}</h2><p>{t.next}</p>{submittedEmail&&<p className="sentTo">{es?'Enviado a':'Sent to'} <strong>{submittedEmail}</strong></p>}{magicSent&&<button type="button" onClick={resendMagicLink} disabled={resendBusy||resendCooldown>0}>{resendBusy?t.sending:resendCooldown>0?t.resend+' ('+resendCooldown+'s)':t.resend+' →'}</button>}{resendMessage&&<p role="status" className="resendStatus">{resendMessage}</p>}</div>:
+    <form onSubmit={submit}><div className="formTop"><span>PAIRVOICE</span><b>{es?'CUENTA':'ACCOUNT'}</b></div>{campaign&&<div className="microSteps"><span className="active">1 {es?'Cuenta':'Account'}</span><span>2 {es?'Compañero':'Partner'}</span><span>3 {es?'Trabajo':'Work'}</span></div>}
+     <label htmlFor="join-first-name">{t.first}<input id="join-first-name" name="first_name" required autoComplete="given-name" enterKeyHint="next"/></label>
+     <label htmlFor="join-email">{t.email}<input id="join-email" name="email" required type="email" autoComplete="email" inputMode="email" autoCapitalize="none" spellCheck={false} enterKeyHint="next"/></label>
+     <label htmlFor="join-phone">{t.phone}<input id="join-phone" name="phone" required type="tel" autoComplete="tel" inputMode="tel" enterKeyHint="next" placeholder={selected?.countryCode==='ES'?'+34 612 345 678':'+1 305 555 0123'}/><small className="fieldHelp">{t.phoneHelp}</small></label>
+     {campaign&&<>
+      <input type="hidden" name="country" value={selected?.countryCode||'US'}/>
+      <input type="hidden" name="language" value={selected?.languageCode||'en'}/>
+      {selected&&<div className="lockedGigFacts"><div><b>{t.country}</b><span>{countryName(selected.countryCode)}</span></div><div><b>{t.language}</b><span>{selected.languageCode.toUpperCase()}</span></div><small>{t.fixed}</small></div>}
+      <label className="check"><input name="age" type="checkbox" required/><span>{t.age}</span></label>
+     </>}
+     <label className="check consentCheck"><input name="consent" type="checkbox" required/><span>{t.consent}<small className="consentFinePrint">{t.consentFine} <a href="/terms" target="_blank" rel="noreferrer">{t.terms}</a> · <a href="/privacy" target="_blank" rel="noreferrer">{t.privacy}</a></small></span></label>
+     {error&&<p className="error">{error}</p>}<button disabled={busy}>{busy?t.saving:t.button+' →'}</button>
+     <small>{es?'No necesitas tarjeta para crear una cuenta.':'No card required to create an account.'}</small>
+    </form>}
+    <a className="joinSigninLink" href="/signin">{t.signin}</a>
+   </div>
   </section>
  </main>;
 }
