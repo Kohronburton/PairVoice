@@ -1,6 +1,7 @@
 export const funnelEvents=[
  'landing_view','opportunity_view','campaign_view','campaign_cta_click',
  'signup_started','signup_submitted','signup_completed','email_queued',
+ 'login_view','magic_link_sent','dashboard_view','readiness_started','readiness_completed',
  'invite_created','partner_invite_created','invite_view','partner_signup_started','partner_signup_completed',
  'partner_choice_have','partner_choice_need_match','partner_matching_requested','partner_matching_joined',
  'partner_invite_share_clicked','partner_invite_opened','partner_invite_accepted',
