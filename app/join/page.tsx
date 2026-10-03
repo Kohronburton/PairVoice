@@ -60,7 +60,8 @@ export default function JoinPage(){
     })});
     const d=await r.json();if(!r.ok)throw new Error(d.error||'Unable to create account.');
    }
-   const m=await fetch('/api/auth/magic-link',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email,next:'/dashboard',intent:'signup'})});
+   const next=campaign?`/dashboard?campaign=${encodeURIComponent(campaign)}${partnerCode?`&partnerCode=${encodeURIComponent(partnerCode)}`:''}`:'/dashboard';
+   const m=await fetch('/api/auth/magic-link',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email,next,intent:'signup'})});
    const md=await m.json();if(!m.ok)throw new Error(md.error||'Account created, but sign-in email could not be sent.');
    setSubmittedEmail(email);setMagicSent(true);setDone(true);setResendCooldown(30);trackFunnelEvent('signup_completed',{campaign_slug:campaign||'general',surface:'production_join'});
   }catch(err){setError(err instanceof Error?err.message:'Unable to create account.')}
@@ -71,7 +72,8 @@ export default function JoinPage(){
   if(!submittedEmail||resendBusy||resendCooldown>0)return;
   setResendBusy(true);setResendMessage('');
   try{
-   const r=await fetch('/api/auth/magic-link',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:submittedEmail,next:'/dashboard'})});
+   const next=campaign?`/dashboard?campaign=${encodeURIComponent(campaign)}${partnerCode?`&partnerCode=${encodeURIComponent(partnerCode)}`:''}`:'/dashboard';
+   const r=await fetch('/api/auth/magic-link',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:submittedEmail,next})});
    const d=await r.json();if(!r.ok)throw new Error(d.error||'Unable to resend link.');
    setResendMessage(t.resent);setResendCooldown(30);setMagicSent(true);
   }catch(err){setResendMessage(err instanceof Error?err.message:'Unable to resend link.')}
