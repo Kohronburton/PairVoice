@@ -1,5 +1,5 @@
 export function buildPartnerInviteUrl(siteUrl:string,inviteCode:string){
-  return `${siteUrl.replace(/\/$/,'')}/invite/${encodeURIComponent(inviteCode.trim().toUpperCase())}`;
+  return `${siteUrl.replace(/\/$/,'')}/pair/${encodeURIComponent(inviteCode.trim().toUpperCase())}`;
 }
 
 export function buildPartnerInviteMessage(language:'en'|'es',inviteUrl:string){
