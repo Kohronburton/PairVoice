@@ -29,7 +29,7 @@ export default async function Dashboard(){
  const nextCopy=pendingPairs.length?'One connection unlocks the next step. If your partner already has PairVoice, connect them below.':workPairs.length?'Your gig is ready. Continue where you left off.':!pool?'PairVoice can look for a compatible partner for you. One tap starts matching.':'You’re in the Partner Pool. We’ll keep looking while you do other things.';
  const hasConnectedPair=(allActivePairs||[]).some((pair:any)=>['PAIRED','READY','RECORDING','REWORK_REQUIRED','SUBMITTED','APPROVED'].includes(pair.state));
  const step2Done=hasConnectedPair;
- return <main className="appDashboard">
+ return <main id="top" className="appDashboard">
   <header className="appTopbar"><div className="logo">PAIR<span>VOICE</span></div><Link className="walletPill" href="/wallet" prefetch>Wallet →</Link></header>
   <section className="appHero">
    <p className="eyebrow">YOUR PAIRVOICE</p>
@@ -37,7 +37,7 @@ export default async function Dashboard(){
    <p className="appPromise">Get paired. Complete the gig. Get paid.</p>
    <div className="appSteps" aria-label="PairVoice progress"><span className="done">1 Joined ✓</span><span className={step2Done?'done':'active'}>2 Partner{step2Done?' ✓':''}</span><span className={workPairs.length?'active':''}>3 Get paid</span></div>
   </section>
-  <section className="nextActionCard">
+  <section id="next-action" className="nextActionCard">
    <small>NEXT STEP</small><h2>{nextAction}</h2><p>{nextCopy}</p>
    {!pool&&<PartnerPoolButton/>}
    {pool?.status==='WAITING'&&<div className="matchActive">✓ Matching is on</div>}
@@ -46,6 +46,19 @@ export default async function Dashboard(){
   </section>
   {partnerPairs.length>0&&<section id="existing-partner" className="taskSection taskSectionPriority"><div className="opportunityGrid">{partnerPairs.map((pair:any)=>{const campaign=Array.isArray(pair.campaigns)?pair.campaigns[0]:pair.campaigns;return campaign?.slug?<ExistingPartnerLink key={pair.id} campaignSlug={campaign.slug} campaignName={campaign.name||'PairVoice opportunity'}/>:null})}</div></section>}
   {workPairs.length>0&&<section id="active-work" className="taskSection taskSectionPriority"><div className="opportunityGrid">{workPairs.map((pair:any)=>{const campaign=Array.isArray(pair.campaigns)?pair.campaigns[0]:pair.campaigns;return <WorkAccessCard key={pair.id} pairId={pair.id} pairCode={pair.public_code} state={pair.state} campaignName={campaign?.name||'PairVoice opportunity'}/>})}</div></section>}
-  <p className="appFinePrint">Your PairVoice account, partner history and progress stay with you across gigs.</p>
+  <details className="appDetails dashboardDetails">
+   <summary>Account & history <span aria-hidden="true">+</span></summary>
+   <div className="compactDetails">
+    <span>{p.email}</span>
+    <span>{approvedJobs||0} approved gig{approvedJobs===1?'':'s'} · {referrals||0} referral{referrals===1?'':'s'}</span>
+    <span>Your PairVoice account, partner history and progress stay with you across gigs.</span>
+   </div>
+  </details>
+  <nav className="appBottomNav" aria-label="PairVoice shortcuts">
+   <a className="active" href="#top"><span aria-hidden="true">⌂</span><b>Home</b></a>
+   <a href={partnerPairs.length?"#existing-partner":"#next-action"}><span aria-hidden="true">👥</span><b>Partner</b></a>
+   <a href={workPairs.length?"#active-work":"#next-action"}><span aria-hidden="true">●</span><b>Gig</b></a>
+   <Link href="/wallet" prefetch><span aria-hidden="true">$</span><b>Wallet</b></Link>
+  </nav>
  </main>;
 }
