@@ -1,6 +1,12 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {sessionClient,serviceClient} from '../../../lib/supabase-server';
 
+function localeChain(raw:string){
+ const normalized=String(raw||'en').trim().replace('_','-').toLowerCase();
+ const base=normalized.split('-')[0]||'en';
+ return [...new Set([normalized,base,'en'])];
+}
+
 async function current(){
  const auth=await sessionClient(),{data}=await auth.auth.getUser();
  if(!data.user)return null;
@@ -14,9 +20,18 @@ async function requiredDocuments(ctx:NonNullable<Awaited<ReturnType<typeof curre
  if(!campaign)return {error:'Campaign not found.',status:404 as const};
  const {data:enrollment}=await ctx.db.from('campaign_enrollments').select('id,campaign_version_id,accepted_terms_at').eq('campaign_id',campaign.id).eq('participant_id',ctx.participant.id).maybeSingle();
  if(!enrollment)return {error:'Join this campaign first.',status:404 as const};
- const {data:docs,error}=await ctx.db.from('legal_documents').select('id,document_key,title,body_text,version,content_sha256').eq('scope','CAMPAIGN').eq('campaign_version_id',enrollment.campaign_version_id).eq('locale',ctx.participant.primary_language_code).eq('status','PUBLISHED').in('document_key',['CAMPAIGN_TERMS','PARTICIPANT_CONSENT']).order('document_key');
+ const locales=localeChain(ctx.participant.primary_language_code);
+ const {data:available,error}=await ctx.db.from('legal_documents')
+  .select('id,document_key,title,body_text,version,content_sha256,locale')
+  .eq('scope','CAMPAIGN').eq('campaign_version_id',enrollment.campaign_version_id)
+  .eq('status','PUBLISHED').in('locale',locales)
+  .in('document_key',['CAMPAIGN_TERMS','PARTICIPANT_CONSENT']);
  if(error)return {error:'Unable to load campaign documents.',status:500 as const};
- return {campaign,enrollment,docs:docs||[]};
+ const docs=['CAMPAIGN_TERMS','PARTICIPANT_CONSENT'].map(key=>{
+  const candidates=(available||[]).filter(d=>d.document_key===key);
+  return locales.map(locale=>candidates.find(d=>d.locale.toLowerCase()===locale)).find(Boolean);
+ }).filter(Boolean);
+ return {campaign,enrollment,docs};
 }
 
 export async function GET(req:NextRequest){
@@ -27,7 +42,7 @@ export async function GET(req:NextRequest){
  if('error'in loaded)return NextResponse.json({error:loaded.error},{status:loaded.status});
  const {data:accepted}=await ctx.db.from('legal_document_acceptances').select('document_id,accepted_at').eq('participant_id',ctx.participant.id).eq('enrollment_id',loaded.enrollment.id);
  const acceptedIds=new Set((accepted||[]).map(x=>x.document_id));
- return NextResponse.json({campaign:loaded.campaign,documents:loaded.docs,acceptedDocumentIds:[...acceptedIds],complete:loaded.docs.length===2&&loaded.docs.every(d=>acceptedIds.has(d.id))});
+ return NextResponse.json({campaign:loaded.campaign,documents:loaded.docs,acceptedDocumentIds:[...acceptedIds],complete:loaded.docs.length===2&&loaded.docs.every(d=>d&&acceptedIds.has(d.id))});
 }
 
 export async function POST(req:NextRequest){
@@ -37,7 +52,7 @@ export async function POST(req:NextRequest){
   if(!campaignSlug||documentIds.length<2)return NextResponse.json({error:'Campaign and both required document acceptances are required.'},{status:400});
   const loaded=await requiredDocuments(ctx,campaignSlug);
   if('error'in loaded)return NextResponse.json({error:loaded.error},{status:loaded.status});
-  const requiredIds=[...loaded.docs.map(d=>d.id)].sort(),submitted=[...new Set(documentIds)].sort();
+  const requiredIds=[...loaded.docs.map(d=>d!.id)].sort(),submitted=[...new Set(documentIds)].sort();
   if(requiredIds.length!==2||submitted.length!==2||requiredIds.some((id,i)=>id!==submitted[i])){
    return NextResponse.json({error:'Accept every required published campaign document.'},{status:400});
   }
