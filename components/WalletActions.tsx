@@ -1,9 +1,10 @@
 'use client';
-import {useState} from 'react';
+import {useRef,useState} from 'react';
 
 type Method={id:string;provider:string;label:string|null;status:string;is_default:boolean};
 
 export default function WalletActions({availableCents,currency,methods}:{availableCents:number;currency:string;methods:Method[]}){
+ const payoutKey=useRef<string>('');
  const[provider,setProvider]=useState('PAYPAL'),[recipient,setRecipient]=useState(''),[label,setLabel]=useState(''),[status,setStatus]=useState(''),[busy,setBusy]=useState(false);
  const verified=methods.find(m=>m.status==='VERIFIED'&&m.is_default);
  const pending=methods.find(m=>m.status==='PENDING'&&m.is_default);
@@ -16,10 +17,10 @@ export default function WalletActions({availableCents,currency,methods}:{availab
  }
  async function requestPayout(){
   if(availableCents<=0||!verified)return;setBusy(true);setStatus('');
-  const r=await fetch('/api/payout',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({amountCents:availableCents,currency,idempotencyKey:crypto.randomUUID()})});
+  const r=await fetch('/api/payout',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({amountCents:availableCents,currency,idempotencyKey:payoutKey.current||(payoutKey.current=crypto.randomUUID())})});
   const d=await r.json();setBusy(false);
   if(!r.ok){setStatus(d.error||'Unable to request payout.');return}
-  setStatus('Payout requested. Your balance is reserved while PairVoice processes it.');window.setTimeout(()=>window.location.reload(),900);
+  payoutKey.current='';setStatus('Payout requested. Your balance is reserved while PairVoice processes it.');window.setTimeout(()=>window.location.reload(),900);
  }
  return <section className="walletAction">
   <small>NEXT STEP</small><h2>{verified?(availableCents>0?'Get paid':'You’re payout-ready'):pending?'Verification in progress':'Set up payouts'}</h2>
