@@ -36,14 +36,14 @@ begin
     raise exception 'authenticated_participant_rpc_access_missing';
   end if;
 
-  if has_function_privilege('anon','public.register_campaign_participant(text,text,text,text,text,text,boolean,boolean,text)','EXECUTE')
-     or has_function_privilege('authenticated','public.register_campaign_participant(text,text,text,text,text,text,boolean,boolean,text)','EXECUTE')
+  if has_function_privilege('anon','public.register_campaign_participant(text,text,text,text,text,text,boolean,boolean,text,boolean)','EXECUTE')
+     or has_function_privilege('authenticated','public.register_campaign_participant(text,text,text,text,text,text,boolean,boolean,text,boolean)','EXECUTE')
      or has_function_privilege('anon','public.join_pair_invite(text,text,text,text,text,text,boolean,boolean)','EXECUTE')
      or has_function_privilege('authenticated','public.join_pair_invite(text,text,text,text,text,text,boolean,boolean)','EXECUTE') then
     raise exception 'direct_public_enrollment_rpc_access_detected';
   end if;
 
-  if not has_function_privilege('service_role','public.register_campaign_participant(text,text,text,text,text,text,boolean,boolean,text)','EXECUTE')
+  if not has_function_privilege('service_role','public.register_campaign_participant(text,text,text,text,text,text,boolean,boolean,text,boolean)','EXECUTE')
      or not has_function_privilege('service_role','public.join_pair_invite(text,text,text,text,text,text,boolean,boolean)','EXECUTE') then
     raise exception 'service_role_enrollment_rpc_access_missing';
   end if;
