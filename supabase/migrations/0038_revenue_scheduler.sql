@@ -4,7 +4,7 @@
 --   pairvoice_site_url
 -- No secret values are committed to source control.
 
-do $
+do $$
 begin
  if not exists(select 1 from pg_extension where extname='pg_net') then
   execute 'create extension pg_net with schema extensions';
