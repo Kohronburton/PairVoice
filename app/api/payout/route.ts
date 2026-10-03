@@ -12,7 +12,9 @@ export async function POST(req:NextRequest){
   if(!participant)return NextResponse.json({error:'PairVoice participant not found.'},{status:404});
   const b=await req.json(),amount=Number(b.amountCents),currency=String(b.currency||'USD').toUpperCase();
   if(!Number.isInteger(amount)||amount<=0)return NextResponse.json({error:'A valid payout amount is required.'},{status:400});
-  const key=String(b.idempotencyKey||crypto.randomUUID());
+  const suppliedKey=String(b.idempotencyKey||'').trim();
+  if(!suppliedKey)return NextResponse.json({error:'A stable payout request key is required. Refresh and try again.',code:'IDEMPOTENCY_KEY_REQUIRED'},{status:400});
+  const key=suppliedKey;
   const {data:payoutId,error}=await db.rpc('request_participant_payout',{
    p_participant_id:participant.id,p_amount_cents:amount,p_currency:currency,p_idempotency_key:key
   });
