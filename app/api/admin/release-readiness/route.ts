@@ -8,19 +8,20 @@ export async function GET(){
  if(!admin)return NextResponse.json({error:'Forbidden'},{status:403});
  try{
   const db=admin.db;
-  const [controlsQ,payoutQ,outboxQ,campaignsQ,versionsQ,accessQ,bindingsQ,providersQ,credentialsQ,legalQ]=await Promise.all([
+  const [controlsQ,payoutQ,outboxQ,campaignsQ,versionsQ,accessQ,bindingsQ,providersQ,credentialsQ,legalQ,adminsQ]=await Promise.all([
    db.from('subsystem_controls').select('subsystem,enabled,reason'),
    db.from('provider_payout_attempts').select('id,state').in('state',['UNKNOWN','MANUAL_REVIEW']),
    db.from('outbox_events').select('id').eq('status','DEAD_LETTER'),
    db.from('campaigns').select('id,slug,name,active,provider').eq('active',true),
    db.from('campaign_versions').select('id,campaign_id,status,invitation_code_mode').eq('status','PUBLISHED'),
-   db.from('campaign_access').select('campaign_id,provider,invitation_code,launch_url'),
+   db.from('campaign_access').select('campaign_id,provider,invitation_code,launch_url,android_launch_url,ios_launch_url'),
    db.from('campaign_provider_bindings').select('campaign_id,campaign_version_id,provider_id,purpose,active').eq('active',true),
    db.from('provider_integrations').select('id,provider_key,provider_type,status'),
    db.from('provider_credentials').select('provider_id,campaign_id,status').eq('status','AVAILABLE'),
-   db.from('legal_documents').select('id,scope,document_key,campaign_version_id,locale,status').eq('status','PUBLISHED')
+   db.from('legal_documents').select('id,scope,document_key,campaign_version_id,locale,status').eq('status','PUBLISHED'),
+   db.from('admin_memberships').select('user_id').eq('active',true)
   ]);
-  const queryError=[controlsQ.error,payoutQ.error,outboxQ.error,campaignsQ.error,versionsQ.error,accessQ.error,bindingsQ.error,providersQ.error,credentialsQ.error,legalQ.error].find(Boolean);
+  const queryError=[controlsQ.error,payoutQ.error,outboxQ.error,campaignsQ.error,versionsQ.error,accessQ.error,bindingsQ.error,providersQ.error,credentialsQ.error,legalQ.error,adminsQ.error].find(Boolean);
   if(queryError)throw queryError;
 
   const checks:Check[]=[];
@@ -38,9 +39,12 @@ export async function GET(){
    ['env_site','Canonical site URL',Boolean(process.env.NEXT_PUBLIC_SITE_URL),'NEXT_PUBLIC_SITE_URL'],
    ['env_resend','Lifecycle email provider',Boolean(process.env.RESEND_API_KEY),'RESEND_API_KEY'],
    ['env_worker','Internal/cron worker secret',Boolean(process.env.PAIRVOICE_INTERNAL_SECRET||process.env.CRON_SECRET),'PAIRVOICE_INTERNAL_SECRET or CRON_SECRET'],
-   ['env_crypto','Credential encryption key',Boolean(process.env.PAIRVOICE_CREDENTIAL_ENCRYPTION_KEY),'PAIRVOICE_CREDENTIAL_ENCRYPTION_KEY']
+   ['env_crypto','Credential encryption key',Boolean(process.env.PAIRVOICE_CREDENTIAL_ENCRYPTION_KEY),'PAIRVOICE_CREDENTIAL_ENCRYPTION_KEY'],
+   ['env_owner','Owner bootstrap identity',Boolean(process.env.PAIRVOICE_OWNER_EMAIL),'PAIRVOICE_OWNER_EMAIL'],
+   ['env_paypal','PayPal Payouts credentials',Boolean(process.env.PAYPAL_CLIENT_ID&&process.env.PAYPAL_CLIENT_SECRET&&process.env.PAYPAL_WEBHOOK_ID),'PAYPAL_CLIENT_ID + PAYPAL_CLIENT_SECRET + PAYPAL_WEBHOOK_ID']
   ] as const;
   for(const [key,label,pass,detail] of envChecks)checks.push({key,label,pass,blocking:true,detail:pass?'Configured':`Missing ${detail}`});
+  checks.push({key:'admin_bootstrap',label:'At least one active administrator',pass:(adminsQ.data||[]).length>0,blocking:true,detail:`${(adminsQ.data||[]).length} active administrator(s)`});
 
   const versions=versionsQ.data||[],access=accessQ.data||[],bindings=bindingsQ.data||[],providers=providersQ.data||[],credentials=credentialsQ.data||[],legal=legalQ.data||[];
   for(const key of ['PRIVACY','TERMS']){const ok=legal.some(d=>d.scope==='SITE'&&d.document_key===key&&d.locale==='en');checks.push({key:`legal_site_${key.toLowerCase()}`,label:`Published site ${key.toLowerCase()}`,pass:ok,blocking:true,detail:ok?'Published':'Missing reviewed published document'});}
@@ -52,7 +56,8 @@ export async function GET(){
    checks.push({key:`campaign_${campaign.slug}_published`,label:`${campaign.name}: published version`,pass:Boolean(version),blocking:true,detail:version?'Published':'No published version'});
    checks.push({key:`campaign_${campaign.slug}_work`,label:`${campaign.name}: active work provider`,pass:Boolean(workProvider&&workProvider.status==='ACTIVE'),blocking:true,detail:workProvider?.provider_key||'No active WORK binding'});
    if(String(campaign.provider||'').toUpperCase()==='FUNCROWD'){
-    checks.push({key:`campaign_${campaign.slug}_launch`,label:`${campaign.name}: external launch URL`,pass:Boolean(ca?.launch_url),blocking:true,detail:ca?.launch_url?'Configured':'Missing launch URL'});
+    const hasMobileLaunch=Boolean(ca?.android_launch_url&&ca?.ios_launch_url);
+    checks.push({key:`campaign_${campaign.slug}_launch`,label:`${campaign.name}: mobile provider destinations`,pass:Boolean(ca?.launch_url||hasMobileLaunch),blocking:true,detail:ca?.launch_url?'Campaign launch configured':hasMobileLaunch?'Android + iPhone destinations configured':'Missing provider destinations'});
    }
    if(version?.invitation_code_mode&&version.invitation_code_mode!=='NONE'){
     checks.push({key:`campaign_${campaign.slug}_code`,label:`${campaign.name}: invitation code`,pass:Boolean(ca?.invitation_code),blocking:true,detail:ca?.invitation_code?'Configured':'Missing invitation code'});
