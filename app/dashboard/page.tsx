@@ -6,7 +6,8 @@ import WorkAccessCard from '../../components/WorkAccessCard';
 import ExistingPartnerLink from '../../components/ExistingPartnerLink';
 import CampaignConsentCard from '../../components/CampaignConsentCard';
 
-export default async function Dashboard(){
+export default async function Dashboard({searchParams}:{searchParams?:Promise<{campaign?:string;partnerCode?:string}>}){
+ const q=searchParams?await searchParams:{},handoffCampaign=String(q.campaign||'').trim(),handoffPartnerCode=String(q.partnerCode||'').trim().toUpperCase();
  const auth=await sessionClient(),{data}=await auth.auth.getUser();
  if(!data.user)redirect('/?signin=1');
  const db=auth;
@@ -17,6 +18,10 @@ export default async function Dashboard(){
   db.from('pair_members').select('pair_id,pairs!inner(state)',{count:'exact',head:true}).eq('pairs.state','APPROVED'),
   db.from('referral_relationships').select('id',{count:'exact',head:true}).eq('referrer_participant_id',p.id)
  ]);
+ if(handoffCampaign&&handoffPartnerCode){
+  const {error:handoffError}=await db.rpc('request_existing_partner',{p_requester_id:p.id,p_target_public_code:handoffPartnerCode,p_campaign_slug:handoffCampaign});
+  if(handoffError)console.error('partner invite recovery failed',handoffError.message);
+ }
  const {data:enrollments}=await db.from('campaign_enrollments').select('id').eq('participant_id',p.id);
  const enrollmentIds=(enrollments||[]).map(e=>e.id);
  const {data:members}=enrollmentIds.length?await db.from('pair_members').select('pair_id').in('enrollment_id',enrollmentIds).eq('active',true):{data:[] as {pair_id:string}[]};
