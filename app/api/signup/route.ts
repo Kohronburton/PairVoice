@@ -1,5 +1,6 @@
 import{NextRequest,NextResponse}from'next/server';
 import{isValidEmail,normalizeEmail,normalizePhone}from'../../../lib/validation';
+import{serviceClient}from'../../../lib/supabase-server';
 
 export async function POST(req:NextRequest){
  try{
@@ -25,14 +26,34 @@ export async function POST(req:NextRequest){
     is18Plus:true,
     consent:true,
     marketingConsent:b.marketingConsent===true,
-    ref:b.ref?String(b.ref).toUpperCase():null
+    ref:b.ref?String(b.ref).toUpperCase():null,
+    partnerCode:b.partnerCode?String(b.partnerCode).trim().toUpperCase():null
    }),
    cache:'no-store'
   });
 
   const data=await response.json().catch(()=>({error:'Unable to complete signup.'}));
-  if(!response.ok)return NextResponse.json({error:data.error||'Unable to complete signup.'},{status:response.status});
-  return NextResponse.json(data);
+  if(!response.ok)return NextResponse.json({
+   error:data.error||'Unable to complete signup.',
+   ...(data.code?{code:data.code}:{})
+  },{status:response.status});
+  let partnerLinkStatus:string|undefined;
+  if(b.partnerCode){
+   const db=serviceClient();
+   const {data:participant}=await db.from('participants').select('id').eq('email',email).maybeSingle();
+   if(participant?.id){
+    const {error:partnerError}=await db.rpc('request_existing_partner',{
+     p_requester_id:participant.id,
+     p_target_public_code:String(b.partnerCode).trim().toUpperCase(),
+     p_campaign_slug:String(b.campaign)
+    });
+    if(partnerError){
+     console.error('partner invite handoff failed',partnerError.message);
+     partnerLinkStatus='NEEDS_RETRY';
+    }else partnerLinkStatus='PENDING';
+   }else partnerLinkStatus='NEEDS_RETRY';
+  }
+  return NextResponse.json({...data,...(partnerLinkStatus?{partnerLinkStatus}:{})});
  }catch(e){
   console.error(e);
   return NextResponse.json({error:'Unable to complete signup.'},{status:500});
