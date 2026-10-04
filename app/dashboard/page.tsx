@@ -5,6 +5,7 @@ import PartnerPoolButton from '../../components/PartnerPoolButton';
 import WorkAccessCard from '../../components/WorkAccessCard';
 import ExistingPartnerLink from '../../components/ExistingPartnerLink';
 import CampaignConsentCard from '../../components/CampaignConsentCard';
+import {PasskeySetup} from '../../components/WalletActions';
 
 export default async function Dashboard({searchParams}:{searchParams?:Promise<{campaign?:string;partnerCode?:string}>}){
  const q=searchParams?await searchParams:{},handoffCampaign=String(q.campaign||'').trim(),handoffPartnerCode=String(q.partnerCode||'').trim().toUpperCase();
@@ -57,6 +58,7 @@ export default async function Dashboard({searchParams}:{searchParams?:Promise<{c
     <span>{p.email}</span>
     <span>{approvedJobs||0} approved gig{approvedJobs===1?'':'s'} · {referrals||0} referral{referrals===1?'':'s'}</span>
     <span>Your PairVoice account, partner history and progress stay with you across gigs.</span>
+    <PasskeySetup/>
    </div>
   </details>
   <nav className="appBottomNav" aria-label="PairVoice shortcuts">
