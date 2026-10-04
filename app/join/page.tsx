@@ -52,8 +52,8 @@ export default function JoinPage(){
     })});
     const d=await r.json();if(!r.ok){const code=String(d.code||'');setErrorCode(code);if(code==='INVALID_PHONE'){setFieldErrors({phone:d.error});document.getElementById('join-phone')?.focus();return}if(code==='INVALID_EMAIL'){setFieldErrors({email:d.error});document.getElementById('join-email')?.focus();return}if(code==='ALREADY_ENROLLED'){
       const next=`/dashboard?campaign=${encodeURIComponent(campaign)}${partnerCode?`&partnerCode=${encodeURIComponent(partnerCode)}`:''}`;
-      const m=await fetch('/api/auth/magic-link',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email,next})});
-      const md=await m.json();if(!m.ok)throw new Error(md.error||'You already have this gig. We could not send your sign-in link.');
+      const m=await fetch('/api/auth/magic-link',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email,next,intent:'signup'})});
+      const md=await m.json();if(!m.ok)throw new Error(md.error||'You already have this gig. We could not send your access link.');
       setSubmittedEmail(email);setMagicSent(true);setDone(true);setResendCooldown(60);return;
      }throw new Error(d.error||'Unable to create account.');}
    }else{
