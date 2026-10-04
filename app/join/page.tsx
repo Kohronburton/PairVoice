@@ -84,8 +84,9 @@ export default function JoinPage(){
   }catch(err){setResendMessage(err instanceof Error?err.message:'Unable to resend link.')}
   finally{setResendBusy(false)}
  }
+ const signinHref=campaign?`/signin?next=${encodeURIComponent(`/dashboard?campaign=${campaign}${partnerCode?`&partnerCode=${partnerCode}`:''}`)}`:'/signin';
  return <main className="prodJoin">
-  <nav className="pvnav"><a className="logo" href="/">PAIR<span>VOICE</span></a><div className="navright"><a className="navsignin" href="/">{t.back}</a><a className="navcta" href="/signin">{es?'Entrar':'Sign in'}</a></div></nav>
+  <nav className="pvnav"><a className="logo" href="/">PAIR<span>VOICE</span></a><div className="navright"><a className="navsignin" href="/">{t.back}</a><a className="navcta" href={signinHref}>{es?'Entrar':'Sign in'}</a></div></nav>
   <section className="joinShell">
    {!campaign&&<div className="joinContext"><div className="eyebrow">{es?'CUENTA PAIRVOICE':'PAIRVOICE ACCOUNT'}</div><h1>{t.title}</h1><p>{t.lead}</p></div>}
    <div id="signup-form" className="joinAccountCard">{done?<div className="success"><div>✓</div><h2>{t.done}</h2><p>{t.next}</p>{submittedEmail&&<p className="sentTo">{es?'Enviado a':'Sent to'} <strong>{submittedEmail}</strong></p>}{magicSent&&<button type="button" onClick={resendMagicLink} disabled={resendBusy||resendCooldown>0}>{resendBusy?t.sending:resendCooldown>0?t.resend+' ('+resendCooldown+'s)':t.resend+' →'}</button>}{resendMessage&&<p role="status" className="resendStatus">{resendMessage}</p>}</div>:
@@ -100,10 +101,10 @@ export default function JoinPage(){
       <label className="check"><input name="age" type="checkbox" required aria-invalid={!!fieldErrors.age}/><span>{t.age}{fieldErrors.age&&<small className="fieldError" role="alert">{fieldErrors.age}</small>}</span></label>
      </>}
      <label className="check consentCheck"><input name="consent" type="checkbox" required aria-invalid={!!fieldErrors.consent}/><span>{t.consent}{fieldErrors.consent&&<small className="fieldError" role="alert">{fieldErrors.consent}</small>}<small className="consentFinePrint">{t.consentFine} <a href="/terms" target="_blank" rel="noreferrer">{t.terms}</a> · <a href="/privacy" target="_blank" rel="noreferrer">{t.privacy}</a></small></span></label>
-     {error&&<div className="error"><p>{error}</p>{errorCode==='PHONE_ALREADY_REGISTERED'&&<div className="identityRecovery"><button type="button" onClick={()=>{setError('');setErrorCode('');document.getElementById('join-phone')?.focus()}}>{es?'Usar otro número':'Use a different number'}</button><a href="/signin">{es?'Entrar a mi cuenta':'Sign in to my account'}</a></div>}</div>}<button disabled={busy}>{busy?t.saving:t.button+' →'}</button>
+     {error&&<div className="error"><p>{error}</p>{errorCode==='PHONE_ALREADY_REGISTERED'&&<div className="identityRecovery"><button type="button" onClick={()=>{setError('');setErrorCode('');document.getElementById('join-phone')?.focus()}}>{es?'Usar otro número':'Use a different number'}</button><a href={signinHref}>{es?'Entrar a mi cuenta':'Sign in to my account'}</a></div>}</div>}<button disabled={busy}>{busy?t.saving:t.button+' →'}</button>
      <small>{es?'No necesitas tarjeta para crear una cuenta.':'No card required to create an account.'}</small>
     </form>}
-    <a className="joinSigninLink" href="/signin">{t.signin}</a>
+    <a className="joinSigninLink" href={signinHref}>{t.signin}</a>
    </div>
   </section>
  </main>;
