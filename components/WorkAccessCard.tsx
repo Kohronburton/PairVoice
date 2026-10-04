@@ -30,7 +30,7 @@ export default function WorkAccessCard({pairId,pairCode,campaignName,state}:{pai
   const r=await fetch('/api/work/access',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({pairId,runId:access.runId,action}),keepalive:action==='START'});
   const d=await r.json();
   if(action==='SUBMIT')setBusy(false);
-  if(!r.ok){setError(d.error||'Unable to update work status.');return}
+  if(!r.ok){setError(action==='SUBMIT'?'We could not confirm your submission. Your work is still saved with the provider. Try again before leaving this page.':(d.error||'Unable to update work status.'));return}
   if(action==='SUBMIT')setSubmitted(true);
  }
  if(submitted)return <article className="opportunityCard"><small>{campaignName}</small><h3>Submitted for review</h3><p>Pair {pairCode}. PairVoice will keep the submission history and update you after QA.</p></article>;

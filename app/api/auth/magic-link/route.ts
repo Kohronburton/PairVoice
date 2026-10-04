@@ -1,5 +1,5 @@
 import {NextRequest,NextResponse} from 'next/server';
-import {sessionClient} from '../../../../lib/supabase-server';
+import {sessionClient,serviceClient} from '../../../../lib/supabase-server';
 import {isValidEmail,normalizeEmail} from '../../../../lib/validation';
 
 function publicOrigin(req:NextRequest){
@@ -19,7 +19,13 @@ export async function POST(req:NextRequest){
   const safeNext=next.startsWith('/')&&!next.startsWith('//')&&!/[\\\u0000-\u001f\u007f]/.test(next)?next:'/dashboard';
   const origin=publicOrigin(req);
   const redirectTo=`${origin}/auth/callback?next=${encodeURIComponent(safeNext)}`;
-  const shouldCreateUser=b.intent==='signup'||b.flow==='signup'||b.shouldCreateUser===true;
+  let shouldCreateUser=b.intent==='signup'||b.flow==='signup'||b.shouldCreateUser===true;
+  if(b.intent==='recover-existing'){
+   const trusted=serviceClient();
+   const {data:participant}=await trusted.from('participants').select('id').eq('email',email).maybeSingle();
+   if(!participant)return NextResponse.json({error:'We could not start sign-in for that account. Check the email or create an account first.',code:'PAIRVOICE_ACCOUNT_NOT_FOUND'},{status:404});
+   shouldCreateUser=true;
+  }
 
   // Use the SSR client so the PKCE code verifier is persisted in an
   // HttpOnly cookie returned to the browser that initiated the email flow.
