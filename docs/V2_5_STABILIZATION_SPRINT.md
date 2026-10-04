@@ -58,9 +58,9 @@ Completed on `v2.5-stabilization`:
 - [x] Backup/restore drill passes.
 
 Still required before merge:
-- [ ] Apply the stabilization migration only to the confirmed staging database/environment.
-- [ ] Reconcile and re-count participant/Auth identity state after migration.
-- [ ] Deploy the stabilization application branch to staging.
+- [x] Apply the stabilization migration to the confirmed **PairVoice Staging** Supabase project.
+- [x] Reconcile and re-count participant/Auth identity state after migration: unlinked participants reduced from 9/10 to 6/10; the remaining six have no Auth user yet and are repaired only when those existing participants authenticate.
+- [ ] Deploy the stabilization application branch to staging (held pending merge/deploy authorization).
 - [ ] Prove one complete staging journey: signup → verify → partner → work → submit → approval → payout state.
 - [ ] Run cross-user/RLS negative tests against the deployed staging build.
 - [ ] Run mobile refresh/back/retry/duplicate-tap tests.
@@ -70,3 +70,6 @@ Still required before merge:
 
 ## Current hold
 PR #21 and PR #20 remain unmerged. Production is untouched.
+
+- [x] Deploy precise-validation `pairvoice-signup` Edge Function v6 to PairVoice Staging.
+- [x] Re-run Supabase security advisor: trigger RPC exposure/search-path warnings cleared; remaining `public_opportunities` and `claim_pairvoice_identity_self` SECURITY DEFINER warnings are intentional surfaces pending final threat-model review.
