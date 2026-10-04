@@ -50,7 +50,12 @@ export default function JoinPage(){
      languageCode:String(f.get('language')||selected?.languageCode||'en'),is18Plus:f.get('age')==='on',consent:f.get('consent')==='on',
      ref:new URLSearchParams(location.search).get('ref'),partnerCode:partnerCode||undefined
     })});
-    const d=await r.json();if(!r.ok){const code=String(d.code||'');setErrorCode(code);if(code==='INVALID_PHONE'){setFieldErrors({phone:d.error});document.getElementById('join-phone')?.focus();return}if(code==='INVALID_EMAIL'){setFieldErrors({email:d.error});document.getElementById('join-email')?.focus();return}throw new Error(d.error||'Unable to create account.');}
+    const d=await r.json();if(!r.ok){const code=String(d.code||'');setErrorCode(code);if(code==='INVALID_PHONE'){setFieldErrors({phone:d.error});document.getElementById('join-phone')?.focus();return}if(code==='INVALID_EMAIL'){setFieldErrors({email:d.error});document.getElementById('join-email')?.focus();return}if(code==='ALREADY_ENROLLED'){
+      const next=`/dashboard?campaign=${encodeURIComponent(campaign)}${partnerCode?`&partnerCode=${encodeURIComponent(partnerCode)}`:''}`;
+      const m=await fetch('/api/auth/magic-link',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email,next})});
+      const md=await m.json();if(!m.ok)throw new Error(md.error||'You already have this gig. We could not send your sign-in link.');
+      setSubmittedEmail(email);setMagicSent(true);setDone(true);setResendCooldown(60);return;
+     }throw new Error(d.error||'Unable to create account.');}
    }else{
     const locale=navigator.language||'en-US',parts=locale.replace('_','-').split('-');
     const r=await fetch('/api/lead',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({
