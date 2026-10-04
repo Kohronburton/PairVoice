@@ -1,5 +1,6 @@
 'use client';
 import {useRef,useState} from 'react';
+import {createBrowserClient} from '@supabase/ssr';
 
 type Method={id:string;provider:string;label:string|null;status:string;is_default:boolean};
 
@@ -34,4 +35,25 @@ export default function WalletActions({availableCents,currency,methods}:{availab
   <small className="walletSecurity">🔒 Payout details are encrypted.</small>
   {status&&<p role="status">{status}</p>}
  </section>;
+}
+
+
+export function PasskeySetup(){
+ const[busy,setBusy]=useState(false),[status,setStatus]=useState('');
+ async function setup(){
+  setBusy(true);setStatus('');
+  try{
+   const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+   if(!url||!key)throw new Error('Passkeys are not configured.');
+   const db=createBrowserClient(url,key,{auth:{experimental:{passkey:true}}});
+   const {data,error}=await db.auth.registerPasskey();
+   if(error)throw error;
+   setStatus(`Passkey ready${data?.friendly_name?` · ${data.friendly_name}`:''}. Next time, sign in without waiting for email.`);
+  }catch(err){
+   const message=err instanceof Error?err.message:'Passkey setup was not completed.';
+   if(/abort|cancel|notallowed/i.test(message))setStatus('Passkey setup canceled. You can do it anytime.');
+   else setStatus(message);
+  }finally{setBusy(false)}
+ }
+ return <section className="passkeySetup"><small>FASTER NEXT TIME</small><h2>Use Face ID or a passkey</h2><p>Set this up once. You can return to PairVoice without waiting for an email.</p><button type="button" onClick={setup} disabled={busy}>{busy?'Opening passkey…':'Set up passkey →'}</button>{status&&<p role="status">{status}</p>}<small>Email sign-in stays available as a backup.</small></section>;
 }
