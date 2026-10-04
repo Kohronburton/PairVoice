@@ -23,12 +23,12 @@ export default function JoinPage(){
  const t=es?{
   title:campaign?'Únete a este proyecto':'Crea tu cuenta PairVoice',lead:campaign?'Tu proyecto ya está seleccionado. Crea tu cuenta, confirma los datos básicos y comprueba si calificas antes de grabar.':'Crea una cuenta reutilizable para ver y participar en proyectos compatibles.',
   first:'Nombre',email:'Correo electrónico',phone:'Número de teléfono',phoneHelp:'Lo usaremos para coordinación del proyecto, recordatorios y opciones como WhatsApp/SMS.',country:'País',language:'Idioma',age:'Confirmo que tengo 18 años o más.',consent:'Acepto recibir comunicaciones relacionadas con mi cuenta PairVoice y mis proyectos por correo electrónico, SMS y WhatsApp usando los datos que proporciono.',consentFine:'Pueden aplicarse tarifas de mensajes y datos. La frecuencia de los mensajes varía. Responde STOP a un SMS para dejar de recibir SMS. Los mensajes promocionales, si se ofrecen, requerirán consentimiento por separado y no son necesarios para crear una cuenta ni calificar para un proyecto.',terms:'Términos',privacy:'Privacidad',fixed:'Ya configurado por este proyecto',resend:'Reenviar enlace',resent:'Nuevo enlace enviado.',sending:'Enviando…',
-  button:campaign?'Crear cuenta y comprobar elegibilidad':'Crear cuenta PairVoice',saving:'Creando cuenta…',done:'Revisa tu correo.',next:'Te enviamos un enlace seguro para entrar a PairVoice.',
+  button:campaign?'Crear cuenta y comprobar elegibilidad':'Crear cuenta PairVoice',saving:'Creando cuenta…',done:'Revisa tu correo.',next:'PairVoice envió el enlace. La entrega puede tardar un momento; revisa también Spam/No deseado. Si usaste Ocultar mi correo de Apple y no aparece, vuelve a intentarlo con tu correo directo.',
   back:'Volver a proyectos',signin:'¿Ya tienes cuenta? Entrar',partner:'Compañero requerido',payout:'Pago por pareja aprobada'
  }:{
   title:campaign?'Join this gig':'Create your PairVoice account',lead:campaign?'Your gig is already selected. Create your account, confirm the basics, and check your eligibility before you record.':'Create one reusable account to discover and join compatible paid voice gigs.',
   first:'First name',email:'Email address',phone:'Phone number',phoneHelp:'We use this for gig coordination, reminders, and options like WhatsApp/SMS.',country:'Country',language:'Language',age:'I confirm I am 18 or older.',consent:'I agree to receive PairVoice account- and gig-related communications by email, SMS, and WhatsApp using the contact information I provide.',consentFine:'Message and data rates may apply. Message frequency varies. Reply STOP to an SMS to opt out of SMS. Promotional marketing, if offered, requires separate consent and is not required to create an account or qualify for a gig.',terms:'Terms',privacy:'Privacy',fixed:'Already set by this gig',resend:'Resend link',resent:'New link sent.',sending:'Sending…',
-  button:campaign?'Create account & check eligibility':'Create PairVoice account',saving:'Creating account…',done:'Check your email.',next:'We sent you a secure link to enter PairVoice.',
+  button:campaign?'Create account & check eligibility':'Create PairVoice account',saving:'Creating account…',done:'Check your email.',next:'PairVoice sent the link. Delivery can take a moment; check Spam/Junk too. If you used Apple Hide My Email and it does not appear, retry with your direct email address.',
   back:'Back to gigs',signin:'Already have an account? Sign in',partner:'Partner required',payout:'Payout per approved pair'
  };
  async function submit(e:FormEvent<HTMLFormElement>){
@@ -63,7 +63,7 @@ export default function JoinPage(){
    const next=campaign?`/dashboard?campaign=${encodeURIComponent(campaign)}${partnerCode?`&partnerCode=${encodeURIComponent(partnerCode)}`:''}`:'/dashboard';
    const m=await fetch('/api/auth/magic-link',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email,next,intent:'signup'})});
    const md=await m.json();if(!m.ok)throw new Error(md.error||'Account created, but sign-in email could not be sent.');
-   setSubmittedEmail(email);setMagicSent(true);setDone(true);setResendCooldown(30);trackFunnelEvent('signup_completed',{campaign_slug:campaign||'general',surface:'production_join'});
+   setSubmittedEmail(email);setMagicSent(true);setDone(true);setResendCooldown(60);trackFunnelEvent('signup_completed',{campaign_slug:campaign||'general',surface:'production_join'});
   }catch(err){setError(err instanceof Error?err.message:'Unable to create account.')}
   finally{setBusy(false)}
  }
@@ -75,7 +75,7 @@ export default function JoinPage(){
    const next=campaign?`/dashboard?campaign=${encodeURIComponent(campaign)}${partnerCode?`&partnerCode=${encodeURIComponent(partnerCode)}`:''}`:'/dashboard';
    const r=await fetch('/api/auth/magic-link',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:submittedEmail,next})});
    const d=await r.json();if(!r.ok)throw new Error(d.error||'Unable to resend link.');
-   setResendMessage(t.resent);setResendCooldown(30);setMagicSent(true);
+   setResendMessage(t.resent);setResendCooldown(60);setMagicSent(true);
   }catch(err){setResendMessage(err instanceof Error?err.message:'Unable to resend link.')}
   finally{setResendBusy(false)}
  }
