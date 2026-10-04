@@ -1,9 +1,9 @@
 name: PairVoice Verify
 on:
   pull_request:
-    branches: [main, staging, phase-2-production-workflow, v2.5-passkeys]
+    branches: [main, staging, phase-2-production-workflow]
   push:
-    branches: [main, staging, phase-2-production-workflow, v2.5-passkeys]
+    branches: [main, staging, phase-2-production-workflow]
   workflow_dispatch:
 
 jobs:
