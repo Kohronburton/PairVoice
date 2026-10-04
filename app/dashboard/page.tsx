@@ -18,9 +18,10 @@ export default async function Dashboard({searchParams}:{searchParams?:Promise<{c
   db.from('pair_members').select('pair_id,pairs!inner(state)',{count:'exact',head:true}).eq('pairs.state','APPROVED'),
   db.from('referral_relationships').select('id',{count:'exact',head:true}).eq('referrer_participant_id',p.id)
  ]);
+ let handoffErrorMessage='';
  if(handoffCampaign&&handoffPartnerCode){
   const {error:handoffError}=await db.rpc('request_existing_partner',{p_requester_id:p.id,p_target_public_code:handoffPartnerCode,p_campaign_slug:handoffCampaign});
-  if(handoffError)console.error('partner invite recovery failed',handoffError.message);
+  if(handoffError){console.error('partner invite recovery failed',handoffError.message);handoffErrorMessage='We could not connect that partner automatically. Your account and gig are safe. Use the partner section below to try again.';}
  }
  const {data:enrollments}=await db.from('campaign_enrollments').select('id').eq('participant_id',p.id);
  const enrollmentIds=(enrollments||[]).map(e=>e.id);
@@ -29,9 +30,10 @@ export default async function Dashboard({searchParams}:{searchParams?:Promise<{c
  const {data:allActivePairs}=pairIds.length?await db.from('pairs').select('id,public_code,state,campaigns(name,slug)').in('id',pairIds):{data:[] as any[]};
  const workPairs=(allActivePairs||[]).filter((pair:any)=>['READY','RECORDING','REWORK_REQUIRED','SUBMITTED'].includes(pair.state));
  const pendingPairs=(allActivePairs||[]).filter((pair:any)=>pair.state==='PARTNER_PENDING');
- const partnerPairs=(allActivePairs||[]).filter((pair:any)=>['PARTNER_PENDING','PAIRED'].includes(pair.state));
- const nextAction=pendingPairs.length?'Connect your partner':workPairs.length?'Continue your active gig':!pool?'Find a partner':'Matching is active';
- const nextCopy=pendingPairs.length?'One connection unlocks the next step. If your partner already has PairVoice, connect them below.':workPairs.length?'Your gig is ready. Continue where you left off.':!pool?'PairVoice can look for a compatible partner for you. One tap starts matching.':'You’re in the Partner Pool. We’ll keep looking while you do other things.';
+ const partnerPairs=(allActivePairs||[]).filter((pair:any)=>pair.state==='PARTNER_PENDING');
+ const pairedPairs=(allActivePairs||[]).filter((pair:any)=>pair.state==='PAIRED');
+ const nextAction=pendingPairs.length?'Connect your partner':workPairs.length?'Continue your active gig':pairedPairs.length?'Getting your gig ready':!pool?'Find a partner':'Matching is active';
+ const nextCopy=pendingPairs.length?'One connection unlocks the next step. If your partner already has PairVoice, connect them below.':workPairs.length?'Your gig is ready. Continue where you left off.':pairedPairs.length?'Your partner is connected. PairVoice is checking the remaining readiness steps before work starts.':!pool?'PairVoice can look for a compatible partner for you. One tap starts matching.':'You’re in the Partner Pool. We’ll keep looking while you do other things.';
  const hasConnectedPair=(allActivePairs||[]).some((pair:any)=>['PAIRED','READY','RECORDING','REWORK_REQUIRED','SUBMITTED','APPROVED'].includes(pair.state));
  const step2Done=hasConnectedPair;
  return <main id="top" className="appDashboard">
@@ -42,6 +44,7 @@ export default async function Dashboard({searchParams}:{searchParams?:Promise<{c
    <p className="appPromise">Get paired. Complete the gig. Get paid.</p>
    <div className="appSteps" aria-label="PairVoice progress"><span className="done">1 Joined ✓</span><span className={step2Done?'done':'active'}>2 Partner{step2Done?' ✓':''}</span><span className={workPairs.length?'active':''}>3 Get paid</span></div>
   </section>
+  {handoffErrorMessage&&<div className="error" role="alert"><p>{handoffErrorMessage}</p></div>}
   <section id="next-action" className="nextActionCard">
    <small>NEXT STEP</small><h2>{nextAction}</h2><p>{nextCopy}</p>
    {!pool&&<PartnerPoolButton/>}
