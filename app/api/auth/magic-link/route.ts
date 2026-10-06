@@ -37,6 +37,7 @@ export async function POST(req:NextRequest){
   let linkType:'magiclink'|'signup'='magiclink';
   if((signupIntent||recoveryIntent)&&participant&&!participant.auth_user_id)linkType='signup';
   const generated=await trusted.auth.admin.generateLink({type:linkType,email,options:{redirectTo:`${publicOrigin(req)}/dashboard`}} as any);
+  let generatedData:any=generated.data;
   if(generated.error){
    const message=String(generated.error.message||'');
    // A participant can have an Auth user before auth_user_id has been claimed.
@@ -44,10 +45,10 @@ export async function POST(req:NextRequest){
    if(linkType==='signup'&&/already|registered|exists/i.test(message)){
     const retry=await trusted.auth.admin.generateLink({type:'magiclink',email,options:{redirectTo:`${publicOrigin(req)}/dashboard`}} as any);
     if(retry.error)throw retry.error;
-    generated.data=retry.data;
+    generatedData=retry.data;
    }else throw generated.error;
   }
-  const tokenHash=(generated.data as any)?.properties?.hashed_token;
+  const tokenHash=generatedData?.properties?.hashed_token;
   if(!tokenHash)throw new Error('Auth provider did not return a token hash');
 
   const confirm=new URL('/auth/confirm',publicOrigin(req));
