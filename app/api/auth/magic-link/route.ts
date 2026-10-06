@@ -52,6 +52,7 @@ export async function POST(req:NextRequest){
 
   const confirm=new URL('/auth/confirm',publicOrigin(req));
   confirm.searchParams.set('token_hash',tokenHash);
+  confirm.searchParams.set('type',linkType);
   confirm.searchParams.set('next',next);
   await sendAuthConfirmationEmail({to:email,confirmUrl:confirm.toString(),language:language(req)});
   return NextResponse.json({ok:true,redirectHost:publicOrigin(req),scannerSafe:true});
