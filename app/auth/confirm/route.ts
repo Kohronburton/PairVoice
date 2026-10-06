@@ -7,11 +7,11 @@ function safe(v:FormDataEntryValue|null){const s=String(v||'/dashboard');return 
 export async function POST(req:NextRequest){
  const base=origin(req);
  try{
-  const form=await req.formData(),tokenHash=String(form.get('token_hash')||''),next=safe(form.get('next'));
+  const form=await req.formData(),tokenHash=String(form.get('token_hash')||''),next=safe(form.get('next')),type=form.get('type')==='signup'?'signup':'magiclink';
   if(!tokenHash)return NextResponse.redirect(new URL('/?auth=invalid',base),303);
 
   const auth=await sessionClient();
-  const verified=await auth.auth.verifyOtp({token_hash:tokenHash,type:'email'} as any);
+  const verified=await auth.auth.verifyOtp({token_hash:tokenHash,type} as any);
   if(verified.error||!verified.data.user?.id||!verified.data.user.email)throw verified.error||new Error('Authenticated identity missing');
 
   const user=verified.data.user,email=user.email.trim().toLowerCase();
