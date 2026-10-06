@@ -14,7 +14,7 @@ export async function POST(req:NextRequest){
   const verified=await auth.auth.verifyOtp({token_hash:tokenHash,type} as any);
   if(verified.error||!verified.data.user?.id||!verified.data.user.email)throw verified.error||new Error('Authenticated identity missing');
 
-  const user=verified.data.user,email=user.email.trim().toLowerCase();
+  const user=verified.data.user,email=String(verified.data.user.email).trim().toLowerCase();
   const trusted=serviceClient();
   const {data:participant,error:lookupError}=await trusted.from('participants').select('id,auth_user_id').eq('email',email).maybeSingle();
   if(lookupError)throw lookupError;
