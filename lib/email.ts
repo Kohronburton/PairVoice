@@ -88,3 +88,24 @@ export async function sendLifecycleEmail({to,firstName,language,templateKey,dash
  const payload=await response.json().catch(()=>({})) as {id?:string};
  return {sent:true,providerReference:payload.id||null};
 }
+
+
+type AuthEmailArgs={to:string;confirmUrl:string;language?:'en'|'es'};
+
+export async function sendAuthConfirmationEmail({to,confirmUrl,language='en'}:AuthEmailArgs){
+ const apiKey=process.env.RESEND_API_KEY;
+ if(!apiKey)throw new Error('Email delivery is not configured');
+ const es=language==='es';
+ const subject=es?'Confirma tu acceso a PairVoice':'Confirm your PairVoice access';
+ const text=es
+  ?`Abre PairVoice y confirma tu acceso. Por seguridad, el enlace abre una página de confirmación antes de iniciar sesión.\n\n${confirmUrl}\n\nSi no solicitaste este correo, puedes ignorarlo.\n\n— PairVoice`
+  :`Open PairVoice and confirm your access. For security, the link opens a confirmation page before signing you in.\n\n${confirmUrl}\n\nIf you did not request this email, you can ignore it.\n\n— PairVoice`;
+ const escaped=confirmUrl.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+ const html=(es
+  ?`<p>Abre PairVoice y confirma tu acceso.</p><p><a href="${escaped}">Continuar a PairVoice</a></p><p>Por seguridad, el enlace abre una página de confirmación antes de iniciar sesión.</p><p>Si no solicitaste este correo, puedes ignorarlo.</p><p>— PairVoice</p>`
+  :`<p>Open PairVoice and confirm your access.</p><p><a href="${escaped}">Continue to PairVoice</a></p><p>For security, the link opens a confirmation page before signing you in.</p><p>If you did not request this email, you can ignore it.</p><p>— PairVoice</p>`);
+ const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({from:process.env.PAIRVOICE_EMAIL_FROM||DEFAULT_FROM,to,subject,text,html})});
+ if(!response.ok){const detail=await response.text().catch(()=> '');throw new Error(`Email provider returned ${response.status}${detail?`: ${detail}`:''}`)}
+ const payload=await response.json().catch(()=>({})) as {id?:string};
+ return {sent:true,providerReference:payload.id||null};
+}
