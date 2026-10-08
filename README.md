@@ -27,7 +27,7 @@ Core domains: acquisition, participants, campaign enrollments, immutable campaig
 
 ## Spain
 
-Current PairVoice offer: **$50 per completed pair**. Confirmed client base revenue from the supplied contract: **$75 per pair**. The supplied invitation code is stored as a campaign default but marked unconfirmed until the client confirms whether it is universal or pair-specific.
+Campaign compensation and provider access details are configured in admin data, not in source control. See docs/CAMPAIGN_CATALOG.md for the campaign structure.
 
 ## Professional gamification
 
