@@ -46,6 +46,7 @@ export async function POST(req:NextRequest){
     const retry=await trusted.auth.admin.generateLink({type:'magiclink',email,options:{redirectTo:`${publicOrigin(req)}/dashboard`}} as any);
     if(retry.error)throw retry.error;
     generatedData=retry.data;
+    linkType='magiclink';
    }else throw generated.error;
   }
   const tokenHash=generatedData?.properties?.hashed_token;
@@ -56,7 +57,7 @@ export async function POST(req:NextRequest){
   confirm.searchParams.set('type',linkType);
   confirm.searchParams.set('next',next);
   await sendAuthConfirmationEmail({to:email,confirmUrl:confirm.toString(),language:language(req)});
-  return NextResponse.json({ok:true,redirectHost:publicOrigin(req),scannerSafe:true});
+  return NextResponse.json({ok:true,redirectHost:publicOrigin(req),scannerSafe:true},{headers:{'Cache-Control':'no-store'}});
  }catch(e){
   console.error('scanner-safe auth route failure',e);
   return NextResponse.json({error:'Unable to send sign-in link.'},{status:500});
