@@ -1,6 +1,7 @@
 'use client';
 import {FormEvent,useEffect,useMemo,useState} from 'react';
 import {trackFunnelEvent} from '../../lib/funnel';
+import {isValidEmail,normalizePhone} from '../../lib/validation';
 
 type Opportunity={slug:string;name:string;countryCode:string;languageCode:string;participantPayoutCents:number|null;payoutCurrency:string;requiresPair:boolean;jobFamily:string|null};
 
@@ -9,7 +10,7 @@ const money=(c:number,x:string)=>{try{return new Intl.NumberFormat(undefined,{st
 
 export default function JoinPage(){
  const[campaign,setCampaign]=useState(''),[partnerCode,setPartnerCode]=useState(''),[ops,setOps]=useState<Opportunity[]>([]),[lang,setLang]=useState<'en'|'es'>('en');
- const[busy,setBusy]=useState(false),[error,setError]=useState(''),[errorCode,setErrorCode]=useState(''),[done,setDone]=useState(false),[magicSent,setMagicSent]=useState(false),[submittedEmail,setSubmittedEmail]=useState(''),[resendBusy,setResendBusy]=useState(false),[resendMessage,setResendMessage]=useState(''),[resendCooldown,setResendCooldown]=useState(0);
+ const[busy,setBusy]=useState(false),[error,setError]=useState(''),[errorCode,setErrorCode]=useState(''),[fieldErrors,setFieldErrors]=useState<Record<string,string>>({}),[done,setDone]=useState(false),[magicSent,setMagicSent]=useState(false),[submittedEmail,setSubmittedEmail]=useState(''),[resendBusy,setResendBusy]=useState(false),[resendMessage,setResendMessage]=useState(''),[resendCooldown,setResendCooldown]=useState(0);
  useEffect(()=>{
   const q=new URLSearchParams(location.search),slug=q.get('campaign')||'',locale=navigator.language||'en-US';
   setCampaign(slug);setPartnerCode((q.get('partnerCode')||'').trim().toUpperCase());setLang(locale.toLowerCase().startsWith('es')?'es':'en');
@@ -22,25 +23,39 @@ export default function JoinPage(){
  const t=es?{
   title:campaign?'Únete a este proyecto':'Crea tu cuenta PairVoice',lead:campaign?'Tu proyecto ya está seleccionado. Crea tu cuenta, confirma los datos básicos y comprueba si calificas antes de grabar.':'Crea una cuenta reutilizable para ver y participar en proyectos compatibles.',
   first:'Nombre',email:'Correo electrónico',phone:'Número de teléfono',phoneHelp:'Lo usaremos para coordinación del proyecto, recordatorios y opciones como WhatsApp/SMS.',country:'País',language:'Idioma',age:'Confirmo que tengo 18 años o más.',consent:'Acepto recibir comunicaciones relacionadas con mi cuenta PairVoice y mis proyectos por correo electrónico, SMS y WhatsApp usando los datos que proporciono.',consentFine:'Pueden aplicarse tarifas de mensajes y datos. La frecuencia de los mensajes varía. Responde STOP a un SMS para dejar de recibir SMS. Los mensajes promocionales, si se ofrecen, requerirán consentimiento por separado y no son necesarios para crear una cuenta ni calificar para un proyecto.',terms:'Términos',privacy:'Privacidad',fixed:'Ya configurado por este proyecto',resend:'Reenviar enlace',resent:'Nuevo enlace enviado.',sending:'Enviando…',
-  button:campaign?'Crear cuenta y comprobar elegibilidad':'Crear cuenta PairVoice',saving:'Creando cuenta…',done:'Revisa tu correo.',next:'Te enviamos un enlace seguro para entrar a PairVoice.',
+  button:campaign?'Crear cuenta y comprobar elegibilidad':'Crear cuenta PairVoice',saving:'Creando cuenta…',done:'Revisa tu correo.',next:'PairVoice envió el enlace. La entrega puede tardar un momento; revisa también Spam/No deseado. Si usaste Ocultar mi correo de Apple y no aparece, vuelve a intentarlo con tu correo directo.',
   back:'Volver a proyectos',signin:'¿Ya tienes cuenta? Entrar',partner:'Compañero requerido',payout:'Pago por pareja aprobada'
  }:{
   title:campaign?'Join this gig':'Create your PairVoice account',lead:campaign?'Your gig is already selected. Create your account, confirm the basics, and check your eligibility before you record.':'Create one reusable account to discover and join compatible paid voice gigs.',
   first:'First name',email:'Email address',phone:'Phone number',phoneHelp:'We use this for gig coordination, reminders, and options like WhatsApp/SMS.',country:'Country',language:'Language',age:'I confirm I am 18 or older.',consent:'I agree to receive PairVoice account- and gig-related communications by email, SMS, and WhatsApp using the contact information I provide.',consentFine:'Message and data rates may apply. Message frequency varies. Reply STOP to an SMS to opt out of SMS. Promotional marketing, if offered, requires separate consent and is not required to create an account or qualify for a gig.',terms:'Terms',privacy:'Privacy',fixed:'Already set by this gig',resend:'Resend link',resent:'New link sent.',sending:'Sending…',
-  button:campaign?'Create account & check eligibility':'Create PairVoice account',saving:'Creating account…',done:'Check your email.',next:'We sent you a secure link to enter PairVoice.',
+  button:campaign?'Create account & check eligibility':'Create PairVoice account',saving:'Creating account…',done:'Check your email.',next:'PairVoice sent the link. Delivery can take a moment; check Spam/Junk too. If you used Apple Hide My Email and it does not appear, retry with your direct email address.',
   back:'Back to gigs',signin:'Already have an account? Sign in',partner:'Partner required',payout:'Payout per approved pair'
  };
  async function submit(e:FormEvent<HTMLFormElement>){
-  e.preventDefault();setBusy(true);setError('');setErrorCode('');setMagicSent(false);
-  const f=new FormData(e.currentTarget),email=String(f.get('email')||''),firstName=String(f.get('first_name')||''),phone=String(f.get('phone')||'');
+  e.preventDefault();setError('');setErrorCode('');setFieldErrors({});setMagicSent(false);
+  const form=e.currentTarget,f=new FormData(form),email=String(f.get('email')||'').trim(),firstName=String(f.get('first_name')||'').trim(),phoneRaw=String(f.get('phone')||'').trim();
+  const countryCode=String(f.get('country')||selected?.countryCode||'US'),phone=normalizePhone(phoneRaw,countryCode);
+  const nextErrors:Record<string,string>={};
+  if(!firstName)nextErrors.first_name=es?'Escribe tu nombre.':'Enter your first name.';
+  if(!isValidEmail(email))nextErrors.email=es?'Escribe un correo electrónico válido.':'Enter a valid email address.';
+  if(!phone)nextErrors.phone=es?'Escribe un número de teléfono válido para este país.':'Enter a valid phone number for this country.';
+  if(campaign&&f.get('age')!=='on')nextErrors.age=es?'Confirma que tienes 18 años o más.':'Confirm that you are 18 or older.';
+  if(f.get('consent')!=='on')nextErrors.consent=es?'Acepta las comunicaciones necesarias para tu cuenta y proyecto.':'Agree to the required account and gig communications.';
+  if(Object.keys(nextErrors).length){setFieldErrors(nextErrors);const first=Object.keys(nextErrors)[0];form.querySelector<HTMLElement>(`[name="${first}"]`)?.focus();return;}
+  setBusy(true);
   try{
    if(campaign){
     const r=await fetch('/api/signup',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({
-     campaign,firstName,email,phone,countryCode:String(f.get('country')||selected?.countryCode||'US'),
+     campaign,firstName,email,phone,countryCode,
      languageCode:String(f.get('language')||selected?.languageCode||'en'),is18Plus:f.get('age')==='on',consent:f.get('consent')==='on',
      ref:new URLSearchParams(location.search).get('ref'),partnerCode:partnerCode||undefined
     })});
-    const d=await r.json();if(!r.ok){setErrorCode(String(d.code||''));throw new Error(d.error||'Unable to create account.');}
+    const d=await r.json();if(!r.ok){const code=String(d.code||'');setErrorCode(code);if(code==='INVALID_PHONE'){setFieldErrors({phone:d.error});document.getElementById('join-phone')?.focus();return}if(code==='INVALID_EMAIL'){setFieldErrors({email:d.error});document.getElementById('join-email')?.focus();return}if(code==='ALREADY_ENROLLED'){
+      const next=`/dashboard?campaign=${encodeURIComponent(campaign)}${partnerCode?`&partnerCode=${encodeURIComponent(partnerCode)}`:''}`;
+      const m=await fetch('/api/auth/magic-link',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email,next,intent:'signup'})});
+      const md=await m.json();if(!m.ok)throw new Error(md.error||'You already have this gig. We could not send your access link.');
+      setSubmittedEmail(email);setMagicSent(true);setDone(true);setResendCooldown(60);return;
+     }throw new Error(d.error||'Unable to create account.');}
    }else{
     const locale=navigator.language||'en-US',parts=locale.replace('_','-').split('-');
     const r=await fetch('/api/lead',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({
@@ -50,9 +65,10 @@ export default function JoinPage(){
     })});
     const d=await r.json();if(!r.ok)throw new Error(d.error||'Unable to create account.');
    }
-   const m=await fetch('/api/auth/magic-link',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email,next:'/dashboard',intent:'signup'})});
+   const next=campaign?`/dashboard?campaign=${encodeURIComponent(campaign)}${partnerCode?`&partnerCode=${encodeURIComponent(partnerCode)}`:''}`:'/dashboard';
+   const m=await fetch('/api/auth/magic-link',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email,next,intent:'signup'})});
    const md=await m.json();if(!m.ok)throw new Error(md.error||'Account created, but sign-in email could not be sent.');
-   setSubmittedEmail(email);setMagicSent(true);setDone(true);setResendCooldown(30);trackFunnelEvent('signup_completed',{campaign_slug:campaign||'general',surface:'production_join'});
+   setSubmittedEmail(email);setMagicSent(true);setDone(true);setResendCooldown(60);trackFunnelEvent('signup_completed',{campaign_slug:campaign||'general',surface:'production_join'});
   }catch(err){setError(err instanceof Error?err.message:'Unable to create account.')}
   finally{setBusy(false)}
  }
@@ -61,35 +77,34 @@ export default function JoinPage(){
   if(!submittedEmail||resendBusy||resendCooldown>0)return;
   setResendBusy(true);setResendMessage('');
   try{
-   const r=await fetch('/api/auth/magic-link',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:submittedEmail,next:'/dashboard'})});
+   const next=campaign?`/dashboard?campaign=${encodeURIComponent(campaign)}${partnerCode?`&partnerCode=${encodeURIComponent(partnerCode)}`:''}`:'/dashboard';
+   const r=await fetch('/api/auth/magic-link',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:submittedEmail,next})});
    const d=await r.json();if(!r.ok)throw new Error(d.error||'Unable to resend link.');
-   setResendMessage(t.resent);setResendCooldown(30);setMagicSent(true);
+   setResendMessage(t.resent);setResendCooldown(60);setMagicSent(true);
   }catch(err){setResendMessage(err instanceof Error?err.message:'Unable to resend link.')}
   finally{setResendBusy(false)}
  }
+ const signinHref=campaign?`/signin?next=${encodeURIComponent(`/dashboard?campaign=${campaign}${partnerCode?`&partnerCode=${partnerCode}`:''}`)}`:'/signin';
  return <main className="prodJoin">
-  <nav className="pvnav"><a className="logo" href="/">PAIR<span>VOICE</span></a><div className="navright"><a className="navsignin" href="/">{t.back}</a><a className="navcta" href="/signin">{es?'Entrar':'Sign in'}</a></div></nav>
+  <nav className="pvnav"><a className="logo" href="/">PAIR<span>VOICE</span></a><div className="navright"><a className="navsignin" href="/">{t.back}</a><a className="navcta" href={signinHref}>{es?'Entrar':'Sign in'}</a></div></nav>
   <section className="joinShell">
-   <div className="joinContext"><div className="eyebrow">{campaign?(es?'PROYECTO SELECCIONADO':'SELECTED GIG'):(es?'CUENTA PAIRVOICE':'PAIRVOICE ACCOUNT')}</div>
-    <h1>{t.title}</h1><p>{t.lead}</p>
-    {selected&&<article className="selectedGigCard"><small>{countryName(selected.countryCode)}</small><h2>{selected.name}</h2><p>{selected.jobFamily||'Voice recording'}</p>{selected.participantPayoutCents!=null&&<strong>{money(selected.participantPayoutCents,selected.payoutCurrency)} <span>{t.payout}</span></strong>}<div className="chips"><span>{selected.languageCode.toUpperCase()}</span>{selected.requiresPair&&<span>{t.partner}</span>}</div><div className="joinPromise"><b>{es?'ANTES DE GRABAR':'BEFORE YOU RECORD'}</b><span>✓ {es?'Compruebas elegibilidad':'Check eligibility'}</span><span>✓ {es?'Ves requisitos del proyecto':'See gig requirements'}</span><span>✓ {es?'Conectas a tu compañero si hace falta':'Connect a partner if required'}</span></div></article>}
-   </div>
-   <div className="joinAccountCard">{done?<div className="success"><div>✓</div><h2>{t.done}</h2><p>{t.next}</p>{submittedEmail&&<p className="sentTo">{es?'Enviado a':'Sent to'} <strong>{submittedEmail}</strong></p>}{magicSent&&<button type="button" onClick={resendMagicLink} disabled={resendBusy||resendCooldown>0}>{resendBusy?t.sending:resendCooldown>0?t.resend+' ('+resendCooldown+'s)':t.resend+' →'}</button>}{resendMessage&&<p role="status" className="resendStatus">{resendMessage}</p>}</div>:
-    <form onSubmit={submit}>{partnerCode&&<div className="partnerInviteBanner"><small>{es?'TU COMPAÑERO YA ESTÁ CONECTADO':'PARTNER INVITE READY'}</small><strong>{partnerCode}</strong><span>{es?'El código de tu compañero ya está aplicado. Solo continúa.':'Your partner’s code is already applied. Just continue.'}</span></div>}<div className="formTop"><span>PAIRVOICE</span><b>{es?'CUENTA':'ACCOUNT'}</b></div>{campaign&&<div className="microSteps"><span className="active">1 {es?'Cuenta':'Account'}</span><span>2 {es?'Compañero':'Partner'}</span><span>3 {es?'Trabajo':'Work'}</span></div>}
-     <label htmlFor="join-first-name">{t.first}<input id="join-first-name" name="first_name" required autoComplete="given-name" enterKeyHint="next"/></label>
-     <label htmlFor="join-email">{t.email}<input id="join-email" name="email" required type="email" autoComplete="email" inputMode="email" autoCapitalize="none" spellCheck={false} enterKeyHint="next"/></label>
-     <label htmlFor="join-phone">{t.phone}<input id="join-phone" name="phone" required type="tel" autoComplete="tel" inputMode="tel" enterKeyHint="next" placeholder={selected?.countryCode==='ES'?'+34 612 345 678':'+1 305 555 0123'}/><small className="fieldHelp">{t.phoneHelp}</small></label>
+   {!campaign&&<div className="joinContext"><div className="eyebrow">{es?'CUENTA PAIRVOICE':'PAIRVOICE ACCOUNT'}</div><h1>{t.title}</h1><p>{t.lead}</p></div>}
+   <div id="signup-form" className="joinAccountCard">{done?<div className="success"><div>✓</div><h2>{t.done}</h2><p>{t.next}</p>{submittedEmail&&<p className="sentTo">{es?'Enviado a':'Sent to'} <strong>{submittedEmail}</strong></p>}{magicSent&&<button type="button" onClick={resendMagicLink} disabled={resendBusy||resendCooldown>0}>{resendBusy?t.sending:resendCooldown>0?t.resend+' ('+resendCooldown+'s)':t.resend+' →'}</button>}{resendMessage&&<p role="status" className="resendStatus">{resendMessage}</p>}</div>:
+    <form onSubmit={submit}>{partnerCode&&<div className="partnerInviteBanner"><small>{es?'TU COMPAÑERO YA ESTÁ CONECTADO':'PARTNER INVITE READY'}</small><strong>{partnerCode}</strong><span>{es?'El código de tu compañero ya está aplicado. Solo continúa.':'Your partner’s code is already applied. Just continue.'}</span></div>}<div className="formTop"><span>PAIRVOICE</span><b>{es?'CUENTA':'ACCOUNT'}</b></div>{campaign&&<div className="microSteps"><span className="active">1 {es?'Registro':'Sign up'}</span><span>2 {es?'Compañero':'Get partner'}</span><span>3 {es?'Cobrar':'Get paid'}</span></div>}
+     <label htmlFor="join-first-name">{t.first}<input id="join-first-name" name="first_name" required autoComplete="given-name" enterKeyHint="next" aria-invalid={!!fieldErrors.first_name}/>{fieldErrors.first_name&&<small className="fieldError" role="alert">{fieldErrors.first_name}</small>}</label>
+     <label htmlFor="join-email">{t.email}<input id="join-email" name="email" required type="email" autoComplete="email" inputMode="email" autoCapitalize="none" spellCheck={false} enterKeyHint="next" aria-invalid={!!fieldErrors.email}/>{fieldErrors.email&&<small className="fieldError" role="alert">{fieldErrors.email}</small>}</label>
+     <label htmlFor="join-phone">{t.phone}<input id="join-phone" name="phone" required type="tel" autoComplete="tel" inputMode="tel" enterKeyHint="next" placeholder={selected?.countryCode==='ES'?'+34 612 345 678':'+1 305 555 0123'} aria-invalid={!!fieldErrors.phone}/>{fieldErrors.phone?<small className="fieldError" role="alert">{fieldErrors.phone}</small>:<small className="fieldHelp">{t.phoneHelp}</small>}</label>
      {campaign&&<>
       <input type="hidden" name="country" value={selected?.countryCode||'US'}/>
       <input type="hidden" name="language" value={selected?.languageCode||'en'}/>
       {selected&&<div className="lockedGigFacts"><div><b>{t.country}</b><span>{countryName(selected.countryCode)}</span></div><div><b>{t.language}</b><span>{selected.languageCode.toUpperCase()}</span></div><small>{t.fixed}</small></div>}
-      <label className="check"><input name="age" type="checkbox" required/><span>{t.age}</span></label>
+      <label className="check"><input name="age" type="checkbox" required aria-invalid={!!fieldErrors.age}/><span>{t.age}{fieldErrors.age&&<small className="fieldError" role="alert">{fieldErrors.age}</small>}</span></label>
      </>}
-     <label className="check consentCheck"><input name="consent" type="checkbox" required/><span>{t.consent}<small className="consentFinePrint">{t.consentFine} <a href="/terms" target="_blank" rel="noreferrer">{t.terms}</a> · <a href="/privacy" target="_blank" rel="noreferrer">{t.privacy}</a></small></span></label>
-     {error&&<div className="error"><p>{error}</p>{errorCode==='PHONE_ALREADY_REGISTERED'&&<div className="identityRecovery"><button type="button" onClick={()=>{setError('');setErrorCode('');document.getElementById('join-phone')?.focus()}}>{es?'Usar otro número':'Use a different number'}</button><a href="/signin">{es?'Entrar a mi cuenta':'Sign in to my account'}</a></div>}</div>}<button disabled={busy}>{busy?t.saving:t.button+' →'}</button>
+     <label className="check consentCheck"><input name="consent" type="checkbox" required aria-invalid={!!fieldErrors.consent}/><span>{t.consent}{fieldErrors.consent&&<small className="fieldError" role="alert">{fieldErrors.consent}</small>}<small className="consentFinePrint">{t.consentFine} <a href="/terms" target="_blank" rel="noreferrer">{t.terms}</a> · <a href="/privacy" target="_blank" rel="noreferrer">{t.privacy}</a></small></span></label>
+     {error&&<div className="error"><p>{error}</p>{errorCode==='PHONE_ALREADY_REGISTERED'&&<div className="identityRecovery"><button type="button" onClick={()=>{setError('');setErrorCode('');document.getElementById('join-phone')?.focus()}}>{es?'Usar otro número':'Use a different number'}</button><a href={signinHref}>{es?'Entrar a mi cuenta':'Sign in to my account'}</a></div>}</div>}<button disabled={busy}>{busy?t.saving:t.button+' →'}</button>
      <small>{es?'No necesitas tarjeta para crear una cuenta.':'No card required to create an account.'}</small>
     </form>}
-    <a className="joinSigninLink" href="/signin">{t.signin}</a>
+    <a className="joinSigninLink" href={signinHref}>{t.signin}</a>
    </div>
   </section>
  </main>;

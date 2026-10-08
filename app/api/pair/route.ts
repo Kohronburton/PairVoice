@@ -7,8 +7,13 @@ export async function POST(req:NextRequest){
   const b=await req.json(),email=normalizeEmail(b.email);
   const countryCode=String(b.countryCode||'').toUpperCase();
   const phone=normalizePhone(b.phone,countryCode);
-  if(!b.inviteCode||!String(b.firstName||'').trim()||!isValidEmail(email)||!countryCode||!b.languageCode||!phone||b.is18Plus!==true||b.consent!==true)
-   return NextResponse.json({error:'Invite, identity, eligibility and consent are required.'},{status:400});
+  if(!b.inviteCode)return NextResponse.json({error:'Open a valid partner invite before continuing.',code:'MISSING_INVITE'},{status:400});
+  if(!String(b.firstName||'').trim())return NextResponse.json({error:'Enter your first name.',code:'MISSING_FIRST_NAME'},{status:400});
+  if(!isValidEmail(email))return NextResponse.json({error:'Enter a valid email address.',code:'INVALID_EMAIL'},{status:400});
+  if(!countryCode||!b.languageCode)return NextResponse.json({error:'This gig is missing country or language settings.',code:'INVALID_GIG_CONFIG'},{status:400});
+  if(!phone)return NextResponse.json({error:'Enter a valid phone number for this country.',code:'INVALID_PHONE'},{status:400});
+  if(b.is18Plus!==true)return NextResponse.json({error:'Confirm that you are 18 or older.',code:'AGE_REQUIRED'},{status:400});
+  if(b.consent!==true)return NextResponse.json({error:'Agree to the required account and gig communications.',code:'CONSENT_REQUIRED'},{status:400});
   const db=serviceClient();
   const{data,error}=await db.rpc('join_pair_invite',{
    p_invite_code:String(b.inviteCode).toUpperCase(),p_first_name:String(b.firstName).trim(),p_email:email,

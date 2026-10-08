@@ -1,9 +1,9 @@
 name: PairVoice Verify
 on:
   pull_request:
-    branches: [main, staging]
+    branches: [main, staging, phase-2-production-workflow]
   push:
-    branches: [main, staging]
+    branches: [main, staging, phase-2-production-workflow]
   workflow_dispatch:
 
 jobs:
@@ -49,7 +49,7 @@ jobs:
         run: |
           psql -h localhost -U postgres -d postgres <<'SQL'
           create schema auth;
-          create table auth.users(id uuid primary key);
+          create table auth.users(id uuid primary key,email text);
           create function auth.uid() returns uuid language sql stable as $$ select null::uuid $$;
           create role anon nologin;
           create role authenticated nologin;

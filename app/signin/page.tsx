@@ -4,7 +4,7 @@ export default function SignIn(){
  const[email,setEmail]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[sent,setSent]=useState(false),[cooldown,setCooldown]=useState(0);
  useEffect(()=>{if(cooldown<=0)return;const t=window.setInterval(()=>setCooldown(v=>v<=1?0:v-1),1000);return()=>window.clearInterval(t)},[cooldown]);
  async function submit(e:FormEvent){e.preventDefault();if(busy||cooldown>0)return;setBusy(true);setError('');
-  const r=await fetch('/api/auth/magic-link',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email,next:'/dashboard'})}),d=await r.json();setBusy(false);
+  const r=await fetch('/api/auth/magic-link',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email,next:(()=>{const n=new URLSearchParams(location.search).get('next');return n&&n.startsWith('/')&&!n.startsWith('//')?n:'/dashboard'})(),intent:'recover-existing'})}),d=await r.json();setBusy(false);
   if(!r.ok){
    if(r.status===429){setCooldown(Number(d.retryAfterSeconds)||60);setError(d.error||'A link was sent recently. Check your inbox or try again shortly.');return}
    setError(d.error||'Unable to send sign-in link.');return

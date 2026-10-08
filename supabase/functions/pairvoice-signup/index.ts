@@ -26,9 +26,13 @@ Deno.serve(async(req)=>{
   const marketingConsent=body.marketingConsent===true;
   const ref=body.ref?String(body.ref).trim().toUpperCase():null;
 
-  if(!campaign||!firstName||!validEmail(email)||!validPhone(phone)||!countryCode||!languageCode||body.is18Plus!==true||body.consent!==true){
-   return json({error:"Campaign, identity, valid phone, eligibility and consent are required."},400);
-  }
+  if(!campaign)return json({error:"Select a gig before creating your account.",code:"MISSING_CAMPAIGN"},400);
+  if(!firstName)return json({error:"Enter your first name.",code:"MISSING_FIRST_NAME"},400);
+  if(!validEmail(email))return json({error:"Enter a valid email address.",code:"INVALID_EMAIL"},400);
+  if(!validPhone(phone))return json({error:"Enter a valid phone number for this country.",code:"INVALID_PHONE"},400);
+  if(!countryCode||!languageCode)return json({error:"This gig is missing country or language settings.",code:"INVALID_GIG_CONFIG"},400);
+  if(body.is18Plus!==true)return json({error:"Confirm that you are 18 or older.",code:"AGE_REQUIRED"},400);
+  if(body.consent!==true)return json({error:"Agree to the required account and gig communications.",code:"CONSENT_REQUIRED"},400);
 
   const url=Deno.env.get("SUPABASE_URL");
   const secretSet=Deno.env.get("SUPABASE_SECRET_KEYS");

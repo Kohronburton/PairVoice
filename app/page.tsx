@@ -21,7 +21,7 @@ export default async function Home({searchParams}:{searchParams:Promise<{lang?:s
  const sorted=sortOpportunities(ops,market);
  const featured=sorted.find(o=>o.countryCode===market)||sorted[0]||null;
  const featuredPayout=featured?.participantPayoutCents!=null?money(featured.participantPayoutCents,featured.payoutCurrency):null;
- const joinHref=(slug:string)=>'/join?campaign='+encodeURIComponent(slug)+(es?'&lang=es':'');
+ const joinHref=(slug:string)=>'/join?campaign='+encodeURIComponent(slug)+(es?'&lang=es':'')+'#signup-form';
 
  const t=es?{
   work:'Proyectos',how:'Cómo funciona',faq:'Preguntas',signIn:'Entrar',create:'Crear cuenta',

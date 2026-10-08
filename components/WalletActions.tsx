@@ -1,9 +1,10 @@
 'use client';
-import {useState} from 'react';
+import {useRef,useState} from 'react';
 
 type Method={id:string;provider:string;label:string|null;status:string;is_default:boolean};
 
 export default function WalletActions({availableCents,currency,methods}:{availableCents:number;currency:string;methods:Method[]}){
+ const payoutKey=useRef<string>('');
  const[provider,setProvider]=useState('PAYPAL'),[recipient,setRecipient]=useState(''),[label,setLabel]=useState(''),[status,setStatus]=useState(''),[busy,setBusy]=useState(false);
  const verified=methods.find(m=>m.status==='VERIFIED'&&m.is_default);
  const pending=methods.find(m=>m.status==='PENDING'&&m.is_default);
@@ -14,12 +15,23 @@ export default function WalletActions({availableCents,currency,methods}:{availab
   if(!r.ok){setStatus(d.error||'Unable to save payout method.');return}
   setStatus('Payout method saved. PairVoice must verify it before withdrawal.');setRecipient('');window.setTimeout(()=>window.location.reload(),900);
  }
+ function durablePayoutKey(){
+  if(payoutKey.current)return payoutKey.current;
+  const storageKey=`pairvoice:payout:${currency}:${availableCents}`;
+  try{payoutKey.current=window.localStorage.getItem(storageKey)||crypto.randomUUID();window.localStorage.setItem(storageKey,payoutKey.current)}catch{payoutKey.current=crypto.randomUUID()}
+  return payoutKey.current;
+ }
+ function clearDurablePayoutKey(){
+  const storageKey=`pairvoice:payout:${currency}:${availableCents}`;
+  try{window.localStorage.removeItem(storageKey)}catch{}
+  payoutKey.current='';
+ }
  async function requestPayout(){
   if(availableCents<=0||!verified)return;setBusy(true);setStatus('');
-  const r=await fetch('/api/payout',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({amountCents:availableCents,currency,idempotencyKey:crypto.randomUUID()})});
+  const r=await fetch('/api/payout',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({amountCents:availableCents,currency,idempotencyKey:durablePayoutKey()})});
   const d=await r.json();setBusy(false);
   if(!r.ok){setStatus(d.error||'Unable to request payout.');return}
-  setStatus('Payout requested. Your balance is reserved while PairVoice processes it.');window.setTimeout(()=>window.location.reload(),900);
+  clearDurablePayoutKey();setStatus('Payout requested. Your balance is reserved while PairVoice processes it.');window.setTimeout(()=>window.location.reload(),900);
  }
  return <section className="walletAction">
   <small>NEXT STEP</small><h2>{verified?(availableCents>0?'Get paid':'You’re payout-ready'):pending?'Verification in progress':'Set up payouts'}</h2>
