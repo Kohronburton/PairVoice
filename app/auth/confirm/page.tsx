@@ -1,3 +1,5 @@
+import type {Metadata} from 'next';
+export const metadata:Metadata={robots:{index:false,follow:false},referrer:'no-referrer'};
 import {redirect} from 'next/navigation';
 
 function safe(v:string|undefined){return v&&v.startsWith('/')&&!v.startsWith('//')&&!/[\\\u0000-\u001f\u007f]/.test(v)?v:'/dashboard'}
