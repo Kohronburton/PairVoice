@@ -1,3 +1,4 @@
+import {createHash} from 'node:crypto';
 import {NextRequest,NextResponse} from 'next/server';
 import {serviceClient} from '../../../../lib/supabase-server';
 import {isValidEmail,normalizeEmail} from '../../../../lib/validation';
@@ -21,14 +22,18 @@ export async function POST(req:NextRequest){
   const trusted=serviceClient();
   const {data:participant,error:participantError}=await trusted.from('participants').select('id,auth_user_id').eq('email',email).maybeSingle();
   if(participantError)throw participantError;
+  // The database performs an atomic upsert so concurrent requests share limits.
+  const emailKey=createHash('sha256').update(email).digest('hex');
+  const {data:allowed,error:limitError}=await trusted.rpc('consume_auth_email_limit',{
+   p_key:`email:${emailKey}`,p_max:4,p_window_seconds:900
+  });
+  if(limitError)throw limitError;
+  if(!allowed)return NextResponse.json({error:'Too many sign-in emails. Try again in 15 minutes.'},{status:429,headers:{'Cache-Control':'no-store','Retry-After':'900'}});
 
   const signupIntent=b.intent==='signup';
   const recoveryIntent=b.intent==='recover-existing';
-  if(!signupIntent&&!recoveryIntent&&!participant){
+  if(!participant){
    return NextResponse.json({error:'No PairVoice account exists for that email. Create your account first.',code:'PAIRVOICE_ACCOUNT_NOT_FOUND'},{status:404});
-  }
-  if(recoveryIntent&&!participant){
-   return NextResponse.json({error:'We could not find that PairVoice account. Check the email or create an account first.',code:'PAIRVOICE_ACCOUNT_NOT_FOUND'},{status:404});
   }
 
   // Generate the Supabase token server-side but NEVER place the provider action_link
