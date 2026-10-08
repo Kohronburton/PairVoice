@@ -59,7 +59,7 @@ services:
       - key: RESEND_API_KEY
         sync: false
       - key: PAIRVOICE_EMAIL_FROM
-        value: PairVoice <hello@pairvoice.com>
+        value: PairVoice Staging <hello@pairvoice.com>
       - key: NEXT_PUBLIC_SITE_URL
         sync: false
       - key: PAIRVOICE_ADMIN_USER
@@ -69,6 +69,12 @@ services:
       - key: PAIRVOICE_INTERNAL_SECRET
         sync: false
       - key: PAIRVOICE_OWNER_EMAIL
+        sync: false
+      - key: PAIRVOICE_EDGE_SHARED_SECRET
+        sync: false
+      - key: PAIRVOICE_CREDENTIAL_ENCRYPTION_KEY
+        sync: false
+      - key: CRON_SECRET
         sync: false
       - key: PAYPAL_MODE
         value: sandbox
