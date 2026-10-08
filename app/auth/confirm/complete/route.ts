@@ -37,6 +37,7 @@ export async function POST(req:NextRequest){
 
   return NextResponse.redirect(new URL(next,base),303);
  }catch(e){
+  try{const auth=await sessionClient();await auth.auth.signOut()}catch{}
   console.error('auth confirmation failure',e);
   return NextResponse.redirect(new URL('/?auth=failed',base),303);
  }
