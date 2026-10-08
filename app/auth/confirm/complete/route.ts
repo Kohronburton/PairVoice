@@ -1,5 +1,5 @@
 import {NextRequest,NextResponse} from 'next/server';
-import {sessionClient,serviceClient} from '../../../lib/supabase-server';
+import {sessionClient,serviceClient} from '../../../../lib/supabase-server';
 
 function origin(req:NextRequest){const configured=(process.env.NEXT_PUBLIC_SITE_URL||'').replace(/\/$/,'');return configured&&!/localhost/i.test(configured)?configured:req.nextUrl.origin}
 function safe(v:FormDataEntryValue|null){const s=String(v||'/dashboard');return s.startsWith('/')&&!s.startsWith('//')&&!/[\\\u0000-\u001f\u007f]/.test(s)?s:'/dashboard'}
