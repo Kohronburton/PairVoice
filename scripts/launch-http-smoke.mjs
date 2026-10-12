@@ -24,7 +24,7 @@ for(const c of checks){
   const location=response.headers.get('location')||'';
   const ok=c.allowed.includes(response.status)&&(!c.rejectLocation||!location.endsWith(c.rejectLocation));
   if(c.path==='/auth/confirm'&&response.status===404)deploymentIssues.push('Scanner-safe auth confirmation route is absent on deployed staging (HTTP 404). Deploy auth PR #25 before expecting this check to pass.');
-  results.push({name:c.name,result:ok?'PASS':'FAIL',http:response.status,ms:Date.now()-started,detail:ok?'':('Unexpected status or redirect '+location.slice(0,120))});
+  results.push({name:c.name,result:ok?'PASS':'FAIL',http:response.status,ms:Date.now()-started,detail:ok?'':(c.path==='/auth/confirm'&&response.status===404?'Auth confirmation route missing from staging deployment':('Unexpected status or redirect '+location.slice(0,120)))});
  }catch(e){results.push({name:c.name,result:'FAIL',http:'-',ms:Date.now()-started,detail:String(e).slice(0,150)});}
 }
 const passed=results.filter(x=>x.result==='PASS').length;
