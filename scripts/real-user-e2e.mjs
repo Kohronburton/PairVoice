@@ -23,8 +23,10 @@ try{
   const response=await page.goto(base+'/join?campaign='+encodeURIComponent(process.env.PAIRVOICE_E2E_CAMPAIGN_SLUG),{waitUntil:'domcontentloaded',timeout:30000});
   await page.screenshot({path:out+'/participant-'+label+'-join.png',fullPage:true});
   const inputs=await page.locator('input').evaluateAll(els=>els.map(e=>({name:e.getAttribute('name'),type:e.getAttribute('type'),required:e.required})));
-  const pass=response?.status()===200&&!errors.length&&inputs.some(x=>x.type==='email');
-  report.checks.push({name:'Participant '+label+' campaign join form',status:pass?'PASS':'FAIL',http:response?.status(),inputs,errors});
+  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2);
+  const buttonVisible=await page.getByRole('button',{name:/create account|crear cuenta/i}).first().isVisible().catch(()=>false);
+  const pass=response?.status()===200&&!errors.length&&!overflow&&buttonVisible&&inputs.some(x=>x.type==='email')&&inputs.some(x=>x.name==='first_name')&&inputs.some(x=>x.name==='phone');
+  report.checks.push({name:'Participant '+label+' campaign join form',status:pass?'PASS':'FAIL',http:response?.status(),inputNames:inputs.map(x=>x.name),overflow,buttonVisible,errors});
   await contexts[i].close();
  }
  report.blockers.push('Authenticated submission and mailbox OTP verification are not implemented; adapter contract and fixtures must be validated before enabling writes.');
