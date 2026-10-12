@@ -18,6 +18,9 @@
 ## Release decision
 BLOCKED. Current E2E runner is not a complete authenticated journey. The evidence evaluator has no trusted provenance and must not be used as a production deployment authorization. OpenAI and Claude assessments are advisory only.
 
+## Security update — release evidence
+The evaluator now refuses release approval while CI evidence provenance is unverified. Regression tests cover fabricated all-PASS and malformed evidence; the E2E workflow invokes them. This is an interim fail-closed guard, not an attestation implementation.
+
 ## Next engineering order
 1. Review and safely deploy PR #25 to staging with migration 0040.
 2. Confirm staging deployed commit and safe confirmation redirect.
