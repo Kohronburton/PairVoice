@@ -23,16 +23,16 @@ Status key: `[ ]` open · `[~]` in progress · `[x]` fixed · `[-]` accepted / w
 | Severity | Count | Meaning |
 |---|---|---|
 | High | 4 | Blocks payouts, risks money, or leaks personal data |
-| Medium | 9 | Real bug or abuse path with a bounded impact |
+| Medium | 8 | Real bug or abuse path with a bounded impact |
 | Low | 10 | Hygiene, correctness at the edges, hardening |
-| Info | 5 | Observations and decisions for the owner |
+| Info | 6 | Observations and decisions for the owner |
 
 **Top five, in fix order (CR-01 to CR-04 are high):**
 1. **CR-01** No code path ever makes a payout method the default, so no participant can request a payout.
 2. **CR-02** The payout worker sends the encrypted recipient string to PayPal instead of the email.
 3. **CR-03** A failed database write after PayPal accepts a payout can mark it FAILED while the money was sent.
 4. **CR-04** `/api/lead` returns the referrer's email address to whoever supplies a referral code.
-5. **CR-05** (medium) PayPal webhook signature is verified against a re-serialized body, so some valid events may not reconcile.
+5. **CR-06** (medium) The partner-joined email puts an unescaped first name into HTML.
 
 CR-01 and CR-02 together mean the payout flow has probably never worked end to end outside the SQL tests. Run one sandbox payout on staging before anything else on this list.
 
@@ -80,11 +80,6 @@ Locations are `file:line` where the line is stable, otherwise `file` and functio
 - **Fix:** destructure the referrer fields out of `result` before responding; use them only server-side for the partner-joined email. The current join page never sends a referral code, but the endpoint is public.
 
 ### Medium
-
-#### CR-05 — PayPal webhook verification uses a re-serialized body `[ ]`
-- **Where:** `app/api/paypal/webhook/route.ts` calls `await req.json()` and passes the parsed object to `verifyPayPalWebhook` (`lib/paypal.ts`), which sends it as `webhook_event`.
-- **Impact:** PayPal signs the exact bytes it sent. Parsing and re-serializing can alter number formatting or whitespace, so some valid events may fail verification and their payouts stay `PROCESSING` until reconciled by hand. It does not weaken security (a bad signature is still rejected).
-- **Fix:** read the raw text first (`await req.text()`), keep it for logging and any signature comparison, then `JSON.parse` it. Test with real sandbox events before and after; if they already verify, downgrade to Low.
 
 #### CR-06 — HTML injection in the partner-joined email `[ ]`
 - `lib/email.ts` `sendPartnerJoinedEmail` builds `html` from a template that includes `firstName` without escaping (`lib/email.ts:44`). `referrerFirstName` is whatever the referrer typed at signup. A hostile first name puts arbitrary HTML into a message sent from the PairVoice domain. `sendLifecycleEmail` escapes correctly; use the same helper.
@@ -148,6 +143,9 @@ Locations are `file:line` where the line is stable, otherwise `file` and functio
 
 ### Info
 
+#### CR-05 — PayPal webhook body handling `[-]` withdrawn
+- Originally filed as a risk that `req.json()` re-serialization could break signature verification. Withdrawn after review: `lib/paypal.ts` calls PayPal's `verify-webhook-signature` REST API, which takes the parsed event as the JSON `webhook_event` field, so formatting differences from parsing do not apply. No change needed. Keep a sandbox-event test in the payout test suite so a real regression would be caught.
+
 #### CR-24 — Secret comparisons are not constant-time `[ ]`
 - `middleware.ts` (Basic Auth), `app/api/internal/*` (Bearer), both Edge Functions (`x-pairvoice-edge-secret`). Use `crypto.timingSafeEqual`. Low practical risk.
 
@@ -170,7 +168,7 @@ Locations are `file:line` where the line is stable, otherwise `file` and functio
 - No tests for any API route, `requireAdmin`, the PayPal webhook, the internal workers, rate limits or the email HTML builders. CR-01 to CR-05 are all in untested code.
 - `supabase/tests/security_surface_invariants.sql` checks a fixed list of functions. Add a generic invariant that fails if any function in `public` is executable by `anon` or `authenticated` unless it is on an explicit allowlist, and one that fails on any `SECURITY DEFINER` function without `search_path`. (A scan today finds 0 such functions; the test keeps it that way.)
 - No end-to-end browser test on `main`; launch-test branches exist (see plan G-03).
-- Suggested first tests: payout worker with mocked PayPal (CR-02, CR-03), webhook raw-body verification (CR-05), `/api/lead` response shape (CR-04), wallet aggregates (CR-12).
+- Suggested first tests: payout worker with mocked PayPal (CR-02, CR-03), a sandbox webhook event through `/api/paypal/webhook` (regression guard), `/api/lead` response shape (CR-04), wallet aggregates (CR-12).
 
 ---
 
@@ -179,7 +177,7 @@ Locations are `file:line` where the line is stable, otherwise `file` and functio
 | Order | Items | Why |
 |---|---|---|
 | 1 | CR-01, CR-02 | Nothing can be paid until these work; run a sandbox payout end to end |
-| 2 | CR-03, CR-05 | Make a payout safe to retry and reconcilable |
+| 2 | CR-03 | Make a payout safe to retry and reconcilable |
 | 3 | CR-04, CR-06, CR-07, CR-08, CR-09 | Privacy and abuse |
 | 4 | CR-10, CR-11, CR-12 | Abuse limits; correct numbers |
 | 5 | CR-13, CR-14 – CR-23 | Correctness and hardening |
@@ -194,3 +192,4 @@ Each fix should ship with the test named in section 5 and, for database changes,
 | Date | Scope | Result |
 |---|---|---|
 | 2026-10-12 | First full pass (sections 1–6) | 28 findings; no code changed |
+| 2026-10-12 | Review of this document | CR-05 withdrawn (PayPal's verify API takes the parsed event). 27 active findings |
