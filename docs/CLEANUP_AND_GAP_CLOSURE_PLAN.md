@@ -2,7 +2,7 @@
 
 Living checklist. Update the checkboxes and the "Scan log" as work lands. Written 2026-10-12 from a scan of `main` at `c95f8dc` plus the remote branch list.
 
-Companion document: `docs/CODE_REVIEW.md` (28 active code-level findings, `CR-nn`). Items below reference it.
+Companion document: `docs/CODE_REVIEW.md` (29 active code-level findings, `CR-nn`). Items below reference it.
 
 Status key: `[ ]` open · `[~]` in progress · `[x]` done · `[?]` needs a decision from the owner.
 
@@ -102,6 +102,7 @@ Evidence is from reading code, docs, CI config and git state. Nothing here was e
 ### P1 — Close launch gaps (production safety)
 
 - [ ] **Payout path (CR-01, CR-02, CR-03):** fix the default-method gap and the ciphertext-to-PayPal bug, make the worker retry-safe, then run one sandbox payout end to end on staging. Until this passes, payouts cannot work regardless of the other items.
+- [ ] **Invitation code scope (CR-30):** confirm with the client whether the code is campaign-wide or per pair before entering it in admin, and decide whether to enforce `invitation_code_scope_confirmed`.
 - [ ] **Privacy (CR-04):** stop `/api/lead` returning the referrer's email.
 - [ ] **G-02:** Merge `phase-2-production-workflow` (with `0040`) into `main` via PR after CI passes. As of 2026-10-12 `main` was merged into the staging branch cleanly (no conflicts), so the promotion is a normal merge; the earlier worry that it would reintroduce the scrubbed contract terms is unfounded (the staging branch simply lacked the scrub).
 - [ ] **G-05:** Apply migrations through the latest to the production Supabase project; record the applied list. Add a documented, repeatable migration step so this stops being manual. Before using the Supabase CLI, reconcile the duplicate `0010`/`0011` versions (G-10): compare the live `supabase_migrations` history with the repo, then either give each logical migration a unique version with a tested repair procedure or use a script that applies files by full filename. Until then, apply by filename in order, as CI does.
@@ -263,4 +264,4 @@ grep -rn 'TODO\|FIXME' app lib components modules
 |---|---|---|
 | 2026-10-12 | Initial scan, written from `main` `c95f8dc` | Findings G-01 … G-18, plan P0–P5 created |
 | 2026-10-12 | Review fixes | Option A (D-01) corrected: only the ~7 commits at the tip need new hashes; CLI vs duplicate migration versions (G-10); cron worker reads `PAIRVOICE_INTERNAL_SECRET` only |
-| 2026-10-12 | Full code review | `docs/CODE_REVIEW.md` added (28 active findings, 4 high). Staging branch re-synced with `main`. Plan P1/P2/P4 updated with the new items; G-06 corrected |
+| 2026-10-12 | Full code review | `docs/CODE_REVIEW.md` added (29 active findings, 4 high). Staging branch re-synced with `main`. Plan P1/P2/P4 updated with the new items; G-06 corrected |

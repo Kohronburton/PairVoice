@@ -27,7 +27,7 @@ Core domains: acquisition, participants, campaign enrollments, immutable campaig
 
 ## Spain
 
-The provider invitation code is not in the current source tree (earlier commits contained it, and the baseline migration still seeds default client revenue and participant compensation amounts; see docs/CODE_REVIEW.md CR-28); set the real invitation code in the admin campaign access screen. The baseline migration seeds default participant compensation amounts so a fresh database is usable, and published campaign versions are immutable, so change compensation by publishing a new campaign version. See docs/CAMPAIGN_CATALOG.md for the campaign structure.
+The provider invitation code is not in the current source tree (earlier commits contained it, and the baseline migration still seeds default client revenue and participant compensation amounts; see docs/CODE_REVIEW.md CR-28); before entering the real invitation code in the admin campaign access screen, confirm with the client whether it is one campaign-wide code or one per pair (the seeded campaign versions record the scope as unconfirmed, and the app hands the same stored code to every pair). The baseline migration seeds default participant compensation amounts so a fresh database is usable, and published campaign versions are immutable, so change compensation by publishing a new campaign version. See docs/CAMPAIGN_CATALOG.md for the campaign structure.
 
 ## Professional gamification
 
