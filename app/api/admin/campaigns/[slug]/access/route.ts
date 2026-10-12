@@ -32,15 +32,20 @@ export async function PATCH(req:NextRequest,{params}:{params:Promise<{slug:strin
  try{
   const {slug}=await params,body=await req.json();
   const provider=String(body.provider||'').trim().toUpperCase();
-  const invitationCode=String(body.invitationCode||'').trim().toUpperCase()||null;
-  const launchUrl=String(body.launchUrl||'').trim()||null;
-  const androidLaunchUrl=String(body.androidLaunchUrl||'').trim()||null;
-  const iosLaunchUrl=String(body.iosLaunchUrl||'').trim()||null;
+  const text=(value:unknown)=>String(value??'').trim()||null;
   const revealState=String(body.revealState||'READY').trim().toUpperCase();
   if(!provider)return NextResponse.json({error:'Provider is required.'},{status:400});
   if(!allowedRevealStates.has(revealState))return NextResponse.json({error:'Invalid reveal state.'},{status:400});
   const {data:campaign,error:campaignError}=await admin.db.from('campaigns').select('id,slug,name').eq('slug',slug).maybeSingle();
   if(campaignError)throw campaignError;if(!campaign)return NextResponse.json({error:'Campaign not found'},{status:404});
+  // Fields the caller omits keep their stored value; an empty string clears a field.
+  const {data:existing,error:existingError}=await admin.db.from('campaign_access')
+   .select('invitation_code,launch_url,android_launch_url,ios_launch_url').eq('campaign_id',campaign.id).maybeSingle();
+  if(existingError)throw existingError;
+  const invitationCode=body.invitationCode===undefined?(existing?.invitation_code??null):(text(body.invitationCode)?.toUpperCase()??null);
+  const launchUrl=body.launchUrl===undefined?(existing?.launch_url??null):text(body.launchUrl);
+  const androidLaunchUrl=body.androidLaunchUrl===undefined?(existing?.android_launch_url??null):text(body.androidLaunchUrl);
+  const iosLaunchUrl=body.iosLaunchUrl===undefined?(existing?.ios_launch_url??null):text(body.iosLaunchUrl);
   const row={
    campaign_id:campaign.id,provider,invitation_code:invitationCode,launch_url:launchUrl,
    android_launch_url:androidLaunchUrl,ios_launch_url:iosLaunchUrl,
