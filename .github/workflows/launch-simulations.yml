@@ -1,23 +1,28 @@
-name: Launch simulation smoke
+name: PairVoice Launch Test
 on:
+  workflow_dispatch:
   pull_request:
     branches: [phase-2-production-workflow, v2.5-auth-rebased-20261011]
-  workflow_dispatch:
-    inputs:
-      staging_url:
-        description: 'Staging URL only; no production or real payouts'
-        required: false
-        default: 'https://staging.pairvoice.com'
+permissions:
+  contents: read
 jobs:
-  http-smoke:
+  staging-smoke:
+    name: Staging smoke (no money)
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    env:
-      PAIRVOICE_TEST_BASE_URL: ${{ inputs.staging_url || 'https://staging.pairvoice.com' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Read-only HTTP checks
+      - name: Run 7 safe staging checks
+        env:
+          PAIRVOICE_TEST_BASE_URL: https://staging.pairvoice.com
         run: node scripts/launch-http-smoke.mjs
+      - name: Upload readable test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pairvoice-launch-smoke-report
+          path: test-results/
+          if-no-files-found: warn
