@@ -1,15 +1,17 @@
-# PairVoice launch simulations
+# Run PairVoice Launch Tests
 
-The existing **PairVoice Verify** workflow already runs all Vitest unit tests, applies all SQL migrations to a disposable PostgreSQL database, and executes every `supabase/tests/*.sql` invariant test. Those database tests cover existing-partner linking, payouts, workflow transitions, and security invariants.
+## One-click run
+After this workflow is available on the repository's default branch, open **GitHub → Actions → PairVoice Launch Test → Run workflow → Run workflow**. Select the branch containing the latest test code. No URL, credentials, or command-line setup required.
 
-This PR adds a separate read-only HTTP smoke job for staging: homepage, join, protected dashboard, invalid confirmation, invalid invitation, work-access validation, and unauthenticated payout denial. It does **not** create accounts, send emails, approve gigs, or transfer money.
+**Results:** open the run → **Summary** to see each check's PASS/FAIL, HTTP status, and duration. Download the `pairvoice-launch-smoke-report` artifact for Markdown and JSON reports. Every check is recorded even if another fails.
 
-## Launch gates not yet automated
+## What it tests
+Seven read-only staging checks: homepage, join entry, unauthenticated dashboard, missing confirmation token, invalid invite, missing work pair ID, and unauthenticated payout rejection.
 
-1. Use two isolated browser sessions with staging-only accounts to complete A/B registration, email confirmation, and partner acceptance.
-2. Test the gig workflow against a staging-only provider/sandbox fixture; assert each database state transition.
-3. Approve a synthetic gig in staging, verify ledger credit, request payout using a sandbox payout method, and verify repeated idempotency key cannot reserve twice.
-4. Capture browser screenshots and server/database evidence; repeat 20 consecutive journeys.
-5. Keep production credentials and real funds out of the suite.
+**Safety:** only `https://staging.pairvoice.com` or the staging Render host are allowed by the script. No account creation, real email, approvals, or payment processing.
 
-Run the new workflow from GitHub Actions with the staging URL. Failure of a public endpoint can reflect deployment drift rather than source code failure; do not infer a complete end-to-end pass from HTTP smoke results.
+## Developer run
+`node scripts/launch-http-smoke.mjs` (Node 22+). Results are written to `test-results/`. Run against a deployed staging site.
+
+## What remains for launch approval
+The existing PairVoice Verify workflow tests TypeScript, unit behavior, migrations and SQL invariants. A separate staging browser/sandbox test must still prove two-person signup/verification, existing-user partner acceptance, gig submission and approval, and payout ledger/idempotency without real money. Twenty consecutive successful journeys remain an acceptance goal; these seven HTTP checks do not satisfy that goal.
