@@ -1,5 +1,6 @@
 import {redirect} from 'next/navigation';
 import {requireAdmin} from '../../../lib/admin-server';
+import {isInvitationCodeConfigured} from '../../../lib/invitation-code';
 
 type Check={key:string;label:string;pass:boolean;blocking:boolean;detail:string};
 
@@ -34,7 +35,7 @@ export default async function ReleaseReadiness(){
   checks.push({key:`${campaign.slug}-published`,label:`${campaign.name}: published`,pass:Boolean(version),blocking:true,detail:version?'Published':'Missing'});
   checks.push({key:`${campaign.slug}-work`,label:`${campaign.name}: work provider`,pass:Boolean(wp&&wp.status==='ACTIVE'),blocking:true,detail:wp?.provider_key||'Missing'});
   if(String(campaign.provider||'').toUpperCase()==='FUNCROWD')checks.push({key:`${campaign.slug}-launch`,label:`${campaign.name}: launch URL`,pass:Boolean(ca?.launch_url),blocking:true,detail:ca?.launch_url?'Configured':'Missing'});
-  if(version?.invitation_code_mode&&version.invitation_code_mode!=='NONE')checks.push({key:`${campaign.slug}-code`,label:`${campaign.name}: invitation code`,pass:Boolean(ca?.invitation_code),blocking:true,detail:ca?.invitation_code?'Configured':'Missing'});
+  if(version?.invitation_code_mode&&version.invitation_code_mode!=='NONE')checks.push({key:`${campaign.slug}-code`,label:`${campaign.name}: invitation code`,pass:isInvitationCodeConfigured(ca?.invitation_code),blocking:true,detail:isInvitationCodeConfigured(ca?.invitation_code)?'Configured':'Missing'});
   if(version){for(const key of ['CAMPAIGN_TERMS','PARTICIPANT_CONSENT']){const ok=legal.some(d=>d.scope==='CAMPAIGN'&&d.campaign_version_id===version.id&&d.document_key===key);checks.push({key:`${campaign.slug}-${key}`,label:`${campaign.name}: ${key.toLowerCase().replaceAll('_',' ')}`,pass:ok,blocking:true,detail:ok?'Published':'Missing reviewed published document'})}}
   const cb=version?bindings.filter(b=>b.campaign_version_id===version.id&&b.purpose==='CREDENTIAL'):[];
   if(cb.length){const n=cb.reduce((sum,b)=>sum+credentials.filter(c=>c.provider_id===b.provider_id&&c.campaign_id===campaign.id).length,0);checks.push({key:`${campaign.slug}-creds`,label:`${campaign.name}: credentials`,pass:n>0,blocking:true,detail:`${n} available`})}

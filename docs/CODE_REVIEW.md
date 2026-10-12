@@ -158,8 +158,9 @@ Locations are `file:line` where the line is stable, otherwise `file` and functio
 #### CR-27 — Funnel events are client-controlled `[ ]`
 - `trackFunnelEvent('signup_completed', …)` is fired by the browser and accepted by an unauthenticated endpoint, so client-side funnel numbers can be inflated. The server-side business events (`business_funnel_events`) are the trustworthy ones; label the admin dashboard accordingly.
 
-#### CR-28 — Git history still contains scrubbed content `[ ]`
-- Commit `c95f8dc` removed the client contract terms and the invitation code from the current tree, but they remain in earlier commits. If the repository is, or may become, public, or if the code is sensitive, rotate or confirm it and consider a history scrub as a separate decision.
+#### CR-28 — Sensitive values remain in source and history `[ ]`
+- Commit `c95f8dc` removed the provider invitation code and some contract text from the current tree, but earlier commits still contain them. Rotate the code if it is sensitive.
+- The current tree is not clean either: `supabase/migrations/0001_baseline.sql` still seeds the client revenue per pair and the participant compensation amounts (the `client_revenue_cents` and `pair_compensation_cents` columns). Decide whether those are acceptable in source; if not, seed placeholders and set the real values through a new published campaign version, and consider a history scrub as a separate decision. Do not describe the repository as free of contract terms until this is resolved.
 
 ---
 
