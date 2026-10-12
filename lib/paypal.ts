@@ -2,6 +2,9 @@ type PayPalMode='sandbox'|'live';
 
 function baseUrl(){
  const mode=(process.env.PAYPAL_MODE||'sandbox').toLowerCase() as PayPalMode;
+ const site=(process.env.NEXT_PUBLIC_SITE_URL||'').toLowerCase();
+ if(site.includes('staging.pairvoice.com')&&mode!=='sandbox')throw new Error('staging_paypal_live_mode_forbidden');
+ if(mode!=='sandbox'&&mode!=='live')throw new Error('invalid_paypal_mode');
  return mode==='live'?'https://api-m.paypal.com':'https://api-m.sandbox.paypal.com';
 }
 
