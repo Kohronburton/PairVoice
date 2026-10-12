@@ -25,7 +25,7 @@ Production partner invitations use `/pair/{inviteCode}`. Legacy `/invite/{code}`
 Partner matching inside PairVoice is a future feature. Until then, the production UI clearly asks Participant A to invite someone they know.
 
 ## Spain operating rules
-Spain rules currently captured: 2 participants; 7 different conversations; target 21–22 minutes (aim ~21:30); hard supplied window >20 and <24; 90–95% Spanish; both say “MagicData sound recording” before every topic; quiet separate rooms/places; phone on table 10–20 cm away; no headphones/charging/other apps/screen-off; no politics/religion/offensive content; no repeat participation. PairVoice public offer: $50 per pair. Supplied invitation code D43LH547F3 remains scope-unconfirmed.
+Spain rules currently captured: 2 participants; 7 different conversations; target 21–22 minutes (aim ~21:30); hard supplied window >20 and <24; 90–95% Spanish; both say “MagicData sound recording” before every topic; quiet separate rooms/places; phone on table 10–20 cm away; no headphones/charging/other apps/screen-off; no politics/religion/offensive content; no repeat participation. Compensation and invitation codes are configured in admin, never in source.
 
 ## Operations rule
 If a control can change eligibility, credentials, QA, approval or money, it must execute a real permission-checked server action and create evidence. Public signup and pair formation go through server-authoritative API routes using the service role; anonymous browser clients cannot execute the enrollment RPCs directly.
