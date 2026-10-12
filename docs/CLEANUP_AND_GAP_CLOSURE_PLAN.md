@@ -45,7 +45,7 @@ Evidence is from reading code, docs, CI config and git state. Nothing here was e
 ### Critical
 
 - **G-01 — History rewrite disconnected the other branches from `main`.**
-  On 2026-10-08 `main` and `phase-2-production-workflow` were rewritten to remove AI attribution. The rewrite changed the hash of every one of the 207 commits (0 commits are shared between the old and new `main`), because the message filter touched all messages, not only the ones with trailers. Result: ~28 older branches (`staging`, `staging-current`, `v2.5-*`, `feat/*`, `archive/*`, …) now share no history with `main` and show "ahead N / behind 207". Branches created after the rewrite (`feat/real-user-release-gates-20261012`, `fix/launch-test-reliability-20261012`, `test/launch-simulations-20261012`, `v2.5-auth-rebased-20261011`) are based on the new history and are fine. Anyone with a clone or open work on old hashes must re-clone or rebase.
+  On 2026-10-08 `main` and `phase-2-production-workflow` were rewritten to remove AI attribution. The rewrite changed the hash of every one of the 207 commits (0 commits are shared between the old and new `main`) because the message filter normalized all messages, not only the ones with trailers. That was avoidable: the oldest attributed commit (`3d8945c`) sat only 6 commits below the old tip, so a precise rewrite would have kept the first ~200 commits byte-identical. Result today: ~28 older branches (`staging`, `staging-current`, `v2.5-*`, `feat/*`, `archive/*`, …) share no history with `main` and show "ahead N / behind 207". Branches created after the rewrite (`feat/real-user-release-gates-20261012`, `fix/launch-test-reliability-20261012`, `test/launch-simulations-20261012`, `v2.5-auth-rebased-20261011`) are based on the new history and are fine. Anyone with a clone or open work on old hashes must re-clone or rebase.
   Decision needed: see D-01.
 
 - **G-02 — `main` lacks the auth rate-limit hardening that exists on `phase-2-production-workflow`.**
@@ -67,7 +67,7 @@ Evidence is from reading code, docs, CI config and git state. Nothing here was e
 
 - **G-09 — Docs are stale and partly contradictory.**
   `docs/IMPLEMENTATION_PROGRESS.md` (1,083 lines) ends at 2026-09-24: says PR #9 is a draft, staging has migrations 0001–0025, and lists staging blockers as open. The repo is at 0039/0040 and PR #9 is long gone. `docs/DATABASE.md` (15 lines), `docs/STATE_MACHINE.md` (6), `docs/TROUBLESHOOTING.md` (9), `docs/SYSTEM_PLAN.md` (12) are thin. `README.md` says "pre-production… one clean schema" while there are 39 migrations. `docs/STAGING_DEPLOYMENT.md` names `https://staging.pairvoice.com`; `docs/IMPLEMENTATION_PROGRESS.md` and `render.yaml` use the Render hostname.
-- **G-10 — Duplicate migration numbers.** Two `0010_*` and two `0011_*` files. Applies in filename order, so it works, but a future renumber or tooling change can reorder them.
+- **G-10 — Duplicate migration versions.** Two `0010_*` and two `0011_*` files. They apply in filename order in CI, so it works there. The Supabase CLI tracks migrations by version prefix, so it cannot track both files with the same version and may skip or reject one. This blocks adopting `supabase db push` as the repeatable production step (P1) until it is reconciled.
 - **G-11 — `PAIRVOICE_SITE_URL` is undocumented.** Used by `scripts/run-revenue-workers.mjs` and the cron service, absent from `.env.example` and `.env.staging.example`. The cron service in `render.yaml` is pinned to `main` and the production URL; there is no staging worker.
 - **G-12 — Test coverage is thin on the TypeScript side.** 6 unit test files / 16 tests cover validation, matching, workflow, funnel, partner-invite, credential crypto. No tests for any API route, admin auth, PayPal webhook verification, or the outbox/payout workers. The SQL invariants are the real safety net.
 - **G-13 — `next.config.ts` disables Next's TypeScript CLI** (`experimental.useTypeScriptCli:false`) as a workaround for a TS 5.9 / Next 16.3.6 incompatibility. Revisit when upgrading.
@@ -87,10 +87,10 @@ Evidence is from reading code, docs, CI config and git state. Nothing here was e
 ### P0 — Repository integrity and history (do first; everything else assumes a stable base)
 
 - [?] **D-01 Resolve G-01.** Pick one:
-  - **A. Re-do the rewrite precisely** (touch only the ~10 commits with AI author/trailers, leave every other commit byte-identical so its hash returns to the original). Old branches reconnect to `main`; branches built after 2026-10-08 (the four listed in G-01 plus the 6 new commits on `phase-2-production-workflow`) must be rebased onto the corrected history. One more force-push to `main` and `phase-2-production-workflow`.
+  - **A. Redo the rewrite precisely from the original history.** Start from the pre-rewrite tip of `main` (it must be recovered from a branch or clone that still has the old hashes, e.g. `archive/*` or `v2.5-stabilization`; the container-local backup tag is gone), and rewrite only `3d8945c` and its ~6 descendants (author, trailers). Everything older keeps its original hash, so old branches reconnect to `main` at the last unchanged commit. A commit's hash depends on its parents, so those ~7 commits (and anything built on them, including the Oct 11–12 branches and the 6 new commits on `phase-2-production-workflow`) get new hashes and must be rebased onto the result. One more force-push to `main` and `phase-2-production-workflow`.
   - **B. Keep the current `main` and rebase/recreate the old branches** you still want. Archive the rest.
   - **C. Keep as is and treat old branches as archives only** (do not merge them).
-  Recommendation: C for anything older than 2026-10-01 (already stale), and A only if branches such as `v2.5-stabilization`, `v2.5-passkeys*`, `staging-current` are still needed as live work.
+  Recommendation: C for anything older than 2026-10-01 (already stale), and A only if branches such as `v2.5-stabilization`, `v2.5-passkeys*`, `staging-current` are still needed as live work. Before choosing A, confirm that an old-hash copy of `main` still exists.
 - [ ] Record the decision and the final branch map in this file (section 5).
 - [ ] Delete `claude/modest-ptolemy-vcw5kz` from the GitHub branches page (merged; the session's git proxy blocks deletes).
 - [ ] Optional: scrub the PR #23 merge message branch name (requires another force-push; see D-02).
@@ -100,8 +100,8 @@ Evidence is from reading code, docs, CI config and git state. Nothing here was e
 ### P1 — Close launch gaps (production safety)
 
 - [ ] **G-02:** Merge `phase-2-production-workflow` (with `0040`) into `main` via PR after CI passes.
-- [ ] **G-05:** Apply migrations through the latest to the production Supabase project; record the applied list. Add a documented, repeatable migration step (CLI or CI job) so this stops being manual.
-- [ ] **G-04:** Set on Render production: `PAYPAL_MODE=live`, `PAIRVOICE_EDGE_SHARED_SECRET` (also in Supabase Edge Functions), `PAIRVOICE_CREDENTIAL_ENCRYPTION_KEY` (production-only), `CRON_SECRET` or `PAIRVOICE_INTERNAL_SECRET`, `PAIRVOICE_SITE_URL` on the cron service. Same list for staging with staging-only values, plus `SUPABASE_SERVICE_ROLE_KEY`, admin credentials, `RESEND_API_KEY`.
+- [ ] **G-05:** Apply migrations through the latest to the production Supabase project; record the applied list. Add a documented, repeatable migration step so this stops being manual. Before using the Supabase CLI, reconcile the duplicate `0010`/`0011` versions (G-10): compare the live `supabase_migrations` history with the repo, then either give each logical migration a unique version with a tested repair procedure or use a script that applies files by full filename. Until then, apply by filename in order, as CI does.
+- [ ] **G-04:** Set on Render production: `PAYPAL_MODE=live`, `PAIRVOICE_EDGE_SHARED_SECRET` (also in Supabase Edge Functions), `PAIRVOICE_CREDENTIAL_ENCRYPTION_KEY` (production-only), `PAIRVOICE_INTERNAL_SECRET` (the cron worker `scripts/run-revenue-workers.mjs` reads only this variable; the internal routes accept either it or `CRON_SECRET`, so use `PAIRVOICE_INTERNAL_SECRET` on the cron service or first update the worker to honor `CRON_SECRET`), `PAIRVOICE_SITE_URL` on the cron service. Same list for staging with staging-only values, plus `SUPABASE_SERVICE_ROLE_KEY`, admin credentials, `RESEND_API_KEY`.
 - [ ] Add `PAIRVOICE_EDGE_SHARED_SECRET`, `PAIRVOICE_CREDENTIAL_ENCRYPTION_KEY`, `CRON_SECRET` to the production service in `render.yaml` as `sync: false` (declaration only).
 - [ ] **G-03:** Merge the launch-test branches (`test/launch-simulations-20261012`, `fix/launch-test-reliability-20261012`, `feat/real-user-release-gates-20261012`) after review; run the staging acceptance once and store the record under `docs/`.
 - [ ] Publish reviewed legal documents (staging and production) and confirm `/admin/legal`, `/terms`, `/privacy` show them.
@@ -126,7 +126,7 @@ Evidence is from reading code, docs, CI config and git state. Nothing here was e
 - [ ] Add `docs/RUNBOOK.md`: deploy, rollback, rotate secrets, apply migrations, payout failure handling, outbox stuck, restore from backup (use `scripts/verify-backup-restore.sh`).
 - [ ] Reconcile hostnames (`staging.pairvoice.com` vs `pairvoice-staging.onrender.com`) in all docs.
 - [ ] Add `PAIRVOICE_SITE_URL` to `.env.example` and `.env.staging.example` (**G-11**).
-- [ ] Fix or document the duplicate `0010`/`0011` migrations (**G-10**): add a note in `docs/DATABASE.md` listing the real application order; do not renumber applied migrations.
+- [ ] Fix or document the duplicate `0010`/`0011` migrations (**G-10**): list the real application order in `docs/DATABASE.md`. Do not renumber applied migrations blindly.
 - **Exit check:** a new person can go from clone to running app and to a staging deploy using only `README.md` and `docs/RUNBOOK.md`.
 
 ### P4 — Quality and tests
@@ -255,3 +255,4 @@ grep -rn 'TODO\|FIXME' app lib components modules
 | Date | What | Result |
 |---|---|---|
 | 2026-10-12 | Initial scan, written from `main` `c95f8dc` | Findings G-01 … G-18, plan P0–P5 created |
+| 2026-10-12 | Review fixes | Option A (D-01) corrected: only the ~7 commits at the tip need new hashes; CLI vs duplicate migration versions (G-10); cron worker reads `PAIRVOICE_INTERNAL_SECRET` only |
