@@ -11,7 +11,10 @@ for(const key of required)if(!process.env[key])report.blockers.push(key+' is not
 if(process.env.PAIRVOICE_E2E_STAGING_ONLY!=='true')report.blockers.push('PAIRVOICE_E2E_STAGING_ONLY=true required');
 if(report.blockers.length){save();process.exit(2);}
 const emails=[process.env.PAIRVOICE_E2E_EMAIL_A,process.env.PAIRVOICE_E2E_EMAIL_B];
+if(emails.some(x=>!x.toLowerCase().includes('+e2e-'))){report.blockers.push('Synthetic test identities must use +e2e- aliases');save();process.exit(2);}
 if(emails[0]===emails[1]){report.blockers.push('A and B must be distinct identities');save();process.exit(2);}
+const adapter=new URL(process.env.PAIRVOICE_E2E_MAILBOX_ADAPTER_URL);
+if(adapter.protocol!=='https:'||adapter.username||adapter.password||adapter.search||adapter.hash||!adapter.hostname.endsWith('.pairvoice.com')){report.blockers.push('Mailbox adapter must be a dedicated HTTPS pairvoice.com host without embedded credentials');save();process.exit(2);}
 const browser=await chromium.launch({headless:true});
 try{
  const contexts=await Promise.all([browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true}),browser.newContext({viewport:{width:360,height:740},isMobile:true,hasTouch:true})]);
