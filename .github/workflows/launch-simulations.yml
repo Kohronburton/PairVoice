@@ -1,7 +1,7 @@
 name: Launch simulation smoke
 on:
   pull_request:
-    branches: [phase-2-production-workflow]
+    branches: [phase-2-production-workflow, v2.5-auth-rebased-20261011]
   workflow_dispatch:
     inputs:
       staging_url:
