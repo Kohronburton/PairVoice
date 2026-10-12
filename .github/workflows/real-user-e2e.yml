@@ -9,6 +9,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - name: Verify release policy cannot accept forged evidence
+        run: node --test scripts/evaluate-release-gates.test.mjs
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
