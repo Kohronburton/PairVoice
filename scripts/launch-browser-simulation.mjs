@@ -25,7 +25,9 @@ for(const [name,page] of [['participant-a',a],['participant-b',b]]){
  });
 }
 await run('confirmation without token cannot sign in',async()=>{
- await a.goto(base+'/auth/confirm',{waitUntil:'domcontentloaded'});
+ const response=await a.goto(base+'/auth/confirm',{waitUntil:'domcontentloaded'});
+ if(!response || response.status()===404)throw Error('Confirmation route not deployed (HTTP 404)');
+ if(![200,302,303,307,308].includes(response.status()))throw Error('Unexpected confirmation response '+response.status());
  await a.screenshot({path:out+'/invalid-confirmation.png'});
  if(new URL(a.url()).pathname==='/dashboard')throw Error('Invalid token authenticated user');
  const current=new URL(a.url());
