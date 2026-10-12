@@ -21,6 +21,8 @@ jobs:
       - name: Run fail-closed real-user prerequisites and browser probes
         env:
           PAIRVOICE_E2E_STAGING_ONLY: 'true'
+          PAIRVOICE_E2E_PHONE_A: ${{ secrets.PAIRVOICE_E2E_PHONE_A }}
+          PAIRVOICE_E2E_PHONE_B: ${{ secrets.PAIRVOICE_E2E_PHONE_B }}
           PAIRVOICE_E2E_EMAIL_A: ${{ vars.PAIRVOICE_E2E_EMAIL_A }}
           PAIRVOICE_E2E_EMAIL_B: ${{ vars.PAIRVOICE_E2E_EMAIL_B }}
           PAIRVOICE_E2E_CAMPAIGN_SLUG: ${{ vars.PAIRVOICE_E2E_CAMPAIGN_SLUG }}
