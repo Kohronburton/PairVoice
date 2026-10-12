@@ -9,7 +9,7 @@
 Provision two fresh distinct `+e2e-` email aliases in an approved isolated test mailbox, not real participant addresses. Set `PAIRVOICE_E2E_EMAIL_A` and `PAIRVOICE_E2E_EMAIL_B` as GitHub environment variables. Never commit addresses, OTPs or link tokens. Fixture campaign must be staging-only and approved for test traffic.
 
 ## Mailbox adapter contract (not implemented)
-Provision a dedicated HTTPS endpoint under `*.pairvoice.com`, protected by `PAIRVOICE_E2E_MAILBOX_ADAPTER_TOKEN`, which returns only test messages for explicitly allowlisted synthetic addresses. Bind to run ID, reject other inboxes, limit retention, prevent redirect/SSRF and redact raw auth tokens from logs and CI artifacts. Use a dedicated email provider test domain/inbox. The current E2E runner does not consume this adapter; **it must not claim completed email verification**.
+Provision a dedicated HTTPS endpoint under `*.pairvoice.com`, protected by `PAIRVOICE_E2E_MAILBOX_ADAPTER_TOKEN`, which returns only test messages for explicitly allowlisted synthetic addresses. Bind to run ID, reject other inboxes, limit retention, prevent redirect/SSRF and redact raw auth tokens from logs and CI artifacts. Use a dedicated email provider test domain/inbox. The E2E runner now polls `GET /v1/test-messages/latest?recipient=...&runId=...` using a Bearer token. A 204 or 404 means not yet delivered; a successful response must contain `confirmUrl` with origin `https://staging.pairvoice.com` and path `/auth/confirm`. The adapter service is **not yet provisioned**, so email verification is not certified.
 
 ## Payout sandbox
 - Configure `PAYPAL_MODE=sandbox` on staging; provision sandbox-only PayPal client credentials and webhook ID in Render secrets, never GitHub code.
@@ -25,7 +25,7 @@ A signs up -> receives email -> explicitly confirms -> authenticated dashboard; 
 The existing release evaluator deliberately blocks all untrusted evidence until CI provenance verification is implemented. AI review is advisory. A browser screenshot alone never proves backend completion.
 
 ## Outstanding blockers
-1. Actual mailbox adapter and provider configuration.
+1. Actual mailbox adapter and provider configuration, plus two isolated test phone numbers in `PAIRVOICE_E2E_PHONE_A/B`.
 2. Authenticated Playwright submission and email verification.
 3. Isolated fixture campaign, accounts and partner acceptance.
 4. Work/QA workflow orchestration and sandbox PayPal test recipient/credentials.
