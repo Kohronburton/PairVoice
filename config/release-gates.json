@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "project": "PairVoice",
+  "environment": "staging",
+  "productionWritesAllowed": false,
+  "requiredGates": [
+    "staging_identity",
+    "auth_signup",
+    "auth_email_confirmation",
+    "participant_isolation",
+    "partner_linking",
+    "campaign_eligibility",
+    "work_submission",
+    "qa_approval",
+    "payout_sandbox_idempotency",
+    "security_negative_tests",
+    "mobile_browser"
+  ],
+  "acceptedEvidence": [
+    "browser_trace",
+    "browser_screenshot",
+    "http_assertion",
+    "database_assertion",
+    "ci_job"
+  ],
+  "statuses": [
+    "PASS",
+    "FAIL",
+    "BLOCKED",
+    "NOT_RUN"
+  ],
+  "aiAuthority": "ADVISORY_ONLY",
+  "releaseDecision": "PASS_ONLY_IF_ALL_REQUIRED_GATES_PASS",
+  "prohibited": [
+    "production_test_writes",
+    "real_money_payout",
+    "log_auth_tokens",
+    "skip_required_gate",
+    "model_self_approval"
+  ],
+  "reviewers": [
+    "OpenAI",
+    "Claude"
+  ],
+  "requiredEvidenceFields": [
+    "gate",
+    "status",
+    "source",
+    "runId",
+    "commitSha",
+    "environment",
+    "timestamp"
+  ]
+}
