@@ -1,5 +1,7 @@
 name: PairVoice Mobile Browser Simulation
 on:
+  push:
+    branches: [fix/launch-test-reliability-20261012]
   workflow_dispatch:
   pull_request:
     branches: [v2.5-auth-rebased-20261011, phase-2-production-workflow]

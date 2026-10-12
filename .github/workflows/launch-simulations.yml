@@ -1,5 +1,7 @@
 name: PairVoice Launch Test
 on:
+  push:
+    branches: [fix/launch-test-reliability-20261012]
   workflow_dispatch:
   pull_request:
     branches: [phase-2-production-workflow, v2.5-auth-rebased-20261011]
