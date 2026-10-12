@@ -95,7 +95,7 @@ Locations are `file:line` where the line is stable, otherwise `file` and functio
 - **Fix:** return one generic response for signup/sign-in attempts and put the specifics in the email; rate limit per IP and per address.
 
 #### CR-10 — No rate limiting on public endpoints `[ ]`
-- `/api/analytics`, `/api/lead`, `/api/signup`, `/api/pair`, `/api/consent` (GET), `/api/opportunities`, `/api/existing-partner`. `/api/analytics` also stores a caller-supplied `metadata` object of any size (`app/api/analytics/route.ts`). See plan item G-07.
+- Unauthenticated: `/api/analytics`, `/api/lead`, `/api/signup`, `/api/pair`, `/api/opportunities`, `/api/auth/magic-link`. Signed-in participant routes (`/api/consent`, `/api/existing-partner`, `/api/partner-pool`, `/api/payout-method`, `/api/payout`, `/api/work/access`) need a session and are lower risk, but `/api/existing-partner` still needs a limit (CR-07). `/api/analytics` also stores a caller-supplied `metadata` object of any size (`app/api/analytics/route.ts`). See plan item G-07.
 
 #### CR-11 — Admin metrics read whole tables and hit the 1,000-row default `[ ]`
 - `app/api/admin/stats`, `…/funnel`, `…/pairs`, `…/release-readiness` select without aggregation or pagination. PostgREST returns at most 1,000 rows by default, so counts and revenue silently stop growing after 1,000 rows, and each call loads every row (including participant emails in `…/pairs`) into server memory.
@@ -194,3 +194,4 @@ Each fix should ship with the test named in section 5 and, for database changes,
 |---|---|---|
 | 2026-10-12 | First full pass (sections 1–6) | 28 findings; no code changed |
 | 2026-10-12 | Review of this document | CR-05 withdrawn (PayPal's verify API takes the parsed event). 27 active findings |
+| 2026-10-12 | Review of this document | CR-10 and plan G-07 corrected: `consent` and `existing-partner` require a session. Work access now refuses to prepare a run when the invitation code is unconfigured (migration `0042`) |

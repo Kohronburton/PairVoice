@@ -35,7 +35,11 @@ export async function POST(req:NextRequest){
   if(b.prepare===true){
    if(!await subsystemEnabled(ctx.db,'WORK'))return NextResponse.json({error:'New work starts are temporarily paused.'},{status:503});
    const {data,error}=await ctx.db.rpc('prepare_pair_work_access',{p_pair_id:pairId,p_idempotency_key:String(b.idempotencyKey||`work:prepare:${pairId}`)});
-   if(error)return NextResponse.json({error:'Unable to prepare work access.'},{status:409});
+   if(error){
+    console.error(error);
+    const m=String(error.message||'');
+    return NextResponse.json({error:m.includes('invitation_code_not_configured')?'This gig is not open for work yet. PairVoice is finishing setup, so check back soon.':'Unable to prepare work access.'},{status:409});
+   }
    return NextResponse.json(data);
   }
   if(!runId||!['START','SUBMIT'].includes(action))return NextResponse.json({error:'pairId, runId and START/SUBMIT action are required.'},{status:400});
