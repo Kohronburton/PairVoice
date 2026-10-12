@@ -3,6 +3,11 @@ const policy=JSON.parse(readFileSync('config/release-gates.json','utf8'));
 const file=process.argv[2];if(!file){console.error('Usage: node scripts/evaluate-release-gates.mjs evidence.json');process.exit(2);}
 let evidence;try{evidence=JSON.parse(readFileSync(file,'utf8'));}catch{console.error('Invalid evidence JSON');process.exit(2);}
 const failures=[],summary=[];
+// Evidence JSON is untrusted input. This evaluator has no CI attestation verifier yet.
+// Therefore it MUST NOT authorize a release, even if every supplied record says PASS.
+failures.push('BLOCKED: evidence provenance is not independently verified; untrusted JSON cannot authorize a release');
+if(!/^[0-9a-f]{40}$/.test(String(evidence.commitSha||'')))failures.push('Invalid or missing 40-character commit SHA');
+if(evidence.environment!=='staging')failures.push('Evidence environment is not staging');
 if(policy.environment!=='staging'||policy.productionWritesAllowed!==false)failures.push('Unsafe policy environment');
 for(const gate of policy.requiredGates){
  const records=Array.isArray(evidence.gates)?evidence.gates.filter(x=>x.gate===gate):[];
