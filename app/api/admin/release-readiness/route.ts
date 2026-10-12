@@ -1,6 +1,6 @@
 import {NextResponse} from 'next/server';
 import {requireAdmin} from '../../../../lib/admin-server';
-import {isInvitationCodeConfigured} from '../../../../lib/invitation-code';
+import {invitationCodeReadiness} from '../../../../lib/invitation-code';
 
 type Check={key:string;label:string;pass:boolean;blocking:boolean;detail:string};
 
@@ -61,7 +61,8 @@ export async function GET(){
     checks.push({key:`campaign_${campaign.slug}_launch`,label:`${campaign.name}: mobile provider destinations`,pass:Boolean(ca?.launch_url||hasMobileLaunch),blocking:true,detail:ca?.launch_url?'Campaign launch configured':hasMobileLaunch?'Android + iPhone destinations configured':'Missing provider destinations'});
    }
    if(version?.invitation_code_mode&&version.invitation_code_mode!=='NONE'){
-    checks.push({key:`campaign_${campaign.slug}_code`,label:`${campaign.name}: invitation code`,pass:isInvitationCodeConfigured(ca?.invitation_code),blocking:true,detail:isInvitationCodeConfigured(ca?.invitation_code)?'Configured':'Missing invitation code'});
+    const codeCheck=invitationCodeReadiness(version.invitation_code_mode,ca?.invitation_code);
+    checks.push({key:`campaign_${campaign.slug}_code`,label:`${campaign.name}: invitation code`,pass:codeCheck.pass,blocking:true,detail:codeCheck.detail});
    }
    if(version){const campaignDocs=legal.filter(d=>d.scope==='CAMPAIGN'&&d.campaign_version_id===version.id);for(const key of ['CAMPAIGN_TERMS','PARTICIPANT_CONSENT']){const ok=campaignDocs.some(d=>d.document_key===key);checks.push({key:`campaign_${campaign.slug}_${key.toLowerCase()}`,label:`${campaign.name}: ${key.toLowerCase().replaceAll('_',' ')}`,pass:ok,blocking:true,detail:ok?'Published':'Missing reviewed published document'});}}
    const credentialBindings=version?bindings.filter(b=>b.campaign_version_id===version.id&&b.purpose==='CREDENTIAL'):[];
