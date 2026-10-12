@@ -1,5 +1,6 @@
--- Work access must not be prepared for a campaign whose published version requires an
--- invitation code until an administrator has configured a real one. Same function as 0036,
+-- Work access must not be prepared for a campaign whose published version uses a campaign-wide
+-- invitation code until an administrator has configured a real one, and must not hand one
+-- campaign-wide code to a PAIR_SPECIFIC campaign. Same function as 0036,
 -- with the invitation-code guard added before the work run is created.
 create or replace function public.prepare_pair_work_access(
  p_pair_id uuid,
@@ -23,9 +24,14 @@ begin
 
  select * into v_access from campaign_access where campaign_id=v_pair.campaign_id;
  select invitation_code_mode into v_mode from campaign_versions where id=v_pair.campaign_version_id;
- if coalesce(v_mode,'NONE')<>'NONE'
+ if v_mode='CAMPAIGN_DEFAULT'
     and (nullif(trim(coalesce(v_access.invitation_code,'')),'') is null or v_access.invitation_code='CONFIGURE_IN_ADMIN') then
   raise exception 'invitation_code_not_configured';
+ end if;
+ -- campaign_access holds one code per campaign, so it cannot serve a PAIR_SPECIFIC campaign.
+ -- Fail closed until pair-bound codes (credential bundles) are wired into work access.
+ if v_mode='PAIR_SPECIFIC' then
+  raise exception 'pair_specific_invitation_code_unsupported';
  end if;
 
  v_run:=create_work_provider_run(p_pair_id,v_provider.provider_key,p_idempotency_key);

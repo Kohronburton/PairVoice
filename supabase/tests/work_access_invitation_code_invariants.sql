@@ -2,7 +2,8 @@
 begin;
 do $$
 begin
- if position('invitation_code_not_configured' in pg_get_functiondef('public.prepare_pair_work_access(uuid,text)'::regprocedure))=0 then
+ if position('invitation_code_not_configured' in pg_get_functiondef('public.prepare_pair_work_access(uuid,text)'::regprocedure))=0
+    or position('pair_specific_invitation_code_unsupported' in pg_get_functiondef('public.prepare_pair_work_access(uuid,text)'::regprocedure))=0 then
   raise exception 'work_access_invitation_code_guard_missing';
  end if;
  if has_function_privilege('anon','public.prepare_pair_work_access(uuid,text)','EXECUTE')

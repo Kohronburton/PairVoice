@@ -25,7 +25,7 @@ Status key: `[ ]` open · `[~]` in progress · `[x]` fixed · `[-]` accepted / w
 | High | 4 | Blocks payouts, risks money, or leaks personal data |
 | Medium | 8 | Real bug or abuse path with a bounded impact |
 | Low | 10 | Hygiene, correctness at the edges, hardening |
-| Info | 6 | Observations and decisions for the owner |
+| Info | 7 | Observations and decisions for the owner |
 
 **Top five, in fix order (CR-01 to CR-04 are high):**
 1. **CR-01** No code path ever makes a payout method the default, so no participant can request a payout.
@@ -158,6 +158,9 @@ Locations are `file:line` where the line is stable, otherwise `file` and functio
 #### CR-27 — Funnel events are client-controlled `[ ]`
 - `trackFunnelEvent('signup_completed', …)` is fired by the browser and accepted by an unauthenticated endpoint, so client-side funnel numbers can be inflated. The server-side business events (`business_funnel_events`) are the trustworthy ones; label the admin dashboard accordingly.
 
+#### CR-29 — `PAIR_SPECIFIC` invitation-code mode is not supported end to end `[ ]`
+- The schema allows `invitation_code_mode = 'PAIR_SPECIFIC'` (codes stored per credential bundle), but `prepare_pair_work_access` only knows the campaign-wide code in `campaign_access`. As of migration `0042` it fails closed for that mode (`pair_specific_invitation_code_unsupported`) instead of handing every pair the same code. The admin readiness check still asks for a campaign-wide code for any mode other than `NONE`, so it does not flag this. Either implement pair-bound codes in work access (decrypt the bundle's code for the pair) and make readiness mode-aware, or remove the mode from the schema check. No seeded campaign uses it today.
+
 #### CR-28 — Sensitive values remain in source and history `[ ]`
 - Commit `c95f8dc` removed the provider invitation code and some contract text from the current tree, but earlier commits still contain them. Rotate the code if it is sensitive.
 - The current tree is not clean either: `supabase/migrations/0001_baseline.sql` still seeds the client revenue per pair and the participant compensation amounts (the `client_revenue_cents` and `pair_compensation_cents` columns). Decide whether those are acceptable in source; if not, seed placeholders and set the real values through a new published campaign version, and consider a history scrub as a separate decision. Do not describe the repository as free of contract terms until this is resolved.
@@ -195,3 +198,4 @@ Each fix should ship with the test named in section 5 and, for database changes,
 | 2026-10-12 | First full pass (sections 1–6) | 28 findings; no code changed |
 | 2026-10-12 | Review of this document | CR-05 withdrawn (PayPal's verify API takes the parsed event). 27 active findings |
 | 2026-10-12 | Review of this document | CR-10 and plan G-07 corrected: `consent` and `existing-partner` require a session. Work access now refuses to prepare a run when the invitation code is unconfigured (migration `0042`) |
+| 2026-10-12 | Review of this document | CR-29 added (`PAIR_SPECIFIC` invitation-code mode). 28 active findings |

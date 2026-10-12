@@ -2,7 +2,7 @@
 
 Living checklist. Update the checkboxes and the "Scan log" as work lands. Written 2026-10-12 from a scan of `main` at `c95f8dc` plus the remote branch list.
 
-Companion document: `docs/CODE_REVIEW.md` (27 active code-level findings, `CR-nn`). Items below reference it.
+Companion document: `docs/CODE_REVIEW.md` (28 active code-level findings, `CR-nn`). Items below reference it.
 
 Status key: `[ ]` open · `[~]` in progress · `[x]` done · `[?]` needs a decision from the owner.
 
@@ -263,4 +263,4 @@ grep -rn 'TODO\|FIXME' app lib components modules
 |---|---|---|
 | 2026-10-12 | Initial scan, written from `main` `c95f8dc` | Findings G-01 … G-18, plan P0–P5 created |
 | 2026-10-12 | Review fixes | Option A (D-01) corrected: only the ~7 commits at the tip need new hashes; CLI vs duplicate migration versions (G-10); cron worker reads `PAIRVOICE_INTERNAL_SECRET` only |
-| 2026-10-12 | Full code review | `docs/CODE_REVIEW.md` added (27 active findings, 4 high). Staging branch re-synced with `main`. Plan P1/P2/P4 updated with the new items; G-06 corrected |
+| 2026-10-12 | Full code review | `docs/CODE_REVIEW.md` added (28 active findings, 4 high). Staging branch re-synced with `main`. Plan P1/P2/P4 updated with the new items; G-06 corrected |

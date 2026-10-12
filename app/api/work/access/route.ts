@@ -38,7 +38,7 @@ export async function POST(req:NextRequest){
    if(error){
     console.error(error);
     const m=String(error.message||'');
-    return NextResponse.json({error:m.includes('invitation_code_not_configured')?'This gig is not open for work yet. PairVoice is finishing setup, so check back soon.':'Unable to prepare work access.'},{status:409});
+    return NextResponse.json({error:m.includes('invitation_code_not_configured')||m.includes('pair_specific_invitation_code_unsupported')?'This gig is not open for work yet. PairVoice is finishing setup, so check back soon.':'Unable to prepare work access.'},{status:409});
    }
    return NextResponse.json(data);
   }
