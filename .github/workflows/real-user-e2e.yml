@@ -1,0 +1,38 @@
+name: PairVoice Real User E2E (gated)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify release policy cannot accept forged evidence
+        run: node --test scripts/evaluate-release-gates.test.mjs
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser
+        run: |
+          npm install --no-save --package-lock=false playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Run fail-closed real-user prerequisites and browser probes
+        env:
+          PAIRVOICE_E2E_STAGING_ONLY: 'true'
+          PAIRVOICE_E2E_PHONE_A: ${{ secrets.PAIRVOICE_E2E_PHONE_A }}
+          PAIRVOICE_E2E_PHONE_B: ${{ secrets.PAIRVOICE_E2E_PHONE_B }}
+          PAIRVOICE_E2E_EMAIL_A: ${{ vars.PAIRVOICE_E2E_EMAIL_A }}
+          PAIRVOICE_E2E_EMAIL_B: ${{ vars.PAIRVOICE_E2E_EMAIL_B }}
+          PAIRVOICE_E2E_CAMPAIGN_SLUG: ${{ vars.PAIRVOICE_E2E_CAMPAIGN_SLUG }}
+          PAIRVOICE_E2E_MAILBOX_ADAPTER_URL: ${{ vars.PAIRVOICE_E2E_MAILBOX_ADAPTER_URL }}
+          PAIRVOICE_E2E_MAILBOX_ADAPTER_TOKEN: ${{ secrets.PAIRVOICE_E2E_MAILBOX_ADAPTER_TOKEN }}
+        run: node scripts/real-user-e2e.mjs
+      - name: Upload evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: real-user-e2e-evidence
+          path: test-results/real-user/
+          if-no-files-found: warn
