@@ -2,6 +2,8 @@
 
 Living checklist. Update the checkboxes and the "Scan log" as work lands. Written 2026-10-12 from a scan of `main` at `c95f8dc` plus the remote branch list.
 
+Companion document: `docs/CODE_REVIEW.md` (28 code-level findings, `CR-nn`). Items below reference it.
+
 Status key: `[ ]` open · `[~]` in progress · `[x]` done · `[?]` needs a decision from the owner.
 
 ---
@@ -59,7 +61,7 @@ Evidence is from reading code, docs, CI config and git state. Nothing here was e
 - **G-04 — Production env and secrets are not fully declared or verified.**
   `render.yaml` production service does not declare `PAIRVOICE_EDGE_SHARED_SECRET`, `PAIRVOICE_CREDENTIAL_ENCRYPTION_KEY`, `CRON_SECRET`. `sync: false` values are not applied to an already-provisioned Render service, so each must be set by hand. `PAYPAL_MODE` is no longer hard-coded; production must be set to `live` by hand (the code falls back to `sandbox` if unset).
 - **G-05 — Migration `0039` and any later migration are not applied automatically to production.** Nothing in CI or Render applies migrations. Production DB state is unverified.
-- **G-06 — Admin area uses a single shared Basic Auth credential in middleware** (`middleware.ts`): non-constant-time string compare, no lockout or rate limit, no per-person identity. `lib/admin-server.ts` has a proper role model (`admin_memberships`, six roles) but middleware gates `/admin` and `/api/admin` before it. Needs a decision on whether Basic Auth is the intended long-term gate (D-03).
+- **G-06 — Admin area uses a single shared Basic Auth credential in middleware** (`middleware.ts`): non-constant-time string compare, no lockout or rate limit, no per-person identity. `lib/admin-server.ts` has a proper role model (`admin_memberships`, six roles) and every admin API route also calls `requireAdmin` (so the APIs are double-gated; see CR-16). Only three admin pages call it at page level. Needs a decision on whether Basic Auth is the intended long-term gate (D-03).
 - **G-07 — Public, unauthenticated endpoints with no rate limiting.** `app/api/analytics`, `app/api/lead`, `app/api/opportunities`, `app/api/signup`, `app/api/consent`, `app/api/existing-partner`. Only `app/api/auth/magic-link` has any limiter. `app/api/analytics` writes caller-supplied `metadata` (any object) into `funnel_events` with the service-role client, so it can be used to fill the table with junk or large JSON.
 - **G-08 — Old Claude/AI attribution remains in places a rewrite can't reach.** GitHub keeps old commits reachable through the merged PR pages (#23, #24) and `refs/pull/*`. The branch `claude/modest-ptolemy-vcw5kz` still exists remotely (the git proxy blocked deletion from the session). The #23 merge commit message still names that branch. Comments posted by the assistant carry a required footer.
 
@@ -99,7 +101,9 @@ Evidence is from reading code, docs, CI config and git state. Nothing here was e
 
 ### P1 — Close launch gaps (production safety)
 
-- [ ] **G-02:** Merge `phase-2-production-workflow` (with `0040`) into `main` via PR after CI passes.
+- [ ] **Payout path (CR-01, CR-02, CR-03, CR-05):** fix the default-method gap and the ciphertext-to-PayPal bug, make the worker retry-safe, then run one sandbox payout end to end on staging. Until this passes, payouts cannot work regardless of the other items.
+- [ ] **Privacy (CR-04):** stop `/api/lead` returning the referrer's email.
+- [ ] **G-02:** Merge `phase-2-production-workflow` (with `0040`) into `main` via PR after CI passes. As of 2026-10-12 `main` was merged into the staging branch cleanly (no conflicts), so the promotion is a normal merge; the earlier worry that it would reintroduce the scrubbed contract terms is unfounded (the staging branch simply lacked the scrub).
 - [ ] **G-05:** Apply migrations through the latest to the production Supabase project; record the applied list. Add a documented, repeatable migration step so this stops being manual. Before using the Supabase CLI, reconcile the duplicate `0010`/`0011` versions (G-10): compare the live `supabase_migrations` history with the repo, then either give each logical migration a unique version with a tested repair procedure or use a script that applies files by full filename. Until then, apply by filename in order, as CI does.
 - [ ] **G-04:** Set on Render production: `PAYPAL_MODE=live`, `PAIRVOICE_EDGE_SHARED_SECRET` (also in Supabase Edge Functions), `PAIRVOICE_CREDENTIAL_ENCRYPTION_KEY` (production-only), `PAIRVOICE_INTERNAL_SECRET` (the cron worker `scripts/run-revenue-workers.mjs` reads only this variable; the internal routes accept either it or `CRON_SECRET`, so use `PAIRVOICE_INTERNAL_SECRET` on the cron service or first update the worker to honor `CRON_SECRET`), `PAIRVOICE_SITE_URL` on the cron service. Same list for staging with staging-only values, plus `SUPABASE_SERVICE_ROLE_KEY`, admin credentials, `RESEND_API_KEY`.
 - [ ] Add `PAIRVOICE_EDGE_SHARED_SECRET`, `PAIRVOICE_CREDENTIAL_ENCRYPTION_KEY`, `CRON_SECRET` to the production service in `render.yaml` as `sync: false` (declaration only).
@@ -112,6 +116,7 @@ Evidence is from reading code, docs, CI config and git state. Nothing here was e
 
 - [ ] **G-07:** Add per-IP/session rate limiting and body-size limits to the public routes; constrain `metadata` in `app/api/analytics` to a small allow-listed shape.
 - [?] **G-06 / D-03:** Decide the admin gate. Options: keep Basic Auth but use constant-time compare + lockout/rate limit; or move `/admin` onto `requireAdmin()` (Supabase session + `admin_memberships`) so every admin action has a named person and role. Recommendation: move to `requireAdmin()` and keep Basic Auth only as an extra outer layer.
+- [ ] **Code review privacy/abuse items:** CR-06 (escape email HTML), CR-07 (`eq` instead of `ilike`), CR-08 (no writes on GET), CR-09 (uniform signup/sign-in responses), CR-10 (rate limits), CR-22 (`https:` only launch URLs), CR-24 (timing-safe compares).
 - [ ] Add tests: admin auth (401/503/role denial), PayPal webhook (bad signature → 400, duplicate event → no-op), internal worker secret checks, public-route rate limits.
 - [ ] Run Supabase security + performance advisors on staging and production; record results here.
 - [ ] Run `/security-review` (or equivalent) over `app/api/**` and `lib/**`, focusing on: service-role usage, RLS gaps, credential handling (`lib/credential-crypto.ts`), PII in logs, CSRF on cookie-authenticated POST routes.
@@ -133,6 +138,8 @@ Evidence is from reading code, docs, CI config and git state. Nothing here was e
 
 - [ ] **G-16:** Add ESLint + Prettier (or Biome), format once in a single mechanical commit, add a CI step.
 - [ ] **G-12:** Add API-route tests with a mocked Supabase client for the highest-risk routes: payouts, approve, credentials assign/release, signup, pair, work access.
+- [ ] **Code review correctness items:** CR-11 (aggregate in SQL, not by loading tables), CR-12 (wallet totals), CR-13 (partner-invite form), CR-14 (guarded state update), CR-15, CR-17 – CR-21, CR-23.
+- [ ] Add the generic database invariants from `docs/CODE_REVIEW.md` section 5 (no unlisted anon/authenticated execute grants; every `SECURITY DEFINER` pins `search_path`).
 - [ ] Keep the SQL invariants as the source of truth; add one for every new migration.
 - [ ] **G-13:** Remove the `useTypeScriptCli:false` workaround when Next/TS versions allow; keep a note in `docs/TROUBLESHOOTING.md` until then.
 - **Exit check:** CI runs lint, typecheck, unit + API tests, build, audit, SQL invariants, backup drill; all green.
@@ -256,3 +263,4 @@ grep -rn 'TODO\|FIXME' app lib components modules
 |---|---|---|
 | 2026-10-12 | Initial scan, written from `main` `c95f8dc` | Findings G-01 … G-18, plan P0–P5 created |
 | 2026-10-12 | Review fixes | Option A (D-01) corrected: only the ~7 commits at the tip need new hashes; CLI vs duplicate migration versions (G-10); cron worker reads `PAIRVOICE_INTERNAL_SECRET` only |
+| 2026-10-12 | Full code review | `docs/CODE_REVIEW.md` added (28 findings, 4 high). Staging branch re-synced with `main`. Plan P1/P2/P4 updated with the new items; G-06 corrected |
