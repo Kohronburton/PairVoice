@@ -10,10 +10,10 @@ const money=(c:number,x:string)=>{try{return new Intl.NumberFormat(undefined,{st
 
 export default function JoinPage(){
  const[campaign,setCampaign]=useState(''),[partnerCode,setPartnerCode]=useState(''),[ops,setOps]=useState<Opportunity[]>([]),[lang,setLang]=useState<'en'|'es'>('en');
- const[leadOnly,setLeadOnly]=useState(false);const[busy,setBusy]=useState(false),[error,setError]=useState(''),[errorCode,setErrorCode]=useState(''),[fieldErrors,setFieldErrors]=useState<Record<string,string>>({}),[done,setDone]=useState(false),[magicSent,setMagicSent]=useState(false),[submittedEmail,setSubmittedEmail]=useState(''),[resendBusy,setResendBusy]=useState(false),[resendMessage,setResendMessage]=useState(''),[resendCooldown,setResendCooldown]=useState(0);
+ const[leadOnly,setLeadOnly]=useState(false),[market,setMarket]=useState<'US'|'ES'>('US');const[busy,setBusy]=useState(false),[error,setError]=useState(''),[errorCode,setErrorCode]=useState(''),[fieldErrors,setFieldErrors]=useState<Record<string,string>>({}),[done,setDone]=useState(false),[magicSent,setMagicSent]=useState(false),[submittedEmail,setSubmittedEmail]=useState(''),[resendBusy,setResendBusy]=useState(false),[resendMessage,setResendMessage]=useState(''),[resendCooldown,setResendCooldown]=useState(0);
  useEffect(()=>{
   const q=new URLSearchParams(location.search),slug=q.get('campaign')||'',locale=navigator.language||'en-US';
-  setCampaign(slug);setPartnerCode((q.get('partnerCode')||'').trim().toUpperCase());setLang(locale.toLowerCase().startsWith('es')?'es':'en');
+  setCampaign(slug);setMarket(q.get('market')==='ES'?'ES':'US');setPartnerCode((q.get('partnerCode')||'').trim().toUpperCase());setLang(q.get('lang')==='es'?'es':q.get('lang')==='en'?'en':locale.toLowerCase().startsWith('es')?'es':'en');
   fetch('/api/opportunities').then(r=>r.ok?r.json():Promise.reject()).then(d=>setOps(Array.isArray(d.opportunities)?d.opportunities:[])).catch(()=>{});
   trackFunnelEvent('signup_started',{campaign_slug:slug||'general',surface:'production_join'});
  },[]);
@@ -34,7 +34,7 @@ export default function JoinPage(){
  async function submit(e:FormEvent<HTMLFormElement>){
   e.preventDefault();setError('');setErrorCode('');setFieldErrors({});setMagicSent(false);
   const form=e.currentTarget,f=new FormData(form),email=String(f.get('email')||'').trim(),firstName=String(f.get('first_name')||'').trim(),phoneRaw=String(f.get('phone')||'').trim();
-  const countryCode=String(f.get('country')||selected?.countryCode||'US'),phone=normalizePhone(phoneRaw,countryCode);
+  const countryCode=String(f.get('country')||selected?.countryCode||market),phone=normalizePhone(phoneRaw,countryCode);
   const nextErrors:Record<string,string>={};
   if(!firstName)nextErrors.first_name=es?'Escribe tu nombre.':'Enter your first name.';
   if(!isValidEmail(email))nextErrors.email=es?'Escribe un correo electrónico válido.':'Enter a valid email address.';
@@ -57,9 +57,9 @@ export default function JoinPage(){
       setSubmittedEmail(email);setMagicSent(true);setDone(true);setResendCooldown(60);return;
      }throw new Error(d.error||'Unable to create account.');}
    }else{
-    const locale=navigator.language||'en-US',parts=locale.replace('_','-').split('-');
+    const locale=navigator.language||'en-US';
     const r=await fetch('/api/lead',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({
-     first_name:firstName,email,phone,consent:f.get('consent')==='on',market_code:(parts[1]||'US').toUpperCase(),language:lang,
+     first_name:firstName,email,phone,consent:f.get('consent')==='on',market_code:countryCode,language:lang,
      detected_locale:locale,detected_languages:Array.from(navigator.languages||[]),source:'production_join',
      marketing_campaign_key:'account_creation',landing_path:location.pathname,referrer:document.referrer||null
     })});
@@ -95,6 +95,7 @@ export default function JoinPage(){
      <label htmlFor="join-first-name">{t.first}<input id="join-first-name" name="first_name" required autoComplete="given-name" enterKeyHint="next" aria-invalid={!!fieldErrors.first_name}/>{fieldErrors.first_name&&<small className="fieldError" role="alert">{fieldErrors.first_name}</small>}</label>
      <label htmlFor="join-email">{t.email}<input id="join-email" name="email" required type="email" autoComplete="email" inputMode="email" autoCapitalize="none" spellCheck={false} enterKeyHint="next" aria-invalid={!!fieldErrors.email}/>{fieldErrors.email&&<small className="fieldError" role="alert">{fieldErrors.email}</small>}</label>
      <label htmlFor="join-phone">{t.phone}<input id="join-phone" name="phone" required type="tel" autoComplete="tel" inputMode="tel" enterKeyHint="next" placeholder={selected?.countryCode==='ES'?'+34 612 345 678':'+1 305 555 0123'} aria-invalid={!!fieldErrors.phone}/>{fieldErrors.phone?<small className="fieldError" role="alert">{fieldErrors.phone}</small>:<small className="fieldHelp">{t.phoneHelp}</small>}</label>
+     {!campaign&&<label htmlFor="join-market">{t.country}<select id="join-market" name="country" value={market} onChange={e=>setMarket(e.target.value as 'US'|'ES')} required><option value="US">United States</option><option value="ES">España</option></select></label>}
      {campaign&&<>
       <input type="hidden" name="country" value={selected?.countryCode||'US'}/>
       <input type="hidden" name="language" value={selected?.languageCode||'en'}/>
