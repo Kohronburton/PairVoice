@@ -22,6 +22,7 @@ export default async function Home({searchParams}:{searchParams:Promise<{lang?:s
  const featured=sorted.find(o=>o.countryCode===market)||sorted[0]||null;
  const featuredPayout=featured?.participantPayoutCents!=null?money(featured.participantPayoutCents,featured.payoutCurrency):null;
  const joinHref=(slug:string)=>'/join?campaign='+encodeURIComponent(slug)+(es?'&lang=es':'')+'#signup-form';
+ const earlyHref=es?'/join?lang=es&market=ES':'/join?lang=en&market=US';
 
  const t=es?{
   work:'Proyectos',how:'Cómo funciona',faq:'Preguntas',signIn:'Entrar',create:'Crear cuenta',
@@ -68,7 +69,7 @@ export default async function Home({searchParams}:{searchParams:Promise<{lang?:s
    <div className="navright">
     <div className="langToggle" aria-label="Language"><a className={!es?'active':''} href="/">EN</a><a className={es?'active':''} href="/?lang=es">ES</a></div>
     <a className="navsignin" href="/signin">{t.signIn}</a>
-    <a className="navcta" href={featured?joinHref(featured.slug):(es?'/join?lang=es':'/join')}>{t.qualify}</a>
+    <a className="navcta" href={featured?joinHref(featured.slug):earlyHref}>{t.qualify}</a>
    </div>
   </nav>
 
