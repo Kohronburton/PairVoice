@@ -454,7 +454,7 @@ insert into campaigns(slug,name,active) values
 
 with c as(select id from campaigns where slug='es-spain-v1')
 insert into campaign_versions(campaign_id,version,status,market_code,country_code,language_code,native_region,sessions_required,target_seconds_min,target_seconds_max,hard_seconds_min,hard_seconds_max,repeat_participation_allowed,currency,pair_compensation_cents,client_revenue_cents,referral_commission_cents,invitation_code_mode,default_invitation_code,invitation_code_scope_confirmed,rules,published_at)
-select id,1,'PUBLISHED','ES','ES','es','Spain',7,1260,1320,1201,1439,false,'USD',5000,7500,0,'CAMPAIGN_DEFAULT','D43LH547F3',false,
+select id,1,'PUBLISHED','ES','ES','es','Spain',7,1260,1320,1201,1439,false,'USD',5000,7500,0,'CAMPAIGN_DEFAULT','CONFIGURE_IN_ADMIN',false,
  '{"openingPhrase":"MagicData sound recording","maxSilenceSeconds":40,"maxMonologueSeconds":60,"headphonesAllowed":false,"chargingAllowed":false,"screenOffAllowed":false,"otherAppsAllowed":false,"politicsAllowed":false,"religionAllowed":false,"topicMix":{"expertPct":60,"casualPct":40,"scope":"UNCONFIRMED"}}'::jsonb,now() from c;
 
 with c as(select id from campaigns where slug='us-english-v1')
